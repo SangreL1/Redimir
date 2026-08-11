@@ -1,0 +1,221 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Recolección — Redimir{% endblock %}
+{% block nav_crear %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up" style="max-width:680px;">
+
+<a href="/dashboard/" class="btn-outline-green btn btn-sm mb-3">
+    <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+</a>
+
+<h1 class="page-title mb-1"><i class="fas fa-recycle" style="color:var(--primary);margin-right:.5rem;"></i>Nueva Recolección</h1>
+<p class="page-subtitle mb-4">Registra los datos y adjunta la foto de evidencia obligatoria</p>
+
+{% if errores %}
+<div class="alert-dark mb-3">
+    <i class="fas fa-exclamation-circle me-2"></i>
+    {% for e in errores %}<div>{{ e }}</div>{% endfor %}
+</div>
+{% endif %}
+
+<div class="card-redimir">
+    <form method="post" enctype="multipart/form-data" id="recoleccionForm">
+        {% csrf_token %}
+        {% if form_data.solicitud_id %}
+        <input type="hidden" name="solicitud_id" value="{{ form_data.solicitud_id }}">
+        {% endif %}
+
+        <div class="mb-3">
+            <label class="form-label-dark">Empresa de Origen *</label>
+            <select name="empresa_origen" id="empresa_origen" required
+                    style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--dark-border);border-radius:8px;color:#e2e8f0;padding:.65rem 1rem;font-family:Inter,sans-serif;">
+                <option value="">-- Seleccionar empresa --</option>
+                {% for empresa in empresas %}
+                <option value="{{ empresa.pk }}" {% if form_data.empresa_origen == empresa.pk|stringformat:'s' %}selected{% endif %}>
+                    {{ empresa.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+
+        <div class="row g-3 mb-3">
+            <div class="col-12 col-sm-6">
+                <label class="form-label-dark">Tipo de Residuo *</label>
+                <select name="tipo_residuo" required
+                        style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--dark-border);border-radius:8px;color:#e2e8f0;padding:.65rem 1rem;font-family:Inter,sans-serif;">
+                    <option value="">-- Seleccionar --</option>
+                    <option value="plastico" {% if form_data.tipo_residuo == "plastico" %}selected{% endif %}>♻️ Plástico</option>
+                    <option value="metal"    {% if form_data.tipo_residuo == "metal"    %}selected{% endif %}>🔩 Metal</option>
+                    <option value="papel"    {% if form_data.tipo_residuo == "papel"    %}selected{% endif %}>📄 Papel / Cartón</option>
+                    <option value="vidrio"   {% if form_data.tipo_residuo == "vidrio"   %}selected{% endif %}>🫙 Vidrio</option>
+                    <option value="organico" {% if form_data.tipo_residuo == "organico" %}selected{% endif %}>🌱 Orgánico</option>
+                    <option value="mixto"    {% if form_data.tipo_residuo == "mixto"    %}selected{% endif %}>📦 Mixto</option>
+                </select>
+            </div>
+            <div class="col-12 col-sm-6">
+                <label class="form-label-dark">Cantidad (kg) *</label>
+                <input type="number" name="cantidad_kg" step="0.1" min="0.1" required
+                       class="form-control-dark w-100"
+                       placeholder="Ej: 25.5"
+                       value="{{ form_data.cantidad_kg|default:"" }}">
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label-dark">Observaciones</label>
+            <textarea name="observaciones_recoleccion" class="form-control-dark w-100" rows="2"
+                      placeholder="(Opcional) Notas adicionales sobre la recolección"
+                      style="resize:vertical;">{{ form_data.observaciones_recoleccion|default:"" }}</textarea>
+        </div>
+
+        <div class="mb-3">
+            <label class="form-label-dark"><i class="fas fa-map-marker-alt me-1" style="color:var(--primary);"></i>Ubicación GPS (Opcional)</label>
+            <input type="text" name="ubicacion_gps" class="form-control-dark w-100"
+                   placeholder="Lat, Long (se captura automáticamente si permites)"
+                   id="ubicacionGps"
+                   value="{{ form_data.ubicacion_gps|default:"" }}">
+            <button type="button" onclick="capturarGPS()" class="btn btn-sm mt-1"
+                    style="background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.2);color:var(--primary);border-radius:6px;">
+                <i class="fas fa-crosshairs me-1"></i>Capturar GPS
+            </button>
+        </div>
+
+        <!-- Photo Upload -->
+        <div class="mb-4">
+            <label class="form-label-dark">
+                <i class="fas fa-camera me-1" style="color:var(--primary);"></i>
+                Foto de Evidencia * <span style="color:var(--danger);">(obligatoria)</span>
+            </label>
+
+            <div class="file-upload-zone" id="dropZone" onclick="document.getElementById('fotoInput').click()">
+                <div id="uploadPlaceholder">
+                    <i class="fas fa-cloud-upload-alt" style="font-size:2rem;color:var(--primary);margin-bottom:.5rem;"></i>
+                    <div style="font-weight:600;margin-bottom:.25rem;">Toca para seleccionar 1 o más fotos</div>
+                    <div style="font-size:.8rem;color:var(--text-muted);">o toma fotos con la cámara</div>
+                    <div style="font-size:.75rem;color:#475569;margin-top:.5rem;">JPG, PNG, WEBP (Múltiples permitidas)</div>
+                </div>
+                <div id="photoPreviewContainer" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;justify-content:center;"></div>
+            </div>
+            <input type="file" id="fotoInput" name="foto_recoleccion" accept="image/*" capture="environment" multiple
+                   required style="display:none;" onchange="previewPhotos(this)">
+        </div>
+
+        <button type="submit" class="btn-green btn btn-lg w-100" id="submitBtn">
+            <i class="fas fa-check-circle me-2"></i>Registrar Recolección
+        </button>
+    </form>
+</div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+function previewPhotos(input) {
+    const files = input.files;
+    const container = document.getElementById('photoPreviewContainer');
+    const placeholder = document.getElementById('uploadPlaceholder');
+    
+    if (!files || files.length === 0) {
+        placeholder.style.display = 'block';
+        container.innerHTML = '';
+        return;
+    }
+    
+    placeholder.style.display = 'none';
+    container.innerHTML = ''; // Limpiar anteriores
+    
+    Array.from(files).forEach((file, index) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
+            wrapper.style.animation = 'fadeInUp 0.3s ease';
+
+            const img = document.createElement('img');
+            img.src = e.target.result;
+            img.style.width = '110px';
+            img.style.height = '110px';
+            img.style.objectFit = 'cover';
+            img.style.borderRadius = '12px';
+            img.style.border = '2px solid var(--secondary)';
+            img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
+            
+            // Interactive hover effect
+            img.onmouseover = () => { img.style.transform = 'scale(1.05)'; img.style.transition = '0.2s'; };
+            img.onmouseout = () => { img.style.transform = 'scale(1)'; };
+
+            const removeBtn = document.createElement('div');
+            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
+            removeBtn.style.position = 'absolute';
+            removeBtn.style.top = '-8px';
+            removeBtn.style.right = '-8px';
+            removeBtn.style.background = 'var(--danger)';
+            removeBtn.style.color = '#fff';
+            removeBtn.style.borderRadius = '50%';
+            removeBtn.style.width = '24px';
+            removeBtn.style.height = '24px';
+            removeBtn.style.display = 'flex';
+            removeBtn.style.alignItems = 'center';
+            removeBtn.style.justifyContent = 'center';
+            removeBtn.style.cursor = 'pointer';
+            removeBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
+            removeBtn.style.zIndex = '10';
+            
+            removeBtn.onclick = (event) => {
+                event.stopPropagation();
+                wrapper.remove();
+                if(container.children.length === 0) {
+                    input.value = ''; // Reset file input
+                    placeholder.style.display = 'block';
+                }
+            };
+            
+            wrapper.appendChild(img);
+            wrapper.appendChild(removeBtn);
+            container.appendChild(wrapper);
+        };
+        reader.readAsDataURL(file);
+    });
+}
+
+function capturarGPS() {
+    if (!navigator.geolocation) {
+        alert('Tu navegador no soporta geolocalización.');
+        return;
+    }
+    navigator.geolocation.getCurrentPosition(
+        pos => {
+            document.getElementById('ubicacionGps').value =
+                pos.coords.latitude.toFixed(6) + ',' + pos.coords.longitude.toFixed(6);
+        },
+        err => alert('No se pudo obtener la ubicación: ' + err.message),
+        { enableHighAccuracy: true, timeout: 8000 }
+    );
+}
+
+// Drag & drop
+const dropZone = document.getElementById('dropZone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const files = e.dataTransfer.files;
+    if (files.length > 0) {
+        const input = document.getElementById('fotoInput');
+        input.files = files;
+        previewPhotos(input);
+    }
+});
+
+// Prevent double-submit
+document.getElementById('recoleccionForm').addEventListener('submit', function() {
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando...';
+});
+</script>
+{% endblock %}

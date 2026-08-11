@@ -1,0 +1,72 @@
+{% extends 'base.html' %}
+{% block title %}Mis Solicitudes — Portal Empresa{% endblock %}
+{% block nav_empresa_solicitudes %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title"><i class="fas fa-inbox" style="color:var(--primary);margin-right:.5rem;"></i>Mis Solicitudes</h1>
+        <p class="page-subtitle">Historial de solicitudes de recolección de {{ empresa.nombre }}</p>
+    </div>
+    <a href="/empresa/solicitudes/crear/" class="btn-green btn">
+        <i class="fas fa-plus me-2"></i>Nueva Solicitud
+    </a>
+</div>
+
+<div class="card-redimir">
+    <div class="table-responsive">
+        <table class="table-dark-custom w-100">
+            <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Descripción</th>
+                    <th>Fecha Solicitada</th>
+                    <th>Estado</th>
+                    <th>Operador Asignado</th>
+                    <th>Fecha Completada</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in solicitudes %}
+                <tr>
+                    <td><span style="font-family:monospace;font-weight:700;color:var(--primary);">#{{ s.pk }}</span></td>
+                    <td style="max-width:250px;">
+                        <div style="font-weight:600;font-size:.85rem;">{{ s.descripcion }}</div>
+                        <div style="font-size:.75rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+                            <i class="fas fa-map-marker-alt me-1"></i>{{ s.direccion_recoleccion }}
+                        </div>
+                    </td>
+                    <td style="font-size:.8rem;">{{ s.fecha_solicitada|date:"d M Y, H:i" }}</td>
+                    <td>
+                        <span class="badge-pill {% if s.estado == 'completada' %}badge-green{% elif s.estado == 'pendiente' %}badge-amber{% elif s.estado == 'asignada' %}badge-blue{% else %}badge-red{% endif %}">
+                            {{ s.get_estado_display }}
+                        </span>
+                    </td>
+                    <td style="font-size:.83rem;">
+                        {% if s.operador_asignado %}
+                        <i class="fas fa-user-circle me-1" style="color:var(--text-muted);"></i>{{ s.operador_asignado.nombre_completo }}
+                        {% else %}
+                        <span style="color:var(--text-muted);">—</span>
+                        {% endif %}
+                    </td>
+                    <td style="font-size:.77rem;color:var(--text-muted);">
+                        {{ s.fecha_completada|date:"d/m/Y H:i"|default:"—" }}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align:center;color:var(--text-muted);padding:2.5rem;">
+                        <i class="fas fa-clipboard-list" style="font-size:2rem;margin-bottom:.5rem;display:block;opacity:.3;"></i>
+                        No has realizado ninguna solicitud de recolección aún.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends 'base.html' %}
+{% block title %}Factores de Eco-Equivalencia — Redimir{% endblock %}
+{% block nav_calculadora %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="page-title"><i class="fas fa-leaf text-secondary-redimir me-2"></i>Factores de Eco-Equivalencia</h1>
+      <p class="page-subtitle">Administración de las fórmulas de conversión (Ahorro ambiental por Tonelada de Material)</p>
+    </div>
+    {% if user.rol == 'admin' or user.rol == 'gerencia' or user.is_staff %}
+    <a href="/calculadora/factores/nuevo/" class="btn-green btn d-flex align-items-center gap-2">
+      <i class="fas fa-plus"></i> Nuevo Factor
+    </a>
+    {% endif %}
+  </div>
+
+  <div class="card-redimir mb-4 p-3" style="background:#EAF4FF; border:1px solid #B8DAFF;">
+    <div class="d-flex align-items-center gap-3">
+      <i class="fas fa-info-circle fa-2x text-primary"></i>
+      <div style="color:var(--primary-dark); font-size:.9rem;">
+        <strong>Información de Conversión:</strong><br>
+        Estos factores representan el impacto ambiental evitado por cada <strong>1 Tonelada (1.000 kg)</strong> de material reciclado en lugar de usar materia prima virgen.
+      </div>
+    </div>
+  </div>
+
+  <div class="card-redimir p-0" style="overflow:hidden;">
+    <div class="table-responsive">
+      <table class="table-custom w-100">
+        <thead>
+          <tr>
+            <th>Material</th>
+            <th class="text-center">💧 Agua (L / Ton)</th>
+            <th class="text-center">💨 CO₂ (kg / Ton)</th>
+            <th class="text-center">⚡ Energía (kWh / Ton)</th>
+            <th class="text-center">🌳 Árboles (u / Ton)</th>
+            <th class="text-center">Estado</th>
+            <th class="text-center">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for factor in factores %}
+          <tr>
+            <td class="fw-bold" style="color:var(--text-body);">
+              <i class="fas fa-recycle me-2" style="color:var(--secondary);"></i>
+              {{ factor.get_material_display }}
+            </td>
+            <!-- Multiplicamos por 1,000 para mostrar impacto por Tonelada -->
+            <td class="text-center fw-bold" style="color:var(--primary); font-size:1rem;">
+              {{ factor.factor_agua_lxkg|floatformat:1 }} L
+            </td>
+            <td class="text-center fw-bold" style="color:var(--secondary-dark); font-size:1rem;">
+              {{ factor.factor_co2_kgxkg|floatformat:2 }} kg
+            </td>
+            <td class="text-center fw-bold" style="color:#d97706; font-size:1rem;">
+              {{ factor.factor_energia_kwhxkg|floatformat:1 }} kWh
+            </td>
+            <td class="text-center fw-bold" style="color:#166534; font-size:1rem;">
+              {{ factor.factor_arboles_kgxkg|floatformat:3 }} u
+            </td>
+            <td class="text-center">
+              {% if factor.activo %}
+              <span class="badge-pill badge-green"><i class="fas fa-check-circle me-1"></i>Vigente</span>
+              {% else %}
+              <span class="badge-pill badge-red"><i class="fas fa-times-circle me-1"></i>Inactivo</span>
+              {% endif %}
+            </td>
+            <td class="text-center">
+              {% if user.rol == 'admin' or user.rol == 'gerencia' or user.is_staff %}
+              <a href="/calculadora/factores/{{ factor.pk }}/editar/" class="btn-outline-green btn btn-sm px-3">
+                <i class="fas fa-edit me-1"></i>Editar
+              </a>
+              {% else %}
+              <span class="text-muted" style="font-size:.8rem;">Lectura</span>
+              {% endif %}
+            </td>
+          </tr>
+          {% empty %}
+          <tr>
+            <td colspan="7" class="text-center py-5 text-muted">
+              <i class="fas fa-exclamation-triangle fa-2x mb-2 text-warning"></i>
+              <p class="mb-0">No hay factores configurados. Por favor poblar la BD.</p>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,384 @@
+{% extends "base.html" %}
+{% block title %}Registrar Retiro RSD — Redimir{% endblock %}
+
+{% block extra_css %}
+<style>
+/* ── MOBILE FIRST OPERADOR ── */
+body { background: var(--gray-bg); }
+.registro-container {
+    max-width: 540px; margin: 0 auto; padding: 0 0 4rem 0;
+}
+.paso-card {
+    background: var(--white); border-radius: var(--radius-lg);
+    box-shadow: var(--shadow); padding: 1.75rem;
+    display: none; /* JS show/hide */
+}
+.paso-card.active { display: block; animation: fadeInUp .3s ease; }
+
+.header-servicio {
+    background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+    border-radius: var(--radius-lg) var(--radius-lg) 0 0;
+    padding: 1.25rem 1.75rem;
+    color: #fff;
+}
+.paso-nav {
+    background: var(--white); padding: .75rem 1.75rem;
+    border-bottom: 1px solid var(--border);
+    position: sticky; top: 60px; z-index: 100;
+}
+
+/* Upload foto zone */
+.foto-zone {
+    border: 2.5px dashed var(--border); border-radius: var(--radius);
+    padding: 2.5rem 1.5rem; text-align: center; cursor: pointer;
+    transition: all .2s; background: var(--gray-bg);
+}
+.foto-zone:hover, .foto-zone.has-foto { border-color: var(--secondary); background: var(--secondary-light); }
+.foto-preview-grid { display: grid; grid-template-columns: repeat(3,1fr); gap:.5rem; margin-top:1rem; }
+.foto-thumb { width:100%; aspect-ratio:1; object-fit:cover; border-radius:var(--radius-sm); border:2px solid var(--border); }
+.foto-obligatoria-warn {
+    background: #FFF8E1; border: 1.5px solid var(--accent); border-radius: var(--radius-sm);
+    padding: .75rem 1rem; color: #856404; font-weight: 600; font-size: .875rem;
+    display: flex; align-items: center; gap: .5rem;
+}
+.btn-nav { min-height: 52px; font-size: 1rem; font-weight: 700; border-radius: var(--radius-sm); }
+.campo-grande { font-size: 1.1rem; padding: .85rem 1rem; }
+.resumen-row { display:flex; justify-content:space-between; align-items:center;
+    padding:.65rem 0; border-bottom:1px solid var(--gray-bg); }
+.resumen-label { font-size:.82rem; color:var(--text-muted); font-weight:600; }
+.resumen-val { font-size:.95rem; font-weight:700; color:var(--text-body); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="registro-container">
+
+  <!-- Header del Servicio -->
+  <div class="header-servicio">
+    <div class="d-flex align-items-start justify-content-between">
+      <div>
+        <div style="font-size:.75rem; opacity:.8; font-weight:600; letter-spacing:.5px;">REGISTRAR RETIRO</div>
+        <h2 style="font-size:1.2rem; font-weight:800; margin:.25rem 0;">{{ servicio.empresa.nombre }}</h2>
+        <div style="font-size:.85rem; opacity:.85;"><i class="fas fa-map-marker-alt me-1"></i>{{ servicio.direccion }}</div>
+      </div>
+      <span class="badge-estado badge-rsd" style="font-size:.7rem; white-space:nowrap;">🗑️ RSD / Basura</span>
+    </div>
+
+    {% if servicio.cantidad_estimada %}
+    <div class="mt-2 p-2 rounded" style="background:rgba(255,255,255,.15); font-size:.82rem;">
+      <i class="fas fa-weight me-1"></i>Estimado: <strong>{{ servicio.cantidad_estimada }} kg</strong>
+      {% if servicio.fecha_programada %}
+      &nbsp;·&nbsp;<i class="fas fa-calendar me-1"></i>{{ servicio.fecha_programada|date:"d/m/Y H:i" }}
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Indicador de pasos sticky -->
+  <div class="paso-nav">
+    <div class="step-indicator mb-0">
+      <div class="step-dot" id="dot1">1</div>
+      <div class="step-line" id="line12"></div>
+      <div class="step-dot" id="dot2">2</div>
+      <div class="step-line" id="line23"></div>
+      <div class="step-dot" id="dot3">3</div>
+      <div class="step-line" id="line34"></div>
+      <div class="step-dot" id="dot4">4</div>
+      <div class="step-line" id="line45"></div>
+      <div class="step-dot" id="dot5">5</div>
+    </div>
+    <div class="text-center mt-1" style="font-size:.72rem; color:var(--text-muted); font-weight:600;" id="paso-label">
+      Paso 1 de 5 — Confirmar datos
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="form-registro" style="padding:1rem;">
+    {% csrf_token %}
+    <input type="hidden" name="ubicacion_gps" id="gps-hidden">
+
+    <!-- ═══════════════════════ PASO 1: CONFIRMACIÓN ═══════ -->
+    <div class="paso-card active" id="paso-1">
+      <h5 class="fw-bold mb-3" style="color:var(--primary);"><i class="fas fa-clipboard-check me-2"></i>Confirmar datos del retiro</h5>
+
+      <div class="card-redimir mb-3 p-3" style="background:var(--primary-light);">
+        <div class="resumen-row"><span class="resumen-label">EMPRESA</span><span class="resumen-val">{{ servicio.empresa.nombre }}</span></div>
+        <div class="resumen-row"><span class="resumen-label">DIRECCIÓN</span><span class="resumen-val">{{ servicio.direccion }}</span></div>
+        <div class="resumen-row"><span class="resumen-label">MÓDULO</span><span class="resumen-val">🗑️ RSD / Basura</span></div>
+        {% if servicio.cantidad_estimada %}
+        <div class="resumen-row"><span class="resumen-label">ESTIMADO</span><span class="resumen-val">{{ servicio.cantidad_estimada }} kg</span></div>
+        {% endif %}
+        {% if servicio.contacto_responsable %}
+        <div class="resumen-row" style="border:none;"><span class="resumen-label">CONTACTO</span><span class="resumen-val">{{ servicio.contacto_responsable }}</span></div>
+        {% endif %}
+      </div>
+
+      {% if servicio.observaciones %}
+      <div class="alert-redimir-info mb-3">
+        <i class="fas fa-info-circle me-2"></i><strong>Observaciones:</strong> {{ servicio.observaciones }}
+      </div>
+      {% endif %}
+
+      <div class="d-grid"><button type="button" class="btn-primary-redimir btn-nav" onclick="irPaso(2)">¿Datos correctos? Continuar →</button></div>
+    </div>
+
+    <!-- ═══════════════════════ PASO 2: CANTIDAD ═══════════ -->
+    <div class="paso-card" id="paso-2">
+      <h5 class="fw-bold mb-3" style="color:var(--primary);"><i class="fas fa-weight me-2"></i>Cantidad registrada</h5>
+
+      <div class="mb-3">
+        <label class="form-label">Cantidad real en kg <span class="required-mark">*</span></label>
+        <div class="input-group">
+          <input type="number" name="cantidad_kg" id="cantidad_kg" class="form-control campo-grande" step="0.1" min="0.1"
+                 placeholder="Ej: 1120" value="{{ servicio.cantidad_estimada|default:'' }}" required>
+          <span class="input-group-text" style="font-weight:700; background:var(--gray-bg);">kg</span>
+        </div>
+        {% if servicio.cantidad_estimada %}
+        <div class="form-text">Estimado: <strong>{{ servicio.cantidad_estimada }} kg</strong></div>
+        {% endif %}
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Tipo de residuo</label>
+        <select name="tipo_residuo" class="form-select campo-grande">
+          <option value="rsd">RSD / Basura Domiciliaria</option>
+          <option value="basura_general">Basura General</option>
+          <option value="rechazo">Rechazo / No-reciclable</option>
+          <option value="organico">Orgánico</option>
+          <option value="mixto">Mixto</option>
+        </select>
+      </div>
+
+      <!-- GPS Opcional -->
+      <div class="mb-4">
+        <button type="button" class="btn btn-outline-secondary w-100" id="btn-gps">
+          <i class="fas fa-map-marker-alt me-1"></i>Usar ubicación GPS (opcional)
+        </button>
+        <div id="gps-status" class="form-text text-center mt-1"></div>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(1)">← Atrás</button>
+        <button type="button" class="btn-primary-redimir btn-nav flex-fill" onclick="validarPaso2()">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════ PASO 3: FOTOS ══════════════ -->
+    <div class="paso-card" id="paso-3">
+      <h5 class="fw-bold mb-3" style="color:var(--primary);"><i class="fas fa-camera me-2"></i>Evidencia fotográfica</h5>
+
+      {% if error_foto %}
+      <div class="foto-obligatoria-warn mb-3">
+        <i class="fas fa-exclamation-triangle"></i>
+        Debes subir al menos 1 foto para continuar.
+      </div>
+      {% endif %}
+
+      <div class="foto-zone" id="foto-zone" onclick="document.getElementById('input-fotos').click()">
+        <i class="fas fa-camera fa-2x mb-2" style="color:var(--text-light);"></i>
+        <p class="fw-bold mb-1" style="color:var(--text-muted);">📸 FOTO OBLIGATORIA</p>
+        <p class="text-muted mb-0" style="font-size:.85rem;">Toca aquí para tomar foto o seleccionar de galería</p>
+      </div>
+
+      <input type="file" name="fotos" id="input-fotos" accept="image/*" multiple
+             capture="environment" style="display:none;" onchange="mostrarPreviews(this)">
+
+      <div class="foto-preview-grid" id="preview-grid"></div>
+
+      <div class="foto-obligatoria-warn mt-3" id="warn-foto" style="display:none;">
+        <i class="fas fa-exclamation-triangle"></i>
+        Mínimo 1 foto requerida para continuar.
+      </div>
+
+      <div class="d-flex gap-2 mt-4">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(2)">← Atrás</button>
+        <button type="button" class="btn-primary-redimir btn-nav flex-fill" onclick="validarPaso3()">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════ PASO 4: TICKET & DESTINO ═══ -->
+    <div class="paso-card" id="paso-4">
+      <h5 class="fw-bold mb-3" style="color:var(--primary);"><i class="fas fa-ticket-alt me-2"></i>Ticket y destino receptor</h5>
+
+      <div class="mb-3">
+        <label class="form-label">N° Ticket externo <span class="required-mark">*</span></label>
+        <input type="text" name="ticket_externo" id="ticket_externo" class="form-control campo-grande"
+               placeholder="Ej: 146900" autocomplete="off" required>
+        <div class="form-text">Número del ticket del destino receptor</div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Destino receptor <span class="required-mark">*</span></label>
+        <select name="destino_receptor" class="form-select campo-grande" id="destino_receptor">
+          <option value="socsal">SOCSAL — Relleno Sanitario</option>
+          <option value="relleno_regional">Relleno Sanitario Regional</option>
+          <option value="municipalidad">Municipalidad</option>
+          <option value="otro">Otro receptor autorizado</option>
+        </select>
+      </div>
+
+      <div class="mb-4" id="destino-otro-div" style="display:none;">
+        <label class="form-label">Especificar destino</label>
+        <input type="text" name="destino_otro" class="form-control" placeholder="Nombre del receptor">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Observaciones <small class="text-muted">(opcional)</small></label>
+        <textarea name="observaciones" class="form-control" rows="2" placeholder="Notas del retiro..."></textarea>
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(3)">← Atrás</button>
+        <button type="button" class="btn-primary-redimir btn-nav flex-fill" onclick="validarPaso4()">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- ═══════════════════════ PASO 5: RESUMEN ══════════════ -->
+    <div class="paso-card" id="paso-5">
+      <h5 class="fw-bold mb-3" style="color:var(--primary);"><i class="fas fa-list-check me-2"></i>Resumen — Confirmar</h5>
+
+      <div class="card-redimir p-3 mb-4" style="background:var(--gray-bg);">
+        <div class="resumen-row"><span class="resumen-label">EMPRESA</span><span class="resumen-val">{{ servicio.empresa.nombre }}</span></div>
+        <div class="resumen-row"><span class="resumen-label">MÓDULO</span><span class="resumen-val">🗑️ RSD / Basura</span></div>
+        <div class="resumen-row"><span class="resumen-label">CANTIDAD</span><span class="resumen-val" id="resumen-cantidad">—</span></div>
+        <div class="resumen-row"><span class="resumen-label">TICKET</span><span class="resumen-val" id="resumen-ticket">—</span></div>
+        <div class="resumen-row"><span class="resumen-label">DESTINO</span><span class="resumen-val" id="resumen-destino">—</span></div>
+        <div class="resumen-row" style="border:none;"><span class="resumen-label">FOTOS</span><span class="resumen-val" id="resumen-fotos">—</span></div>
+      </div>
+
+      <div class="alert-redimir-info mb-4">
+        <i class="fas fa-info-circle me-2"></i>Al guardar, el administrador recibirá una notificación para validar el registro.
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(4)">← Atrás</button>
+        <button type="submit" class="btn-success-redimir btn-nav flex-fill" id="btn-guardar">
+          <i class="fas fa-check-circle me-1"></i>Guardar Retiro
+        </button>
+      </div>
+    </div>
+
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let pasoActual = 1;
+const labels = [
+    'Paso 1 de 5 — Confirmar datos',
+    'Paso 2 de 5 — Cantidad y tipo',
+    'Paso 3 de 5 — Evidencia fotográfica',
+    'Paso 4 de 5 — Ticket y destino',
+    'Paso 5 de 5 — Resumen final',
+];
+
+function irPaso(n) {
+    document.getElementById('paso-' + pasoActual).classList.remove('active');
+    document.getElementById('paso-' + n).classList.add('active');
+    pasoActual = n;
+    document.getElementById('paso-label').textContent = labels[n - 1];
+    // Update dots
+    for (let i = 1; i <= 5; i++) {
+        const dot = document.getElementById('dot' + i);
+        dot.classList.remove('active','done');
+        if (i < n) dot.classList.add('done');
+        else if (i === n) dot.classList.add('active');
+        if (i < 5) {
+            const line = document.getElementById('line' + i + (i+1));
+            if (line) line.classList.toggle('done', i < n);
+        }
+    }
+    window.scrollTo(0, 0);
+}
+
+// GPS
+document.getElementById('btn-gps').addEventListener('click', () => {
+    if (!navigator.geolocation) return;
+    const btn = document.getElementById('btn-gps');
+    const status = document.getElementById('gps-status');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Obteniendo ubicación...';
+    btn.disabled = true;
+    navigator.geolocation.getCurrentPosition(pos => {
+        const coords = `${pos.coords.latitude.toFixed(6)},${pos.coords.longitude.toFixed(6)}`;
+        document.getElementById('gps-hidden').value = coords;
+        status.innerHTML = `<i class="fas fa-check-circle text-success me-1"></i>GPS capturado: ${coords}`;
+        btn.innerHTML = '<i class="fas fa-map-marker-alt me-1"></i>GPS capturado ✓';
+        btn.style.borderColor = 'var(--secondary)';
+        btn.style.color = 'var(--secondary)';
+    }, () => {
+        status.textContent = 'No se pudo obtener la ubicación.';
+        btn.innerHTML = '<i class="fas fa-map-marker-alt me-1"></i>Usar ubicación GPS';
+        btn.disabled = false;
+    });
+});
+
+// Destino otro
+document.getElementById('destino_receptor').addEventListener('change', function() {
+    document.getElementById('destino-otro-div').style.display = this.value === 'otro' ? 'block' : 'none';
+});
+
+// Fotos preview
+function mostrarPreviews(input) {
+    const grid = document.getElementById('preview-grid');
+    const zone = document.getElementById('foto-zone');
+    grid.innerHTML = '';
+    if (input.files.length > 0) {
+        zone.classList.add('has-foto');
+        Array.from(input.files).forEach(file => {
+            const reader = new FileReader();
+            reader.onload = e => {
+                const img = document.createElement('img');
+                img.src = e.target.result;
+                img.className = 'foto-thumb';
+                grid.appendChild(img);
+            };
+            reader.readAsDataURL(file);
+        });
+        document.getElementById('resumen-fotos').textContent = `${input.files.length} foto(s) ✓`;
+    }
+}
+
+// Validaciones por paso
+function validarPaso2() {
+    const qty = document.getElementById('cantidad_kg').value;
+    if (!qty || parseFloat(qty) <= 0) {
+        alert('⚠️ Ingresa una cantidad válida (mayor a 0).');
+        return;
+    }
+    document.getElementById('resumen-cantidad').textContent = qty + ' kg';
+    irPaso(3);
+}
+
+function validarPaso3() {
+    const fotos = document.getElementById('input-fotos').files;
+    if (fotos.length === 0) {
+        document.getElementById('warn-foto').style.display = 'flex';
+        return;
+    }
+    document.getElementById('warn-foto').style.display = 'none';
+    irPaso(4);
+}
+
+function validarPaso4() {
+    const ticket = document.getElementById('ticket_externo').value.trim();
+    if (!ticket) {
+        alert('⚠️ El número de ticket es obligatorio.');
+        return;
+    }
+    const destino = document.getElementById('destino_receptor');
+    document.getElementById('resumen-ticket').textContent = ticket;
+    document.getElementById('resumen-destino').textContent = destino.options[destino.selectedIndex].text;
+    irPaso(5);
+}
+
+// Prevenir doble submit
+document.getElementById('form-registro').addEventListener('submit', () => {
+    document.getElementById('btn-guardar').disabled = true;
+    document.getElementById('btn-guardar').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
+});
+
+// Init primer paso
+irPaso(1);
+</script>
+{% endblock %}

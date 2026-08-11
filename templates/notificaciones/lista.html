@@ -1,0 +1,74 @@
+{% extends 'base.html' %}
+{% block title %}Notificaciones — Redimir{% endblock %}
+{% block nav_notif %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title"><i class="fas fa-bell" style="color:var(--primary);margin-right:.5rem;"></i>Notificaciones</h1>
+        <p class="page-subtitle">
+            {% if sin_leer > 0 %}
+            <span class="badge-pill badge-red">{{ sin_leer }} sin leer</span>
+            {% else %}
+            Todo al día ✅
+            {% endif %}
+        </p>
+    </div>
+    {% if sin_leer > 0 %}
+    <form method="post" action="/notificaciones/leer-todas/">
+        {% csrf_token %}
+        <button type="submit" class="btn-outline-green btn btn-sm">
+            <i class="fas fa-check-double me-1"></i>Marcar todas como leídas
+        </button>
+    </form>
+    {% endif %}
+</div>
+
+<div class="card-redimir">
+    {% for n in notificaciones %}
+    <div class="d-flex align-items-start gap-3 py-3 {% if not forloop.last %}border-bottom{% endif %}" style="border-color:rgba(255,255,255,.05);">
+
+        <!-- Icon -->
+        <div style="width:42px;height:42px;border-radius:50%;flex-shrink:0;display:flex;align-items:center;justify-content:center;
+            background:{% if n.tipo == 'nueva_solicitud' %}rgba(245,158,11,.15){% elif n.tipo == 'recoleccion_confirmada' %}rgba(34,197,94,.15){% else %}rgba(59,130,246,.15){% endif %};">
+            <i class="fas fa-{% if n.tipo == 'nueva_solicitud' %}truck{% elif n.tipo == 'recoleccion_confirmada' %}check-circle{% elif n.tipo == 'solicitud_asignada' %}user-check{% else %}info-circle{% endif %}"
+               style="color:{% if n.tipo == 'nueva_solicitud' %}#fbbf24{% elif n.tipo == 'recoleccion_confirmada' %}#4ade80{% else %}#60a5fa{% endif %};font-size:.9rem;"></i>
+        </div>
+
+        <!-- Content -->
+        <div style="flex:1;">
+            <div class="d-flex justify-content-between align-items-start gap-2 flex-wrap">
+                <div>
+                    <div style="font-weight:{% if not n.leida %}700{% else %}500{% endif %};font-size:.9rem;
+                        color:{% if not n.leida %}#f1f5f9{% else %}#94a3b8{% endif %};">
+                        {{ n.titulo }}
+                        {% if not n.leida %}<span class="badge-pill badge-red ms-2" style="font-size:.65rem;">Nueva</span>{% endif %}
+                    </div>
+                    <div style="font-size:.82rem;color:var(--text-muted);margin-top:.2rem;">{{ n.mensaje }}</div>
+                    <div style="font-size:.72rem;color:#475569;margin-top:.3rem;">
+                        <i class="fas fa-clock me-1"></i>{{ n.fecha_creacion|date:"d/m/Y H:i" }}
+                    </div>
+                </div>
+                {% if not n.leida %}
+                <form method="post" action="/notificaciones/{{ n.pk }}/leer/">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-sm" style="background:rgba(255,255,255,.06);border:1px solid var(--dark-border);color:#94a3b8;border-radius:6px;">
+                        <i class="fas fa-check"></i> Leer
+                    </button>
+                </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    {% empty %}
+    <div style="text-align:center;padding:3rem;color:var(--text-muted);">
+        <i class="fas fa-bell-slash" style="font-size:2.5rem;margin-bottom:.75rem;display:block;opacity:.4;"></i>
+        No tienes notificaciones aún.
+    </div>
+    {% endfor %}
+</div>
+
+</div>
+{% endblock %}

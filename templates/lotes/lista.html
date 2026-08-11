@@ -1,0 +1,82 @@
+{% extends 'base.html' %}
+{% block title %}Historial de Recolecciones — Redimir{% endblock %}
+{% block nav_historial %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title"><i class="fas fa-list" style="color:var(--primary);margin-right:.5rem;"></i>Historial</h1>
+        <p class="page-subtitle">{% if user.rol == 'admin' or user.is_staff %}Todas las recolecciones{% else %}Mis recolecciones{% endif %}</p>
+    </div>
+    <a href="/recolecciones/crear/" class="btn-green btn">
+        <i class="fas fa-plus me-2"></i>Nueva
+    </a>
+</div>
+
+<div class="card-redimir">
+    <div class="table-responsive">
+        <table class="table-dark-custom w-100">
+            <thead>
+                <tr>
+                    <th>Código</th>
+                    {% if user.rol == 'admin' or user.is_staff %}<th>Operador</th>{% endif %}
+                    <th>Empresa</th>
+                    <th>Tipo</th>
+                    <th>Kg</th>
+                    <th>Estado</th>
+                    <th>Fecha</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for lote in lotes %}
+                <tr>
+                    <td>
+                        <span style="font-family:monospace;font-size:.8rem;color:#4ade80;font-weight:700;">{{ lote.codigo_lote }}</span>
+                    </td>
+                    {% if user.rol == 'admin' or user.is_staff %}
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            <div class="avatar-circle" style="width:28px;height:28px;font-size:.65rem;">
+                                {% if lote.operador %}{{ lote.operador.nombre|first|upper }}{% else %}?{% endif %}
+                            </div>
+                            <span style="font-size:.85rem;">{{ lote.operador.nombre|default:"—" }}</span>
+                        </div>
+                    </td>
+                    {% endif %}
+                    <td style="font-size:.85rem;">{{ lote.empresa_origen.nombre|truncatechars:22 }}</td>
+                    <td>
+                        <span class="badge-pill {% if lote.tipo_residuo == 'plastico' %}badge-blue{% elif lote.tipo_residuo == 'vidrio' %}badge-green{% elif lote.tipo_residuo == 'metal' %}badge-red{% else %}badge-amber{% endif %}">
+                            {{ lote.get_tipo_residuo_display }}
+                        </span>
+                    </td>
+                    <td><strong style="color:#4ade80;">{{ lote.cantidad_kg }}</strong></td>
+                    <td>
+                        <span class="badge-pill {% if lote.estado == 'procesado' %}badge-green{% elif lote.estado == 'procesando' %}badge-blue{% else %}badge-amber{% endif %}">
+                            {{ lote.get_estado_display }}
+                        </span>
+                    </td>
+                    <td style="font-size:.78rem;color:var(--text-muted);">{{ lote.fecha_creacion|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <a href="/lotes/{{ lote.codigo_lote }}/" class="btn-outline-green btn btn-sm">
+                            <i class="fas fa-eye"></i>
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center;color:var(--text-muted);padding:2.5rem;">
+                        <i class="fas fa-inbox" style="font-size:2rem;margin-bottom:.5rem;display:block;opacity:.3;"></i>
+                        No hay recolecciones registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}

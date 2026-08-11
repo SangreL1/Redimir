@@ -1,0 +1,112 @@
+{% extends 'base.html' %}
+{% block title %}Configuración de Tarifarios Comercial — Redimir{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="page-title"><i class="fas fa-tags text-primary-redimir me-2"></i>Tarifarios Comerciales por Empresa</h1>
+      <p class="page-subtitle">Configura precios por kilo, m3 o servicio para calcular automáticamente los Estados de Pago (EDP)</p>
+    </div>
+    <a href="/estados-de-pago/" class="btn btn-outline-secondary btn-sm">
+      <i class="fas fa-arrow-left me-1"></i>Volver a Estados de Pago
+    </a>
+  </div>
+
+  <div class="row g-4">
+    <!-- Formulario para agregar/editar tarifa -->
+    <div class="col-lg-4">
+      <div class="card-redimir p-4">
+        <h5 class="fw-bold text-white mb-3"><i class="fas fa-plus-circle me-2 text-primary"></i>Configurar Tarifa</h5>
+        <form action="/empresas/tarifas/" method="post">
+          {% csrf_token %}
+          <div class="mb-3">
+            <label class="form-label-dark fw-bold">Empresa Cliente *</label>
+            <select name="empresa_id" class="form-select bg-white text-dark border" required>
+              <option value="">-- Seleccionar Empresa --</option>
+              {% for emp in empresas %}
+              <option value="{{ emp.pk }}">{{ emp.nombre }} ({{ emp.rut }})</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-dark fw-bold">Módulo *</label>
+            <select name="modulo" class="form-select bg-white text-dark border" required>
+              <option value="reciclables">Reciclables / Eco-equivalencia</option>
+              <option value="rsd">RSD / Basura</option>
+              <option value="escombros">RESCON / Escombros</option>
+            </select>
+          </div>
+
+          <div class="mb-3">
+            <label class="form-label-dark fw-bold">Material / Categoría *</label>
+            <input type="text" name="tipo_material" class="form-control bg-white text-dark border" placeholder="Ej: pet, carton, vidrio, latas, rsd, escombros" required>
+            <small class="text-muted" style="font-size:0.75rem;">Para reciclables, usa la palabra clave: pet, carton, vidrio, latas, etc.</small>
+          </div>
+
+          <div class="row g-2 mb-3">
+            <div class="col-7">
+              <label class="form-label-dark fw-bold">Precio Unitario ($) *</label>
+              <input type="number" step="0.01" name="precio_unitario" class="form-control bg-white text-dark border" placeholder="Ej: 150" required>
+            </div>
+            <div class="col-5">
+              <label class="form-label-dark fw-bold">Unidad *</label>
+              <select name="unidad_medida" class="form-select bg-white text-dark border">
+                <option value="kg">kg</option>
+                <option value="m3">m3</option>
+                <option value="servicio">servicio</option>
+                <option value="ton">ton</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn-primary-redimir w-100 py-2 border-0 fw-bold">
+            <i class="fas fa-save me-1"></i>Guardar Tarifa
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <!-- Tabla de tarifas configuradas -->
+    <div class="col-lg-8">
+      <div class="card-redimir p-0" style="overflow:hidden;">
+        {% if tarifas %}
+        <div class="table-responsive">
+          <table class="table-redimir">
+            <thead>
+              <tr>
+                <th>Empresa</th>
+                <th>Módulo</th>
+                <th>Material</th>
+                <th>Precio Configurado</th>
+                <th>Última Actualización</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for t in tarifas %}
+              <tr>
+                <td><strong class="text-dark fw-bold">{{ t.empresa.nombre }}</strong></td>
+                <td><span class="badge-pill badge-blue">{{ t.get_modulo_display }}</span></td>
+                <td><strong class="text-primary">{{ t.tipo_material|upper }}</strong></td>
+                <td><strong style="color:var(--secondary); font-size:1.05rem;">${{ t.precio_unitario|floatformat:0 }} / {{ t.unidad_medida }}</strong></td>
+                <td style="font-size:.82rem;" class="text-muted">{{ t.fecha_actualizacion|date:"d/m/Y H:i" }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+        {% else %}
+        <div class="text-center py-5">
+          <i class="fas fa-tags fa-3x mb-3 text-muted"></i>
+          <h4 class="fw-bold text-primary">No hay tarifarios personalizados configurados</h4>
+          <p class="text-muted small">El sistema utilizará las tarifas por defecto ($120/kg RSD, $18.000/m3 RESCON, $150/kg Reciclables).</p>
+        </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+
+</div>
+{% endblock %}

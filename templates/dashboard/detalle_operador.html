@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+{% block title %}Detalle Operador — {{ operador.nombre_completo }} — Redimir{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<!-- Back -->
+<a href="/dashboard/" class="btn-outline-green btn btn-sm mb-3">
+    <i class="fas fa-arrow-left me-1"></i>Volver al Dashboard
+</a>
+
+<!-- Header -->
+<div class="d-flex align-items-center gap-3 mb-4">
+    <div class="avatar-circle" style="width:56px;height:56px;font-size:1.2rem;">
+        {{ operador.nombre|first|upper }}{{ operador.apellido|first|upper }}
+    </div>
+    <div>
+        <h1 class="page-title">{{ operador.nombre_completo }}</h1>
+        <p class="page-subtitle">RUT: {{ operador.rut }} | {% if operador.empresa %}{{ operador.empresa.nombre }}{% else %}Operaciones Redimir{% endif %}</p>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="kpi-card green">
+            <div class="kpi-label">Rec. Este Mes</div>
+            <div class="kpi-number" style="color:#4ade80;">{{ total_rec_mes }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card blue">
+            <div class="kpi-label">Kg Este Mes</div>
+            <div class="kpi-number" style="color:#60a5fa;">{{ total_kg_mes|floatformat:1 }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card amber">
+            <div class="kpi-label">Prom. Kg/Rec.</div>
+            <div class="kpi-number" style="color:#fbbf24;">{{ promedio_kg }}</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card" style="background:var(--dark-card);border:1px solid var(--dark-border);">
+            <div class="kpi-label">E-mail</div>
+            <div style="font-size:.85rem;font-weight:500;margin-top:.25rem;">{{ operador.email|default:"—" }}</div>
+        </div>
+    </div>
+</div>
+
+<!-- Chart + Historial -->
+<div class="row g-3">
+    {% if tipos_labels %}
+    <div class="col-12 col-lg-5">
+        <div class="card-redimir">
+            <div class="section-title">Por Tipo de Residuo</div>
+            <div class="chart-container" style="position:relative; height:200px; width:100%;">
+                <canvas id="chartTipo"></canvas>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+
+    <div class="col-12 {% if tipos_labels %}col-lg-7{% endif %}">
+        <div class="card-redimir">
+            <div class="section-title">Historial de Recolecciones (últimas 20)</div>
+
+            {% for lote in lotes %}
+            <a href="/lotes/{{ lote.codigo_lote }}/" style="text-decoration:none;">
+                <div class="d-flex align-items-center gap-3 mb-3 pb-3" style="border-bottom:1px solid rgba(255,255,255,.05);">
+                    {% if lote.foto_recoleccion %}
+                    <img src="{{ lote.foto_recoleccion.url }}" class="photo-preview" alt="foto">
+                    {% else %}
+                    <div class="photo-preview d-flex align-items-center justify-content-center" style="background:rgba(255,255,255,.04);">
+                        <i class="fas fa-image" style="color:#475569;"></i>
+                    </div>
+                    {% endif %}
+                    <div style="flex:1;">
+                        <div style="font-weight:600;color:#e2e8f0;font-size:.875rem;">{{ lote.codigo_lote }}</div>
+                        <div style="font-size:.78rem;color:var(--text-muted);">{{ lote.empresa_origen.nombre }}</div>
+                        <div style="font-size:.75rem;color:#475569;">{{ lote.fecha_creacion|date:"d/m/Y H:i" }}</div>
+                    </div>
+                    <div class="d-flex flex-column align-items-end gap-1">
+                        <span style="font-weight:700;color:#4ade80;">{{ lote.cantidad_kg }} kg</span>
+                        <span class="badge-pill badge-blue" style="font-size:.7rem;">{{ lote.get_tipo_residuo_display }}</span>
+                    </div>
+                </div>
+            </a>
+            {% empty %}
+            <p style="color:var(--text-muted);">Sin recolecciones aún.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+{% if tipos_labels %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.borderColor = '#334155';
+Chart.defaults.font.family = 'Inter';
+
+new Chart(document.getElementById('chartTipo'), {
+    type: 'doughnut',
+    data: {
+        labels: {{ tipos_labels|safe }},
+        datasets: [{
+            data: {{ tipos_values|safe }},
+            backgroundColor: ['#22c55e','#3b82f6','#f59e0b','#ef4444','#8b5cf6','#14b8a6'],
+            borderWidth: 0
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: { position: 'bottom', labels: { padding: 12, font: { size: 11 } } }
+        },
+        cutout: '60%'
+    }
+});
+</script>
+{% endif %}
+{% endblock %}

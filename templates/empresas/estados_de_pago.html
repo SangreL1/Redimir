@@ -1,0 +1,181 @@
+{% extends 'base.html' %}
+{% block title %}Estados de Pago Internos — Redimir{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="page-title"><i class="fas fa-file-invoice-dollar text-primary-redimir me-2"></i>Estados de Pago Internos</h1>
+      <p class="page-subtitle">Valorización comercial y consolidación por cliente · Reservado para Gerencia y Administración</p>
+    </div>
+    {% if user.rol == 'admin' or user.rol == 'gerencia' or user.is_staff %}
+    <div class="d-flex align-items-center gap-2">
+      <a href="/empresas/tarifas/" class="btn btn-outline-secondary btn-sm d-flex align-items-center gap-2" style="padding:.6rem 1.1rem; border-radius:var(--radius-sm); font-weight:600;">
+        <i class="fas fa-tags text-primary"></i> Configurar Tarifario
+      </a>
+      <a href="/estados-de-pago/crear/" class="btn-primary-redimir d-flex align-items-center gap-2 text-decoration-none" style="padding:.6rem 1.25rem; border-radius:var(--radius-sm);">
+        <i class="fas fa-plus"></i> Generar Nuevo EDP
+      </a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="card-redimir p-0" style="overflow:hidden;">
+    {% if edps %}
+    <div class="table-responsive">
+      <table class="table-redimir">
+        <thead>
+          <tr>
+            <th>N° EDP</th>
+            <th>Empresa</th>
+            <th>Período</th>
+            <th>Servicios</th>
+            <th>Subtotal Neto</th>
+            <th>IVA (19%)</th>
+            <th>Total Bruto</th>
+            <th>Estado</th>
+            <th>Fecha Emisión</th>
+            <th class="text-end">Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for edp in edps %}
+          <tr>
+            <td><strong class="text-primary">{{ edp.numero_edp }}</strong></td>
+            <td><strong class="text-dark fw-bold fs-6">{{ edp.empresa.nombre }}</strong><br><small class="text-muted">{{ edp.empresa.rut }}</small></td>
+            <td>{{ edp.periodo_inicio|date:"d/m/Y" }} al {{ edp.periodo_fin|date:"d/m/Y" }}</td>
+            <td><span class="badge-pill badge-blue">{{ edp.total_servicios }} retiros</span></td>
+            <td>${{ edp.subtotal_neto|floatformat:0 }}</td>
+            <td>${{ edp.iva|floatformat:0 }}</td>
+            <td><strong style="color:var(--secondary); font-size:1rem;">${{ edp.total_bruto|floatformat:0 }}</strong></td>
+            <td>
+              {% if edp.estado == 'pagado' %}
+              <span class="badge-pill badge-green"><i class="fas fa-check-circle me-1"></i>Pagado</span>
+              {% elif edp.estado == 'emitido' %}
+              <span class="badge-pill badge-blue"><i class="fas fa-paper-plane me-1"></i>Emitido</span>
+              {% elif edp.estado == 'anulado' %}
+              <span class="badge-pill badge-red"><i class="fas fa-ban me-1"></i>Anulado</span>
+              {% else %}
+              <span class="badge-pill badge-amber"><i class="fas fa-clock me-1"></i>Borrador</span>
+              {% endif %}
+            </td>
+            <td style="font-size:.82rem;" class="text-muted">{{ edp.fecha_emision|date:"d/m/Y" }}</td>
+            <td class="text-end">
+              <div class="d-flex align-items-center justify-content-end gap-1">
+                <!-- Ver Detalle / Liquidación -->
+                <a href="/estados-de-pago/{{ edp.pk }}/" class="btn btn-sm btn-outline-info" title="Ver Desglose Comercial">
+                  <i class="fas fa-eye"></i>
+                </a>
+                
+                <!-- Cambiar Estado / Editar -->
+                <button type="button" class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#modalEditEdp{{ edp.pk }}" title="Cambiar Estado / Editar">
+                  <i class="fas fa-edit"></i>
+                </button>
+
+                <!-- Anular sin Borrar -->
+                {% if edp.estado != 'anulado' %}
+                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#modalAnularEdp{{ edp.pk }}" title="Anular EDP">
+                  <i class="fas fa-ban"></i>
+                </button>
+                {% endif %}
+
+                <!-- Eliminar Físico -->
+                <form action="/estados-de-pago/{{ edp.pk }}/eliminar/" method="post" onsubmit="return confirm('¿Seguro de eliminar permanentemente el EDP {{ edp.numero_edp }}?');" class="d-inline">
+                  {% csrf_token %}
+                  <button type="submit" class="btn btn-sm btn-outline-secondary text-danger" title="Eliminar Permanentemente">
+                    <i class="fas fa-trash"></i>
+                  </button>
+                </form>
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="fas fa-receipt fa-3x mb-3" style="color:var(--border);"></i>
+      <h3 style="font-family:'Montserrat',sans-serif;font-weight:800;color:var(--primary);">No hay Estados de Pago registrados</h3>
+      <p class="text-muted fw-600 mb-4">Genera el primer consolidado de cobro comercial para tus clientes.</p>
+      {% if user.rol == 'admin' or user.rol == 'gerencia' or user.is_staff %}
+      <div class="d-flex align-items-center justify-content-center gap-2">
+        <a href="/empresas/tarifas/" class="btn btn-outline-secondary text-decoration-none">
+          <i class="fas fa-tags me-1"></i>Configurar Tarifario
+        </a>
+        <a href="/estados-de-pago/crear/" class="btn-primary-redimir text-decoration-none" style="padding:.7rem 1.4rem;border-radius:var(--radius-sm);">
+          <i class="fas fa-plus me-1"></i>Crear Estado de Pago
+        </a>
+      </div>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+
+<!-- MODALES EXTRAÍDOS FUERA DE LA TABLA Y DE FADE-IN-UP PARA EVITAR OVERLAY GRIS -->
+{% for edp in edps %}
+<!-- Modal Editar Estado -->
+<div class="modal fade" id="modalEditEdp{{ edp.pk }}" tabindex="-1" aria-labelledby="modalEditEdpLabel{{ edp.pk }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#ffffff; border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 20px 60px rgba(0,0,0,0.35); overflow:hidden; color:var(--text-body);">
+      <div class="modal-header" style="background:var(--primary); color:#ffffff; padding:1rem 1.25rem;">
+        <h5 class="modal-title fw-bold text-white mb-0" id="modalEditEdpLabel{{ edp.pk }}"><i class="fas fa-edit me-2"></i>Gestión Estado: {{ edp.numero_edp }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="/estados-de-pago/{{ edp.pk }}/editar/" method="post">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <p class="text-muted mb-3">Empresa: <strong class="text-dark">{{ edp.empresa.nombre }}</strong> | Total: <strong class="text-success">${{ edp.total_bruto|floatformat:0 }}</strong></p>
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark mb-1">Estado Actual / Nuevo Estado *</label>
+            <select name="estado" class="form-select bg-white text-dark border-secondary" required>
+              <option value="borrador" {% if edp.estado == 'borrador' %}selected{% endif %}>Borrador Interno</option>
+              <option value="emitido" {% if edp.estado == 'emitido' %}selected{% endif %}>Emitido a Cliente</option>
+              <option value="pagado" {% if edp.estado == 'pagado' %}selected{% endif %}>Pagado / Conforme</option>
+              <option value="anulado" {% if edp.estado == 'anulado' %}selected{% endif %}>Anulado</option>
+            </select>
+          </div>
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark mb-1">Observaciones / Notas Internas</label>
+            <textarea name="observaciones" class="form-control bg-white text-dark border-secondary" rows="3">{{ edp.observaciones }}</textarea>
+          </div>
+        </div>
+        <div class="modal-footer bg-light border-top p-3 d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn-primary-redimir border-0 btn btn-sm px-4">Guardar Cambios</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<!-- Modal Anular EDP -->
+<div class="modal fade" id="modalAnularEdp{{ edp.pk }}" tabindex="-1" aria-labelledby="modalAnularEdpLabel{{ edp.pk }}" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#ffffff; border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 20px 60px rgba(0,0,0,0.35); overflow:hidden; color:var(--text-body);">
+      <div class="modal-header bg-danger text-white p-3">
+        <h5 class="modal-title fw-bold text-white mb-0" id="modalAnularEdpLabel{{ edp.pk }}"><i class="fas fa-ban me-2"></i>Anular Estado de Pago {{ edp.numero_edp }}</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="/estados-de-pago/{{ edp.pk }}/anular/" method="post">
+        {% csrf_token %}
+        <div class="modal-body p-4">
+          <p class="text-danger fw-bold mb-3"><i class="fas fa-exclamation-triangle me-1"></i>El estado del EDP cambiará a ANULADO. No se borrará de la base de datos para mantener la trazabilidad de auditoría.</p>
+          <div class="mb-3">
+            <label class="form-label fw-bold text-dark mb-1">Motivo de Anulación *</label>
+            <input type="text" name="motivo" class="form-control bg-white text-dark border-secondary" placeholder="Ej: Error en fecha de liquidación o refacturación" required>
+          </div>
+        </div>
+        <div class="modal-footer bg-light border-top p-3 d-flex justify-content-end gap-2">
+          <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-danger btn-sm px-4">Confirmar Anulación</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endfor %}
+{% endblock %}

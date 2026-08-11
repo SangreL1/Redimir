@@ -1,0 +1,109 @@
+{% extends 'base.html' %}
+{% block title %}Mi Dashboard — Redimir{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="fw-bold" style="color:var(--primary); font-size:1.6rem;">¡Hola, {{ user.nombre }}! 👋</h1>
+        <p class="text-muted mb-0 fw-bold">Modo Operador / Conductor</p>
+    </div>
+    <a href="/servicios/crear/" class="btn-primary-redimir" style="padding:.6rem 1.25rem;">
+        <i class="fas fa-plus-circle me-2"></i>Registrar Retiro
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="kpi-card text-center" style="background:var(--primary); color:white;">
+            <div class="kpi-number" style="color:white;">{{ programados_hoy|length }}</div>
+            <div class="kpi-label text-white">Rutas Hoy</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card green text-center">
+            <div class="kpi-number" style="color:var(--secondary-dark);">{{ pendientes }}</div>
+            <div class="kpi-label">Pendientes</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card amber text-center">
+            <div class="kpi-number" style="color:var(--accent-dark);">{{ historial|length }}</div>
+            <div class="kpi-label">Gestionados</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="kpi-card text-center position-relative" style="background:#FFF0F0; border-color:#FFD6D6;">
+            {% if notifs_recientes|length > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle"></span>
+            {% endif %}
+            <div class="kpi-number" style="color:#E53935;">{{ notifs_recientes|length }}</div>
+            <div class="kpi-label">Notificaciones</div>
+        </div>
+    </div>
+</div>
+
+{% if programados_hoy|length > 0 %}
+<div class="card-redimir mb-4">
+    <h5 class="fw-bold mb-3"><i class="fas fa-route me-2" style="color:var(--primary);"></i>Ruta Programada de Hoy</h5>
+    {% for s in programados_hoy %}
+    <div class="d-flex align-items-center justify-content-between p-3 mb-2 rounded" style="background:var(--gray-bg); border-left:4px solid var(--primary);">
+        <div>
+            <h6 class="fw-bold mb-1">{{ s.empresa.nombre }}</h6>
+            <div style="font-size:.85rem; color:var(--text-muted);"><i class="fas fa-map-marker-alt me-1"></i>{{ s.direccion }}</div>
+            <div style="font-size:.8rem; margin-top:.2rem;">
+                {% if s.modulo == 'rsd' %}<span class="badge-estado badge-rsd">🗑️ RSD</span>
+                {% elif s.modulo == 'escombros' %}<span class="badge-estado badge-escombros">🏗️ Escombros</span>
+                {% else %}<span class="badge-estado badge-reciclable">♻️ Reciclables</span>{% endif %}
+            </div>
+        </div>
+        <a href="/servicios/{{ s.pk }}/registrar/" class="btn-success-redimir btn-sm" style="padding:.5rem 1rem;">Registrar →</a>
+    </div>
+    {% endfor %}
+</div>
+{% endif %}
+
+<div class="card-redimir">
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <h5 class="fw-bold mb-0">📋 Últimos Retiros Completados</h5>
+        <a href="/servicios/" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+    </div>
+
+    {% for s in historial %}
+    <div class="d-flex align-items-center gap-3 mb-3 pb-3" style="border-bottom:1px solid var(--border);">
+        <div style="width:48px;height:48px;border-radius:10px;display:flex;align-items:center;justify-content:center;background:var(--gray-bg);flex-shrink:0;">
+            {% if s.modulo == 'rsd' %}🗑️
+            {% elif s.modulo == 'escombros' %}🏗️
+            {% else %}♻️{% endif %}
+        </div>
+        <div style="flex:1;">
+            <div class="fw-bold text-dark" style="font-size:.9rem;">{{ s.empresa.nombre }}</div>
+            <div style="font-size:.8rem;color:var(--text-muted);">{{ s.fecha_retiro|date:"d/m/Y H:i" }}</div>
+        </div>
+        <div class="text-end">
+            {% if s.estado == 'validado' %}<span class="badge-estado badge-reciclable">Validado</span>
+            {% elif s.estado == 'observado' %}<span class="badge-estado badge-observado">Observado</span>
+            {% else %}<span class="badge-estado badge-pendiente">En validación</span>{% endif %}
+            
+            {% with reg=s.get_registro %}
+            {% if reg %}
+            <div class="fw-bold mt-1" style="font-size:.85rem;">
+                {% if s.modulo == 'escombros' %}{{ reg.cantidad }} {{ reg.get_unidad_display }}
+                {% else %}{{ reg.cantidad_kg }} kg{% endif %}
+            </div>
+            {% endif %}
+            {% endwith %}
+        </div>
+    </div>
+    {% empty %}
+    <div class="text-center py-4 text-muted">
+        Aún no tienes retiros completados.<br>
+        Las validaciones de tus retiros aparecerán aquí.
+    </div>
+    {% endfor %}
+</div>
+
+</div>
+{% endblock %}

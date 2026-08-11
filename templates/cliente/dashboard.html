@@ -1,0 +1,88 @@
+{% extends 'base.html' %}
+{% block title %}Mi Portal - Redimir{% endblock %}
+
+{% block content %}
+{% if error %}
+  <div class="alert alert-warning">{{ error }}</div>
+{% else %}
+<div class="d-flex justify-content-between align-items-center mb-4">
+  <h2 class="fw-bold mb-0" style="color: var(--primary)">Mi Portal - {{ empresa.nombre }}</h2>
+  <a href="/api/reportes/exportar-excel/" class="btn btn-outline-success btn-sm">Descargar CSV</a>
+</div>
+
+<!-- KPIs -->
+<div class="row mb-4 g-3">
+  <div class="col-6">
+    <div class="card border-0 shadow-sm text-white h-100" style="background:var(--primary)">
+      <div class="card-body text-center">
+        <div>Total Kg Recolectados</div>
+        <div class="fs-2 fw-bold">{{ total_kg|floatformat:0 }}</div>
+      </div>
+    </div>
+  </div>
+  <div class="col-6">
+    <div class="card border-0 shadow-sm text-white h-100" style="background:#27AE60">
+      <div class="card-body text-center">
+        <div>N° Recolecciones</div>
+        <div class="fs-2 fw-bold">{{ lotes.count }}</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="row g-3">
+  <!-- Tabla recolecciones -->
+  <div class="col-md-8">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h5 class="card-title">Mis Recolecciones</h5>
+        <div class="table-responsive">
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr><th>Fecha</th><th>Tipo</th><th>Kg</th><th>Estado</th><th></th></tr>
+            </thead>
+            <tbody>
+              {% for lote in lotes %}
+              <tr>
+                <td>{{ lote.fecha_creacion|date:"d/m/Y" }}</td>
+                <td>{{ lote.get_tipo_residuo_display }}</td>
+                <td>{{ lote.cantidad_kg }}</td>
+                <td><span class="badge bg-secondary">{{ lote.get_estado_display }}</span></td>
+                <td><a href="/lotes/{{ lote.codigo_lote }}/" class="btn btn-sm btn-outline-primary">Ver</a></td>
+              </tr>
+              {% empty %}
+              <tr><td colspan="5" class="text-muted text-center">No hay recolecciones aún.</td></tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Certificados -->
+  <div class="col-md-4">
+    <div class="card shadow-sm border-0">
+      <div class="card-body">
+        <h5 class="card-title">Certificados</h5>
+        <ul class="list-group list-group-flush">
+          {% for cert in certificados %}
+          <li class="list-group-item d-flex justify-content-between align-items-center px-0">
+            <div>
+              <strong>{{ cert.codigo_certificado }}</strong><br>
+              <small class="text-muted">{{ cert.periodo_inicio }} → {{ cert.periodo_fin }}</small>
+            </div>
+            {% if cert.archivo_pdf %}
+            <a href="{{ cert.archivo_pdf.url }}" target="_blank" class="btn btn-sm btn-success">PDF</a>
+            {% endif %}
+          </li>
+          {% empty %}
+          <li class="list-group-item text-muted px-0">No hay certificados aún.</li>
+          {% endfor %}
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}

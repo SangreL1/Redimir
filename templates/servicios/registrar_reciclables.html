@@ -1,0 +1,303 @@
+{% extends "base.html" %}
+{% block title %}Registrar Retiro Reciclables — Redimir{% endblock %}
+
+{% block extra_css %}
+<style>
+body { background: var(--gray-bg); }
+.registro-container { max-width: 540px; margin: 0 auto; padding: 0 0 4rem 0; }
+.paso-card { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 1.75rem; display: none; }
+.paso-card.active { display: block; animation: fadeInUp .3s ease; }
+.header-servicio { background: linear-gradient(135deg, var(--secondary), var(--secondary-dark)); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 1.25rem 1.75rem; color: #fff; }
+.paso-nav { background: var(--white); padding: .75rem 1.75rem; border-bottom: 1px solid var(--border); position: sticky; top: 60px; z-index: 100; }
+.foto-zone { border: 2.5px dashed var(--border); border-radius: var(--radius); padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: all .2s; background: var(--gray-bg); }
+.foto-zone.has-foto { border-color: var(--secondary); background: var(--secondary-light); }
+.foto-preview-grid { display: grid; grid-template-columns: repeat(3,1fr); gap:.5rem; margin-top:1rem; }
+.foto-thumb { width:100%; aspect-ratio:1; object-fit:cover; border-radius:var(--radius-sm); border:2px solid var(--border); }
+.btn-nav { min-height: 52px; font-size: 1rem; font-weight: 700; border-radius: var(--radius-sm); }
+.campo-grande { font-size: 1.1rem; padding: .85rem 1rem; }
+.resumen-row { display:flex; justify-content:space-between; align-items:center; padding:.65rem 0; border-bottom:1px solid var(--gray-bg); }
+.material-grid { display:grid; grid-template-columns:repeat(2,1fr); gap:.75rem; }
+@media(max-width:400px){ .material-grid { grid-template-columns:1fr; } }
+.material-row { background:var(--gray-bg); border-radius:var(--radius-sm); padding:.75rem 1rem; }
+.eco-result { background:linear-gradient(135deg,var(--secondary-light),var(--primary-light)); border-radius:var(--radius); padding:1rem; }
+.eco-item { display:flex; align-items:center; gap:.65rem; padding:.4rem 0; border-bottom:1px solid rgba(0,0,0,.06); }
+.eco-item:last-child { border:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="registro-container">
+
+  <div class="header-servicio">
+    <div class="d-flex align-items-start justify-content-between">
+      <div>
+        <div style="font-size:.75rem; opacity:.8; font-weight:600; letter-spacing:.5px;">REGISTRAR RETIRO</div>
+        <h2 style="font-size:1.2rem; font-weight:800; margin:.25rem 0;">{{ servicio.empresa.nombre }}</h2>
+        <div style="font-size:.85rem; opacity:.85;"><i class="fas fa-map-marker-alt me-1"></i>{{ servicio.direccion }}</div>
+      </div>
+      <span class="badge-estado badge-reciclable" style="font-size:.7rem;">♻️ Reciclables</span>
+    </div>
+    {% if servicio.cantidad_estimada %}
+    <div class="mt-2 p-2 rounded" style="background:rgba(255,255,255,.2); font-size:.82rem;">
+      <i class="fas fa-weight me-1"></i>Estimado: <strong>{{ servicio.cantidad_estimada }} kg</strong>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Indicador pasos -->
+  <div class="paso-nav">
+    <div class="step-indicator mb-0">
+      <div class="step-dot" id="dot1">1</div>
+      <div class="step-line" id="line12"></div>
+      <div class="step-dot" id="dot2">2</div>
+      <div class="step-line" id="line23"></div>
+      <div class="step-dot" id="dot3">3</div>
+      <div class="step-line" id="line34"></div>
+      <div class="step-dot" id="dot4">4</div>
+    </div>
+    <div class="text-center mt-1" style="font-size:.72rem; color:var(--text-muted); font-weight:600;" id="paso-label">
+      Paso 1 de 4 — Confirmar datos
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="form-reg" style="padding:1rem;">
+    {% csrf_token %}
+    <input type="hidden" name="ubicacion_gps" id="gps-h">
+
+    <!-- PASO 1 -->
+    <div class="paso-card active" id="paso-1">
+      <h5 class="fw-bold mb-3" style="color:var(--secondary);"><i class="fas fa-recycle me-2"></i>Material a registrar</h5>
+      <div class="mb-3">
+        <label class="form-label">Tipo de material <span class="required-mark">*</span></label>
+        <select name="material" class="form-select campo-grande" id="sel-material" required>
+          <option value="">-- Selecciona el material --</option>
+          <option value="carton">📦 Cartón</option>
+          <option value="papel">📄 Papel</option>
+          <option value="pet">🧴 Botellas PET (Plástico)</option>
+          <option value="latas">🥫 Latas de Aluminio</option>
+          <option value="film">🎞️ Film LDPE</option>
+          <option value="carretes">🧵 Carretes</option>
+          <option value="sunchos">📎 Sunchos</option>
+          <option value="vidrio">🍶 Vidrio</option>
+          <option value="tetrapak">🧃 Tetrapak</option>
+          <option value="plastico">♻️ Plástico general</option>
+          <option value="pallets">🪵 Pallets</option>
+          <option value="otro">📦 Otro material</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Cantidad en kg <span class="required-mark">*</span></label>
+        <div class="input-group">
+          <input type="number" name="cantidad_kg" id="cantidad-kg" class="form-control campo-grande" step="0.1" min="0.1" placeholder="0.0" required>
+          <span class="input-group-text" style="font-weight:700; background:var(--gray-bg);">kg</span>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Unidades <small class="text-muted">(opcional: carretes, sacos, pallets...)</small></label>
+        <input type="number" name="unidades" class="form-control" min="1" step="1" placeholder="Ej: 5 carretes">
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">Destino / Gestor <span class="required-mark">*</span></label>
+        <select name="destino" class="form-select" required>
+          <option value="gestor">Gestor autorizado</option>
+          <option value="interno">Gestión interna Redimir</option>
+          <option value="receptor">Receptor directo</option>
+        </select>
+      </div>
+
+      <div class="mb-3">
+        <button type="button" class="btn btn-outline-secondary w-100" id="btn-gps">
+          <i class="fas fa-map-marker-alt me-1"></i>GPS (opcional)
+        </button>
+        <div id="gps-o" class="form-text text-center mt-1"></div>
+      </div>
+
+      <div class="d-grid">
+        <button type="button" class="btn-success-redimir btn-nav" onclick="validarPaso1()">
+          Siguiente → Fotos
+        </button>
+      </div>
+    </div>
+
+    <!-- PASO 2: FOTOS -->
+    <div class="paso-card" id="paso-2">
+      <h5 class="fw-bold mb-3" style="color:var(--secondary);"><i class="fas fa-camera me-2"></i>Evidencia fotográfica</h5>
+
+      {% if error_foto %}
+      <div class="alert-redimir-warning mb-3">
+        <i class="fas fa-exclamation-triangle me-2"></i>Debes subir al menos 1 foto.
+      </div>
+      {% endif %}
+
+      <div class="foto-zone" id="foto-zone" onclick="document.getElementById('inp-fotos').click()">
+        <i class="fas fa-camera fa-2x mb-2" style="color:var(--text-light);"></i>
+        <p class="fw-bold mb-1" style="color:var(--text-muted);">📸 FOTO OBLIGATORIA</p>
+        <p class="text-muted mb-0" style="font-size:.85rem;">Toca aquí para foto o galería</p>
+      </div>
+      <input type="file" name="fotos" id="inp-fotos" accept="image/*" multiple capture="environment" style="display:none;" onchange="showPreviews(this)">
+      <div class="foto-preview-grid" id="prev-grid"></div>
+      <div class="alert-redimir-warning mt-3" id="warn-foto" style="display:none;">
+        <i class="fas fa-exclamation-triangle me-1"></i>Mínimo 1 foto requerida.
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(1)">← Atrás</button>
+        <button type="button" class="btn-success-redimir btn-nav flex-fill" onclick="validarPaso2()">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- PASO 3: OBSERVACIONES -->
+    <div class="paso-card" id="paso-3">
+      <h5 class="fw-bold mb-3" style="color:var(--secondary);"><i class="fas fa-comment me-2"></i>Observaciones</h5>
+      <div class="mb-4">
+        <label class="form-label">Notas adicionales <small class="text-muted">(opcional)</small></label>
+        <textarea name="observaciones" class="form-control" rows="4" placeholder="Estado del material, condiciones, notas especiales..."></textarea>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(2)">← Atrás</button>
+        <button type="button" class="btn-success-redimir btn-nav flex-fill" onclick="irPaso(4)">Ver resumen →</button>
+      </div>
+    </div>
+
+    <!-- PASO 4: RESUMEN -->
+    <div class="paso-card" id="paso-4">
+      <h5 class="fw-bold mb-3" style="color:var(--secondary);"><i class="fas fa-leaf me-2"></i>Resumen — Confirmar</h5>
+
+      <div class="card-redimir p-3 mb-3" style="background:var(--secondary-light);">
+        <div style="font-size:.72rem; font-weight:700; color:var(--secondary-dark); letter-spacing:.5px; margin-bottom:.5rem;">DATOS DEL REGISTRO</div>
+        <div class="resumen-row"><span style="font-size:.82rem;color:var(--text-muted);">Empresa</span><strong style="font-size:.9rem;">{{ servicio.empresa.nombre }}</strong></div>
+        <div class="resumen-row"><span style="font-size:.82rem;color:var(--text-muted);">Material</span><strong style="font-size:.9rem;" id="r-mat">—</strong></div>
+        <div class="resumen-row"><span style="font-size:.82rem;color:var(--text-muted);">Cantidad</span><strong style="font-size:.9rem;" id="r-kg">—</strong></div>
+        <div class="resumen-row" style="border:none;"><span style="font-size:.82rem;color:var(--text-muted);">Fotos</span><strong style="font-size:.9rem;" id="r-fotos">—</strong></div>
+      </div>
+
+      <div class="eco-result mb-3" id="eco-preview" style="display:none;">
+        <div style="font-size:.72rem; font-weight:700; color:var(--secondary-dark); letter-spacing:.5px; margin-bottom:.5rem;">
+          <i class="fas fa-leaf me-1"></i>IMPACTO AMBIENTAL ESTIMADO
+        </div>
+        <div class="eco-item"><span style="font-size:1rem;">💧</span><div><div style="font-size:.72rem;color:var(--text-muted);">Ahorro de agua</div><strong id="eco-agua">—</strong></div></div>
+        <div class="eco-item"><span style="font-size:1rem;">💨</span><div><div style="font-size:.72rem;color:var(--text-muted);">CO₂ evitado</div><strong id="eco-co2">—</strong></div></div>
+        <div class="eco-item"><span style="font-size:1rem;">⚡</span><div><div style="font-size:.72rem;color:var(--text-muted);">Ahorro de energía</div><strong id="eco-energia">—</strong></div></div>
+        <div class="eco-item"><span style="font-size:1rem;">🌳</span><div><div style="font-size:.72rem;color:var(--text-muted);">Árboles preservados</div><strong id="eco-arboles">—</strong></div></div>
+      </div>
+
+      <div class="alert-redimir-info mb-3" style="font-size:.82rem;">
+        <i class="fas fa-info-circle me-2"></i>La eco-equivalencia exacta se calculará al validar el registro.
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(3)">← Atrás</button>
+        <button type="submit" class="btn-success-redimir btn-nav flex-fill" id="btn-save">
+          <i class="fas fa-check-circle me-1"></i>Guardar
+        </button>
+      </div>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let paso = 1;
+const labels = ['Paso 1 de 4 — Material y cantidad','Paso 2 de 4 — Fotos','Paso 3 de 4 — Observaciones','Paso 4 de 4 — Resumen'];
+
+// Factores aproximados para preview
+const factores = {
+    carton:{agua:270,co2:0,energia:7,arboles:0.017},
+    papel:{agua:270,co2:0,energia:7,arboles:0.017},
+    pet:{agua:36.26,co2:2.5,energia:5,arboles:0},
+    latas:{agua:0,co2:9,energia:14,arboles:0},
+    film:{agua:36.26,co2:2.5,energia:5,arboles:0},
+    carretes:{agua:36.26,co2:2.5,energia:5,arboles:0},
+    sunchos:{agua:36.26,co2:2.5,energia:5,arboles:0},
+    vidrio:{agua:0,co2:0.67,energia:1.3,arboles:0},
+    tetrapak:{agua:270,co2:0,energia:7,arboles:0.017},
+    plastico:{agua:36.26,co2:2.5,energia:5,arboles:0},
+    pallets:{agua:50,co2:0,energia:1,arboles:0.004},
+};
+
+function irPaso(n) {
+    document.getElementById('paso-' + paso).classList.remove('active');
+    document.getElementById('paso-' + n).classList.add('active');
+    paso = n;
+    document.getElementById('paso-label').textContent = labels[n-1];
+    for (let i=1;i<=4;i++) {
+        const d = document.getElementById('dot'+i);
+        if (!d) continue;
+        d.classList.remove('active','done');
+        if (i<n) d.classList.add('done');
+        else if (i===n) d.classList.add('active');
+    }
+    window.scrollTo(0,0);
+}
+
+function validarPaso1() {
+    const mat = document.getElementById('sel-material').value;
+    const kg  = document.getElementById('cantidad-kg').value;
+    if (!mat) { alert('Selecciona el tipo de material.'); return; }
+    if (!kg || parseFloat(kg) <= 0) { alert('Ingresa una cantidad válida.'); return; }
+
+    // Actualizar resumen
+    document.getElementById('r-mat').textContent = document.getElementById('sel-material').options[document.getElementById('sel-material').selectedIndex].text;
+    document.getElementById('r-kg').textContent = kg + ' kg';
+
+    // Preview eco
+    const f = factores[mat];
+    if (f) {
+        const kgN = parseFloat(kg);
+        document.getElementById('eco-agua').textContent = (kgN * f.agua).toFixed(0) + ' L';
+        document.getElementById('eco-co2').textContent  = (kgN * f.co2).toFixed(1) + ' kg';
+        document.getElementById('eco-energia').textContent = (kgN * f.energia).toFixed(1) + ' kWh';
+        document.getElementById('eco-arboles').textContent = (kgN * f.arboles).toFixed(2) + ' árb.';
+        document.getElementById('eco-preview').style.display = 'block';
+    }
+    irPaso(2);
+}
+
+function validarPaso2() {
+    const fotos = document.getElementById('inp-fotos').files;
+    if (fotos.length === 0) { document.getElementById('warn-foto').style.display='flex'; return; }
+    document.getElementById('warn-foto').style.display='none';
+    document.getElementById('r-fotos').textContent = fotos.length + ' foto(s) ✓';
+    irPaso(3);
+}
+
+function showPreviews(input) {
+    const grid = document.getElementById('prev-grid');
+    document.getElementById('foto-zone').classList.toggle('has-foto', input.files.length > 0);
+    grid.innerHTML = '';
+    Array.from(input.files).forEach(f => {
+        const r = new FileReader();
+        r.onload = e => {
+            const img = document.createElement('img');
+            img.src = e.target.result; img.className = 'foto-thumb';
+            grid.appendChild(img);
+        };
+        r.readAsDataURL(f);
+    });
+}
+
+// GPS
+document.getElementById('btn-gps').addEventListener('click', () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('gps-h').value = `${pos.coords.latitude},${pos.coords.longitude}`;
+        document.getElementById('gps-o').innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>GPS capturado';
+        document.getElementById('btn-gps').style.borderColor = 'var(--secondary)';
+        document.getElementById('btn-gps').style.color = 'var(--secondary)';
+    });
+});
+
+// Prevent doble submit
+document.getElementById('form-reg').addEventListener('submit', () => {
+    document.getElementById('btn-save').disabled = true;
+    document.getElementById('btn-save').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
+});
+
+irPaso(1);
+</script>
+{% endblock %}

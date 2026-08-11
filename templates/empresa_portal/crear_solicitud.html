@@ -1,0 +1,204 @@
+{% extends 'base.html' %}
+{% block title %}Nueva Solicitud — Portal Empresa Redimir{% endblock %}
+{% block nav_empresa_solicitudes %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  .form-card-premium {
+    background: #ffffff;
+    border: 1px solid #E2E8F0;
+    border-top: 4px solid var(--primary);
+    border-radius: 16px;
+    padding: 2rem 2.25rem;
+    box-shadow: 0 10px 30px rgba(0, 107, 184, 0.08);
+  }
+  .form-label-custom {
+    color: #1E293B;
+    font-weight: 700;
+    font-size: .88rem;
+    margin-bottom: .4rem;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+  }
+  .input-group-custom {
+    border-radius: 10px;
+    overflow: hidden;
+    transition: all .2s ease;
+  }
+  .input-group-custom .input-group-text {
+    background: #F1F5F9;
+    border: 1.5px solid #CBD5E1;
+    border-right: none;
+    color: var(--primary);
+    font-size: 1rem;
+    padding: .65rem .9rem;
+  }
+  .form-control-custom {
+    background: #F8FAFC;
+    border: 1.5px solid #CBD5E1;
+    color: #0F172A;
+    font-weight: 600;
+    font-size: .92rem;
+    padding: .65rem 1rem;
+    border-radius: 0 10px 10px 0;
+    transition: all .2s ease;
+  }
+  .form-control-custom:focus {
+    background: #ffffff;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(0, 107, 184, 0.15);
+    outline: none;
+    color: #0F172A;
+  }
+  select.form-control-custom {
+    cursor: pointer;
+  }
+  .btn-submit-premium {
+    background: linear-gradient(135deg, #95BF3C 0%, #7AA030 100%);
+    color: #ffffff !important;
+    font-weight: 800;
+    font-size: 1rem;
+    letter-spacing: .3px;
+    padding: .85rem 1.75rem;
+    border-radius: 10px;
+    border: none;
+    box-shadow: 0 6px 18px rgba(149, 191, 60, 0.35);
+    transition: all .25 ease;
+  }
+  .btn-submit-premium:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(149, 191, 60, 0.45);
+    background: linear-gradient(135deg, #a3ce43 0%, #83ac33 100%);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in-up mx-auto" style="max-width:720px;">
+
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <a href="/empresa/solicitudes/" class="btn-outline-green btn btn-sm d-inline-flex align-items-center gap-2" style="font-weight: 700;">
+      <i class="fas fa-arrow-left"></i> Mis Solicitudes
+    </a>
+    <span class="badge-pill badge-blue" style="font-size: .78rem;">
+      <i class="fas fa-bolt me-1"></i> ATENCIÓN PRIORITARIA
+    </span>
+  </div>
+
+  <div class="mb-4">
+    <h1 class="page-title mb-1" style="font-size: 1.65rem; color: var(--primary-dark); font-weight: 800;">
+      <i class="fas fa-plus-circle text-primary me-2"></i>Nueva Solicitud de Recolección
+    </h1>
+    <p class="page-subtitle mb-0" style="color: #64748B; font-size: .95rem;">
+      Pide una recolección para tu empresa. Avisaremos a nuestros administradores y recolectores en tiempo real.
+    </p>
+  </div>
+
+  {% if errores %}
+  <div class="alert alert-danger d-flex align-items-center gap-2 mb-4 p-3" style="border-radius: 10px;">
+    <i class="fas fa-exclamation-circle fa-lg me-1"></i>
+    <div>
+      {% for e in errores %}<div><strong>Error:</strong> {{ e }}</div>{% endfor %}
+    </div>
+  </div>
+  {% endif %}
+
+  <div class="form-card-premium">
+    <form method="post">
+      {% csrf_token %}
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-5">
+          <label class="form-label-custom">
+            <i class="fas fa-recycle text-primary"></i> Tipo de Residuo *
+          </label>
+          <div class="input-group input-group-custom">
+            <span class="input-group-text"><i class="fas fa-boxes-packing"></i></span>
+            <select name="tipo_recoleccion" required class="form-control form-control-custom">
+              <option value="">-- Seleccionar --</option>
+              <option value="plastico">Plástico</option>
+              <option value="carton_papel">Cartón / Papel</option>
+              <option value="vidrio">Vidrio</option>
+              <option value="metales">Metales</option>
+              <option value="electronicos">Electrónicos</option>
+              <option value="mixto" selected>Mixto</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-7">
+          <label class="form-label-custom">
+            <i class="fas fa-pen-to-square text-primary"></i> Descripción Breve *
+          </label>
+          <div class="input-group input-group-custom">
+            <span class="input-group-text"><i class="fas fa-file-alt"></i></span>
+            <input type="text" name="descripcion" required class="form-control form-control-custom" 
+                   placeholder="Ej: Retiro de 5 cajas de cartón y botellas plásticas"
+                   value="{{ form_data.descripcion|default:"" }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label-custom">
+          <i class="fas fa-location-dot text-danger"></i> Dirección de Recolección *
+        </label>
+        <div class="input-group input-group-custom">
+          <span class="input-group-text"><i class="fas fa-building"></i></span>
+          <input type="text" name="direccion_recoleccion" required class="form-control form-control-custom" 
+                 value="{{ form_data.direccion_recoleccion|default:empresa.direccion }}">
+        </div>
+        <div style="font-size:.78rem; color:#64748B; margin-top:.35rem;" class="d-flex align-items-center gap-1">
+          <i class="fas fa-info-circle text-primary"></i> Por defecto se usa la dirección registrada de tu empresa. Modifícala si es necesario.
+        </div>
+      </div>
+
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom">
+            <i class="fas fa-calendar-day text-warning"></i> Fecha y Hora Solicitada *
+          </label>
+          <div class="input-group input-group-custom">
+            <span class="input-group-text"><i class="fas fa-clock"></i></span>
+            <input type="datetime-local" name="fecha_solicitada" required class="form-control form-control-custom"
+                   value="{{ form_data.fecha_solicitada|default:"" }}">
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom">
+            <i class="fas fa-weight-hanging text-info"></i> Peso Estimado (kg)
+          </label>
+          <div class="input-group input-group-custom">
+            <span class="input-group-text"><i class="fas fa-scale-balanced"></i></span>
+            <input type="number" name="peso_estimado" class="form-control form-control-custom" step="1"
+                   placeholder="Opcional. Ej: 50" value="{{ form_data.peso_estimado|default:"" }}">
+          </div>
+        </div>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label-custom">
+          <i class="fas fa-comment-dots text-secondary"></i> Observaciones adicionales
+        </label>
+        <textarea name="observaciones" rows="3" class="form-control form-control-custom w-100" style="border-radius: 10px;"
+                  placeholder="(Opcional) Ej: Tocar el timbre de bodega, preguntar por Don Juan..."></textarea>
+      </div>
+
+      <button type="submit" class="btn-submit-premium w-100 d-flex align-items-center justify-content-center gap-2" id="submitBtn">
+        <i class="fas fa-paper-plane fa-lg"></i> Enviar Solicitud de Recolección
+      </button>
+    </form>
+  </div>
+
+</div>
+
+<script>
+document.querySelector('form').addEventListener('submit', function() {
+    const btn = document.getElementById('submitBtn');
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin fa-lg me-2"></i>Enviando Solicitud...';
+    btn.classList.add('disabled');
+});
+</script>
+{% endblock %}

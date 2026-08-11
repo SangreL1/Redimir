@@ -1,0 +1,120 @@
+{% extends 'base.html' %}
+{% block title %}Solicitudes de Recolección — Redimir{% endblock %}
+{% block nav_solicitudes %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title"><i class="fas fa-clipboard-list" style="color:var(--primary);margin-right:.5rem;"></i>Solicitudes</h1>
+        <p class="page-subtitle">Gestión de solicitudes de recolección</p>
+    </div>
+    {% if user.rol == 'admin' or user.is_staff %}
+    <a href="/solicitudes/crear/" class="btn-green btn">
+        <i class="fas fa-plus me-2"></i>Nueva Solicitud
+    </a>
+    {% endif %}
+</div>
+
+<div class="card-redimir">
+    <div class="table-responsive">
+        <table class="table-dark-custom w-100">
+            <thead>
+                <tr>
+                    <th>#</th>
+                    <th>Empresa</th>
+                    <th>Descripción</th>
+                    <th>Dirección</th>
+                    <th>Fecha Solicitada</th>
+                    <th>Estado</th>
+                    <th>Operador</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for s in solicitudes %}
+                <tr>
+                    <td style="color:var(--text-muted);font-size:.8rem;">#{{ s.pk }}</td>
+                    <td style="font-weight:500;">{{ s.empresa.nombre|truncatechars:22 }}</td>
+                    <td style="font-size:.83rem;color:var(--text-muted);">{{ s.descripcion|truncatechars:40 }}</td>
+                    <td style="font-size:.82rem;">
+                        <i class="fas fa-map-marker-alt me-1" style="color:var(--primary);"></i>{{ s.direccion_recoleccion|truncatechars:28 }}
+                    </td>
+                    <td style="font-size:.8rem;color:var(--text-muted);">{{ s.fecha_solicitada|date:"d/m/Y H:i" }}</td>
+                    <td>
+                        <span class="badge-pill
+                            {% if s.estado == 'pendiente' %}badge-amber
+                            {% elif s.estado == 'asignada' %}badge-blue
+                            {% elif s.estado == 'completada' %}badge-green
+                            {% else %}badge-red{% endif %}">
+                            {{ s.get_estado_display }}
+                        </span>
+                    </td>
+                    <td style="font-size:.83rem;">{{ s.operador_asignado.nombre|default:"—" }}</td>
+                    <td>
+                        <div class="d-flex gap-1 align-items-center">
+                            {% if s.estado == 'completada' %}
+                                <span class="text-muted" style="font-size: .8rem; font-weight: 600;"><i class="fas fa-check-double text-success me-1"></i>Finalizada</span>
+                            {% elif s.estado == 'cancelada' %}
+                                <span class="text-muted" style="font-size: .8rem; font-weight: 600;"><i class="fas fa-ban text-danger me-1"></i>Cancelada</span>
+                            {% else %}
+                                {% if user.rol == 'recolector' and s.estado == 'pendiente' %}
+                                <form method="post" action="/solicitudes/{{ s.pk }}/aceptar/">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn-green btn btn-sm px-3" onclick="return confirm('¿Aceptar esta recolección y asignarla a ti?');">
+                                        <i class="fas fa-check me-1"></i> Aceptar
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                {% if s.estado == 'asignada' and user.rol == 'recolector' and s.operador_asignado == user %}
+                                <a href="/recolecciones/crear/?empresa={{ s.empresa.pk }}&solicitud={{ s.pk }}" class="btn btn-sm" style="background:var(--primary-glow);border:1px solid var(--primary);color:var(--primary);border-radius:6px;text-decoration:none;">
+                                    <i class="fas fa-truck-loading me-1"></i> Recolectar
+                                </a>
+                                <form method="post" action="/solicitudes/{{ s.pk }}/completar/" style="display:inline-block;margin-left:4px;">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-sm" style="background:rgba(59,130,246,.15);border:1px solid rgba(59,130,246,.3);color:#60a5fa;border-radius:6px;" onclick="return confirm('¿Marcar como COMPLETADA?');">
+                                        <i class="fas fa-check-double text-white"></i> Cerrar
+                                    </button>
+                                </form>
+                                {% endif %}
+
+                                {% if user.rol == 'admin' or user.is_staff %}
+                                    {% if s.estado == 'asignada' %}
+                                    <form method="post" action="/solicitudes/{{ s.pk }}/completar/">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" style="border-radius:6px;">
+                                            Completar
+                                        </button>
+                                    </form>
+                                    {% endif %}
+                                {% endif %}
+
+                                {% if user.rol == 'admin' or user.is_staff or user.rol == 'empresa' and s.estado == 'pendiente' %}
+                                    <form method="post" action="/solicitudes/{{ s.pk }}/cancelar/">
+                                        {% csrf_token %}
+                                        <button type="submit" class="btn-danger-soft btn btn-sm" onclick="return confirm('¿Cancelar esta solicitud?')" title="Cancelar">
+                                            <i class="fas fa-times"></i>
+                                        </button>
+                                    </form>
+                                {% endif %}
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center;color:var(--text-muted);padding:2.5rem;">
+                        <i class="fas fa-clipboard" style="font-size:2rem;margin-bottom:.5rem;display:block;opacity:.3;"></i>
+                        No hay solicitudes.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,98 @@
+{% extends 'base.html' %}
+{% block title %}Cierre Mensual & Paquete Documental — Redimir{% endblock %}
+{% block nav_cierre %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up" style="max-width: 850px; margin: 0 auto;">
+
+    <div class="d-flex align-items-center justify-content-between mb-4">
+        <div>
+            <h1 class="page-title"><i class="fas fa-file-archive text-primary-redimir me-2"></i>Cierre Mensual & Paquete Documental</h1>
+            <p class="page-subtitle">Exportación del libro mayor de servicios y empaquetamiento masivo por cliente</p>
+        </div>
+        <a href="/dashboard/" class="btn-outline-green btn btn-sm">
+            <i class="fas fa-arrow-left me-1"></i>Volver
+        </a>
+    </div>
+
+    <div class="row g-4">
+        <!-- Tarjeta 1: Libro Mayor Excel -->
+        <div class="col-md-6">
+            <div class="card-redimir text-center py-4 h-100 d-flex flex-column justify-content-between">
+                <div>
+                    <i class="fas fa-file-excel fa-3x mb-3" style="color:#107c41;"></i>
+                    <h5 class="fw-bold mb-2 text-white">Libro Mayor Consolidado</h5>
+                    <p class="text-muted mb-4" style="font-size: .85rem;">
+                        Descarga el detalle plano en Excel con todos los retiros validados (RSD, RESCON y Reciclables) ordenados por fecha y ticket.
+                    </p>
+                </div>
+                <div>
+                    <a href="/api/reportes/exportar-excel/" class="btn-primary-redimir w-100 py-2 text-decoration-none">
+                        <i class="fas fa-download me-2"></i>Descargar Excel General
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tarjeta 2: Paquete Documental ZIP por Cliente -->
+        <div class="col-md-6">
+            <div class="card-redimir text-center py-4 h-100 d-flex flex-column justify-content-between" style="border-top: 4px solid var(--secondary);">
+                <div>
+                    <i class="fas fa-file-zipper fa-3x mb-3" style="color:var(--secondary);"></i>
+                    <h5 class="fw-bold mb-2 text-white">Paquete Documental (.ZIP)</h5>
+                    <p class="text-muted mb-4" style="font-size: .85rem;">
+                        Agrupa en un solo archivo comprimido el Certificado Oficial PDF y el Excel filtrado por Empresa y Período.
+                    </p>
+                </div>
+                <div>
+                    <button type="button" class="btn-green w-100 py-2 border-0" data-bs-toggle="modal" data-bs-target="#modalZip">
+                        <i class="fas fa-box-archive me-2"></i>Generar Paquete ZIP
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- Modal Generación ZIP -->
+<div class="modal fade" id="modalZip" tabindex="-1" aria-labelledby="modalZipLabel" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content" style="background:#ffffff; border:1px solid var(--border); border-radius:var(--radius); box-shadow:0 20px 60px rgba(0,0,0,0.35); overflow:hidden; color:var(--text-body);">
+      <div class="modal-header" style="background:var(--primary); color:#ffffff; padding:1rem 1.25rem;">
+        <h5 class="modal-title fw-bold text-white mb-0" id="modalZipLabel"><i class="fas fa-file-zipper me-2"></i>Configurar Paquete ZIP</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form action="/api/reportes/exportar-zip/" method="get" target="_blank">
+        <div class="modal-body p-4">
+            <div class="mb-3">
+                <label class="form-label fw-bold text-dark mb-1"><i class="fas fa-building me-1 text-primary"></i>Empresa / Cliente *</label>
+                <select name="empresa_id" class="form-select bg-white text-dark border-secondary" required>
+                    <option value="">-- Seleccionar Empresa --</option>
+                    {% for emp in empresas %}
+                    <option value="{{ emp.pk }}">{{ emp.nombre }} ({{ emp.rut }})</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="row g-3 mb-2">
+                <div class="col-6">
+                    <label class="form-label fw-bold text-dark mb-1"><i class="fas fa-calendar-alt me-1 text-primary"></i>Desde *</label>
+                    <input type="date" name="inicio" class="form-control bg-white text-dark border-secondary" required>
+                </div>
+                <div class="col-6">
+                    <label class="form-label fw-bold text-dark mb-1"><i class="fas fa-calendar-alt me-1 text-primary"></i>Hasta *</label>
+                    <input type="date" name="fin" class="form-control bg-white text-dark border-secondary" required>
+                </div>
+            </div>
+        </div>
+        <div class="modal-footer bg-light border-top p-3 d-flex justify-content-end gap-2">
+            <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Cancelar</button>
+            <button type="submit" class="btn-primary-redimir border-0 btn btn-sm px-4">
+                <i class="fas fa-download me-1"></i> Generar & Descargar ZIP
+            </button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+{% endblock %}

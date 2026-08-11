@@ -1,0 +1,200 @@
+{% extends "base.html" %}
+{% block title %}Validaciones Pendientes — Redimir{% endblock %}
+{% block nav_validaciones %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h1 class="page-title">
+        <i class="fas fa-exclamation-circle me-2" style="color:var(--accent-dark);"></i>Validaciones Pendientes
+      </h1>
+      <p class="page-subtitle">{{ total }} servicio{{ total|pluralize }} esperando tu revisión</p>
+    </div>
+    {% if total > 0 %}
+    <div class="kpi-card amber" style="min-width:120px; text-align:center;">
+      <div class="kpi-number" style="color:var(--accent-dark);">{{ total }}</div>
+      <div class="kpi-label">Pendientes</div>
+    </div>
+    {% endif %}
+  </div>
+
+  {% if pendientes %}
+  <div class="d-flex flex-column gap-3">
+    {% for s in pendientes %}
+    <div class="card-redimir {% if s.estado == 'observado' %}border-warning{% endif %}">
+      <div class="row g-3 align-items-start">
+
+        <!-- Info principal -->
+        <div class="col-12 col-md-5">
+          <div class="d-flex align-items-center gap-2 mb-2">
+            {% if s.modulo == 'rsd' %}
+            <span class="badge-estado badge-rsd">🗑️ RSD</span>
+            {% elif s.modulo == 'escombros' %}
+            <span class="badge-estado badge-escombros">🏗️ Escombros</span>
+            {% else %}
+            <span class="badge-estado badge-reciclable">♻️ Reciclables</span>
+            {% endif %}
+            {% if s.estado == 'observado' %}
+            <span class="badge-estado badge-observado"><i class="fas fa-eye me-1"></i>Observado</span>
+            {% else %}
+            <span class="badge-estado badge-pendiente"><i class="fas fa-clock me-1"></i>Pendiente</span>
+            {% endif %}
+          </div>
+          <h6 class="fw-bold mb-1">{{ s.empresa.nombre }}</h6>
+          <p class="text-muted mb-1" style="font-size:.85rem;"><i class="fas fa-map-marker-alt me-1"></i>{{ s.direccion }}</p>
+          {% if s.operador %}
+          <p class="mb-0" style="font-size:.82rem;"><i class="fas fa-user me-1" style="color:var(--primary);"></i>{{ s.operador.nombre_completo }}</p>
+          {% endif %}
+          {% if s.fecha_retiro_real %}
+          <p class="mb-0" style="font-size:.78rem; color:var(--text-muted);">
+            <i class="fas fa-clock me-1"></i>Retirado: {{ s.fecha_retiro_real|date:"d/m/Y H:i" }}
+          </p>
+          {% endif %}
+        </div>
+
+        <!-- Datos del registro -->
+        <div class="col-12 col-md-4">
+          {% with reg=s.get_registro %}
+          {% if reg %}
+          <div class="p-2 rounded" style="background:var(--gray-bg); font-size:.82rem;">
+            {% if s.modulo == 'rsd' %}
+            <div class="d-flex justify-content-between"><span class="text-muted">Cantidad:</span><strong>{{ reg.cantidad_kg }} kg</strong></div>
+            <div class="d-flex justify-content-between"><span class="text-muted">Ticket:</span><strong>{{ reg.ticket_externo }}</strong></div>
+            <div class="d-flex justify-content-between"><span class="text-muted">Destino:</span><strong>{{ reg.get_destino_receptor_display }}</strong></div>
+            {% elif s.modulo == 'escombros' %}
+            <div class="d-flex justify-content-between"><span class="text-muted">Cantidad:</span><strong>{{ reg.cantidad }} {{ reg.get_unidad_display }}</strong></div>
+            <div class="d-flex justify-content-between"><span class="text-muted">Ticket:</span><strong>{{ reg.ticket_externo }}</strong></div>
+            {% else %}
+            <div class="d-flex justify-content-between"><span class="text-muted">Material:</span><strong>{{ reg.get_material_display }}</strong></div>
+            <div class="d-flex justify-content-between"><span class="text-muted">Cantidad:</span><strong>{{ reg.cantidad_kg }} kg</strong></div>
+            {% endif %}
+
+            <!-- Fotos adjuntas -->
+            {% with fotos=reg.fotos.all %}
+            {% if fotos %}
+            <div class="mt-2">
+              <small class="text-muted d-block mb-1">Fotos adjuntas ({{ fotos.count }}):</small>
+              <div class="d-flex gap-1 flex-wrap">
+                {% for foto in fotos|slice:":4" %}
+                <a href="{{ foto.foto.url }}" target="_blank">
+                  <img src="{{ foto.foto.url }}" style="width:48px;height:48px;object-fit:cover;border-radius:6px;border:2px solid var(--border);" alt="Foto">
+                </a>
+                {% endfor %}
+              </div>
+            </div>
+            {% else %}
+            <div class="text-danger mt-1" style="font-size:.78rem;"><i class="fas fa-exclamation-triangle me-1"></i>Sin fotos adjuntas</div>
+            {% endif %}
+            {% endwith %}
+          </div>
+          {% else %}
+          <div class="text-muted fst-italic" style="font-size:.85rem;">No hay registro de retiro aún.</div>
+          {% endif %}
+          {% endwith %}
+
+          {% if s.observacion_admin %}
+          <div class="alert-redimir-warning mt-2" style="font-size:.78rem;">
+            <i class="fas fa-eye me-1"></i><strong>Obs. anterior:</strong> {{ s.observacion_admin }}
+          </div>
+          {% endif %}
+        </div>
+
+        <!-- Acciones -->
+        <div class="col-12 col-md-3">
+          <a href="/servicios/{{ s.pk }}/" class="btn btn-sm btn-outline-secondary w-100 mb-2">
+            <i class="fas fa-eye me-1"></i>Ver detalle completo
+          </a>
+
+          <!-- Modal trigger -->
+          <button type="button" class="btn-success-redimir w-100 mb-2"
+                  style="border-radius:var(--radius-sm); padding:.5rem 1rem; font-size:.85rem;"
+                  onclick="accionValidar({{ s.pk }}, 'validar')">
+            <i class="fas fa-check me-1"></i>Validar
+          </button>
+          <button type="button" class="btn-warning-redimir w-100 mb-2"
+                  style="border-radius:var(--radius-sm); padding:.5rem 1rem; font-size:.85rem;"
+                  onclick="accionConObservacion({{ s.pk }}, 'observar')">
+            <i class="fas fa-eye me-1"></i>Observar
+          </button>
+          <button type="button"
+                  style="background:var(--danger);color:#fff;border:none;border-radius:var(--radius-sm);padding:.5rem 1rem;font-size:.85rem;font-weight:700;cursor:pointer;width:100%;"
+                  onclick="accionConObservacion({{ s.pk }}, 'rechazar')">
+            <i class="fas fa-times me-1"></i>Rechazar
+          </button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+
+  {% else %}
+  <div class="card-redimir text-center py-5">
+    <i class="fas fa-check-circle fa-4x mb-3" style="color:var(--secondary);opacity:.5;"></i>
+    <h5 class="fw-bold text-muted">¡Todo al día!</h5>
+    <p class="text-muted">No hay servicios pendientes de validación.</p>
+    <a href="/servicios/" class="btn-primary-redimir text-decoration-none" style="padding:.6rem 1.25rem;border-radius:var(--radius-sm);">
+      Ver todos los servicios
+    </a>
+  </div>
+  {% endif %}
+</div>
+
+<!-- Forms ocultos para acciones -->
+<form method="post" id="form-accion" style="display:none;">
+  {% csrf_token %}
+  <input type="hidden" name="servicio_id" id="fa-servicio-id">
+  <input type="hidden" name="accion" id="fa-accion">
+  <input type="hidden" name="observacion" id="fa-observacion">
+</form>
+
+<!-- Modal observación -->
+<div id="modal-obs" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,.5); z-index:9999; align-items:center; justify-content:center;">
+  <div class="card-redimir" style="max-width:420px; width:90%; padding:1.5rem;">
+    <h6 class="fw-bold mb-3" id="modal-title">Ingresar observación</h6>
+    <textarea id="obs-text" class="form-control mb-3" rows="3" placeholder="Describe el motivo (obligatorio)..."></textarea>
+    <div class="d-flex gap-2 justify-content-end">
+      <button type="button" class="btn btn-outline-secondary" onclick="cerrarModal()">Cancelar</button>
+      <button type="button" class="btn-primary-redimir" style="padding:.5rem 1.25rem;border-radius:var(--radius-sm);" onclick="confirmarAccion()">Confirmar</button>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let pendingId = null, pendingAccion = null;
+
+function accionValidar(id, accion) {
+    if (!confirm('¿Confirmar validación de este servicio?')) return;
+    document.getElementById('fa-servicio-id').value = id;
+    document.getElementById('fa-accion').value = accion;
+    document.getElementById('fa-observacion').value = '';
+    document.getElementById('form-accion').submit();
+}
+
+function accionConObservacion(id, accion) {
+    pendingId = id; pendingAccion = accion;
+    const titles = { observar: '⚠️ Agregar observación', rechazar: '❌ Motivo de rechazo' };
+    document.getElementById('modal-title').textContent = titles[accion];
+    document.getElementById('obs-text').value = '';
+    document.getElementById('modal-obs').style.display = 'flex';
+}
+
+function cerrarModal() {
+    document.getElementById('modal-obs').style.display = 'none';
+    pendingId = null; pendingAccion = null;
+}
+
+function confirmarAccion() {
+    const obs = document.getElementById('obs-text').value.trim();
+    if (!obs) { alert('⚠️ La observación es obligatoria.'); return; }
+    document.getElementById('fa-servicio-id').value = pendingId;
+    document.getElementById('fa-accion').value = pendingAccion;
+    document.getElementById('fa-observacion').value = obs;
+    cerrarModal();
+    document.getElementById('form-accion').submit();
+}
+</script>
+{% endblock %}

@@ -1,0 +1,75 @@
+{% extends 'base.html' %}
+{% block title %}Historial de Auditoría — Redimir{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="page-title"><i class="fas fa-shield-alt text-primary-redimir me-2"></i>Historial de Auditoría & Trazabilidad</h1>
+      <p class="page-subtitle">Registro cronológico de quién creó, modificó, validó o emitió cada documento en la plataforma</p>
+    </div>
+  </div>
+
+  <div class="card-redimir p-0" style="overflow:hidden;">
+    {% if logs %}
+    <div class="table-responsive">
+      <table class="table-redimir">
+        <thead>
+          <tr>
+            <th>Fecha / Hora</th>
+            <th>Usuario Responsable</th>
+            <th>Acción</th>
+            <th>Modelo / Entidad</th>
+            <th>Registro / Folio</th>
+            <th>Detalles de la Operación</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for log in logs %}
+          <tr>
+            <td style="font-size:.82rem;" class="text-muted fw-bold">
+              <i class="far fa-clock me-1"></i>{{ log.fecha_registro|date:"d/m/Y H:i:s" }}
+            </td>
+            <td>
+              {% if log.usuario %}
+              <strong class="text-white">{{ log.usuario.nombre_completo }}</strong><br>
+              <small class="text-muted">{{ log.usuario.get_rol_display }} ({{ log.usuario.rut }})</small>
+              {% else %}
+              <span class="text-muted">Sistema Automático</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if log.accion == 'creacion' %}
+              <span class="badge-pill badge-green"><i class="fas fa-plus-circle me-1"></i>Creación</span>
+              {% elif log.accion == 'modificacion' %}
+              <span class="badge-pill badge-amber"><i class="fas fa-edit me-1"></i>Modificación</span>
+              {% elif log.accion == 'validacion' %}
+              <span class="badge-pill badge-blue"><i class="fas fa-check-double me-1"></i>Validación</span>
+              {% elif log.accion == 'emision_doc' %}
+              <span class="badge-pill badge-green"><i class="fas fa-file-pdf me-1"></i>Emisión Doc</span>
+              {% elif log.accion == 'eliminacion' %}
+              <span class="badge-pill badge-red"><i class="fas fa-trash me-1"></i>Desactivación</span>
+              {% else %}
+              <span class="badge-pill badge-blue">{{ log.get_accion_display }}</span>
+              {% endif %}
+            </td>
+            <td><strong class="text-primary">{{ log.modelo }}</strong></td>
+            <td><code style="color:var(--secondary); background:rgba(149,191,60,.1); padding:.2rem .4rem; border-radius:4px;">#{{ log.registro_id }}</code></td>
+            <td style="font-size:.85rem; max-width:320px;" class="text-light">{{ log.detalles }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      <i class="fas fa-history fa-3x mb-3 text-muted"></i>
+      <h3 style="font-family:'Montserrat',sans-serif;font-weight:800;color:var(--primary);">No hay registros de auditoría aún</h3>
+      <p class="text-muted fw-600 mb-0">Las acciones críticas del sistema se registrarán aquí automáticamente.</p>
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

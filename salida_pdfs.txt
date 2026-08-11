@@ -1,0 +1,245 @@
+--- IDENTIDAD ---
+Propuesta de
+para REDIMIR
+Seamos
+el cambio
+que el planeta
+necesita.
+Guarda Comenta Comparte
+redimir.cl
++56 9 3178 0868
+contacto@redimir.cl
+
+
+AaTítulo
+abcdefghijklmnñopqrstuvwxyzáéíóúü
+1234567890
+Aa Subtítulo
+abcdefghijklmnñopqrstuvwxyz
+áéíóúü
+1234567890
+Aa Cuerpo
+abcdefghijklmnñopqrstuvwxyz
+áéíóúü
+1234567890
+¡Seamos el Cambio!
+
+ECO TIPS
+ Inspiración
+NUESTROSSERVICIOS
+ECO TIPS
+ Inspiración
+NUESTROSSERVICIOS
+Sigue leyendo...
+
+
+Texturas y Fondos
+Papel Rasgado Texturas
+
+
+
+
+
+--- REQUERIMIENTOS ---
+Requerimientos de implementación - Plataforma Redimir
+REDIMIR SpA | Documento para desarrollo por módulos
+REQUERIMIENTOS PARA IMPLEMENTACIÓN
+PLATAFORMA REDIMIR
+Documento único para Lixander: módulos, entregables, formatos y calculadora de eco-
+equivalencia
+Campo Detalle
+Empresa Redimir SpA
+Responsable Leslie Plaza Vargas
+Fecha 09 de agosto de 2026
+Destinatario funcional Lixander Dicent Lemos / desarrollo de plataforma
+Objetivo Definir exactamente qué debe implementar, configurar y 
+entregar el desarrollador.
+Alcance El documento incorpora formatos base y calculadora técnica 
+para evitar anexos separados.
+Restricción comercial
+No se incluyen valores comerciales. La plataforma debe 
+manejar esa información en configuración interna con acceso 
+restringido.
+Requerimientos de implementación - Plataforma Redimir
+REDIMIR SpA | Documento para desarrollo por módulos
+1. Objetivo del desarrollo
+Lixander debe construir una plataforma interna y operativa para Redimir que permita registrar servicios, respaldar 
+evidencia, consolidar información mensual y generar documentos por cliente, separando correctamente cada línea de 
+gestión de residuos.
+El desarrollo debe organizarse en tres módulos principales. Cada módulo debe tener campos, estados, reportes y 
+documentos propios.
+Módulo a habilitar Propósito Documentos que debe generar
+1. RSD / Basura Gestionar residuos sólidos domiciliarios, 
+basura general o rechazo.
+Registro mensual de tickets, certificado de 
+retiro y disposición final, cierre mensual por 
+cliente.
+2. Escombros / RESCON
+Gestionar escombros, RESCON, áridos, 
+tierra, voluminosos u otros residuos 
+derivados a destino autorizado.
+Registro mensual de tickets, certificado de 
+escombros/RESCON, respaldo de 
+recepción/disposición.
+3. Reciclables / Eco-equivalencia
+Gestionar materiales reciclables o 
+valorizables y calcular beneficios 
+ambientales.
+Registro de reciclables, certificado de gestión 
+de reciclables y certificado de eco-
+equivalencia.
+2. Requerimiento central para Lixander
+Debe implementar una plataforma integral con módulos separados, no una pantalla única para todos los residuos. La 
+selección del módulo debe definir automáticamente los campos, el vocabulario, los documentos disponibles y los 
+indicadores del dashboard.
+ Debe habilitar un selector obligatorio de módulo en cada solicitud o registro de retiro.
+ Debe evitar que los documentos de RSD/Basura o RESCON usen indicadores de reciclaje o eco-equivalencia.
+ Debe permitir que el módulo de Reciclables mantenga certificado de eco-equivalencia y beneficios ambientales.
+ Debe permitir reportes mensuales por cliente, módulo, tipo de residuo, período, destino y estado.
+ Debe dejar todos los documentos generados con identidad Redimir y en formato PDF descargable.
+3. Roles y permisos que debe implementar
+Rol Permisos requeridos
+Gerencia / Superadmin Ver todos los módulos, configurar usuarios, destinos, factores de 
+cálculo, plantillas, cierres y respaldos.
+Administrador Redimir Crear clientes, programar servicios, asignar operadores, validar 
+registros, emitir documentos y cerrar períodos.
+Operador / Recolector Ver retiros asignados, registrar servicio, subir tickets/fotos, ingresar 
+cantidad y observaciones desde celular.
+Cliente / Empresa Solicitar retiro, revisar estado, ver historial propio y descargar 
+documentos emitidos.
+ Debe permitir desactivar usuarios sin borrar registros históricos.
+ Debe registrar quién creó, modificó, validó o emitió cada documento.
+ Debe separar permisos por módulo para que cada usuario vea solo lo que corresponde.
+4. Flujo operativo que debe programar
+1. Crear cliente o seleccionar cliente existente.
+2. Crear solicitud o servicio interno y elegir módulo: RSD/Basura, Escombros/RESCON o Reciclables/Eco-equivalencia.
+3. Ingresar dirección, fecha, contacto, tipo de residuo, cantidad estimada y observaciones.
+4. Asignar operador y programar ruta o fecha de atención.
+5. Registrar retiro desde celular: ticket, peso/volumen/unidad, fotos, destino y observaciones.
+6. Dejar el registro en estado pendiente de validación.
+7. Permitir revisión administrativa de datos, tickets, fotos y destino.
+8. Generar certificado según el módulo correspondiente.
+Requerimientos de implementación - Plataforma Redimir
+REDIMIR SpA | Documento para desarrollo por módulos
+9. Consolidar cierre mensual por cliente y descargar paquete documental.
+5. Estados que debe tener cada servicio
+Estado Uso en plataforma
+Solicitado Solicitud creada por cliente o administrador.
+Programado Fecha o ventana de atención definida.
+Asignado Operador definido.
+En ruta Operador inició atención.
+Retirado Servicio ejecutado y registrado.
+Pendiente de validación Falta revisión administrativa.
+Observado Requiere completar o corregir información.
+Validado Registro aprobado para certificado o cierre mensual.
+Documento emitido Certificado o registro PDF generado.
+Cerrado Incluido en cierre mensual del cliente.
+Cancelado Servicio no realizado.
+6. Módulo 1: RSD / Basura
+Lixander debe desarrollar este módulo para retiros de residuos sólidos domiciliarios, basura general o rechazo. El 
+módulo debe enfocarse en tickets, retiro, disposición final y destino receptor.
+Función Debe hacer
+Registro individual Guardar fecha, cliente, dirección, operador, tipo de residuo, peso, 
+ticket, destino receptor y evidencia.
+Tickets Registrar número de ticket, peso, fecha, archivo/foto del ticket y 
+observaciones.
+Destino receptor Permitir seleccionar relleno sanitario, receptor autorizado u otro 
+destino configurado.
+Certificado Generar certificado de retiro y disposición final RSD/Basura.
+Cierre mensual Consolidar cantidad de tickets, fechas, pesos y total mensual por 
+cliente.
+Exportación Descargar PDF y Excel del registro mensual y certificado.
+7. Módulo 2: Escombros / RESCON
+Lixander debe desarrollar este módulo para escombros, RESCON, áridos, tierra, voluminosos u otros residuos derivados 
+a destino autorizado.
+Función Debe hacer
+Registro individual Guardar fecha, cliente, origen, operador, tipo de residuo, cantidad, 
+ticket, destino receptor y evidencia.
+Unidades permitidas Kg, m3, sacos, batea, camión u otra unidad configurable.
+Clasificación Escombros, RESCON, áridos, tierra, voluminoso u otro según 
+catálogo configurable.
+Certificado Generar certificado de retiro/disposición de escombros o RESCON.
+Respaldo Adjuntar ticket, certificado municipal, foto o documento de 
+recepción.
+Cierre mensual Consolidar tickets, cantidades, fechas, residuos y destino por cliente.
+8. Módulo 3: Reciclables / Eco-equivalencia
+Lixander debe mantener el módulo de reciclables y dejar habilitada la generación de eco-equivalencia para materiales 
+valorizables.
+Función Debe hacer
+Materiales Permitir cartón, papel, PET, latas, film, carretes, sunchos, tetrapak, 
+vidrio y otros materiales configurables.
+Registro Guardar fecha, cliente, material, kg, unidades si aplica, evidencia, 
+Requerimientos de implementación - Plataforma Redimir
+REDIMIR SpA | Documento para desarrollo por módulos
+destino/gestor y observaciones.
+Certificado reciclables Generar certificado de gestión de materiales reciclables por cliente y 
+período.
+Eco-equivalencia Calcular beneficios ambientales usando factores configurables por 
+material.
+Indicadores Mostrar ahorro de agua, energía, emisiones de CO2, combustibles 
+fósiles y árboles no talados.
+Exportación Generar PDF con diseño institucional y tabla de residuos/cantidades.
+9. Cierre mensual por cliente
+Lixander debe implementar un módulo de cierre mensual que permita seleccionar cliente, período y módulo para 
+generar un paquete documental completo.
+Documento del cierre mensual Módulo aplicable Salida requerida
+Registro de tickets RSD/Basura RSD / Basura PDF y Excel con ticket, peso, fecha, destino y 
+respaldo.
+Certificado RSD/Basura RSD / Basura PDF institucional con folio/QR.
+Registro de tickets Escombros/RESCON Escombros / RESCON PDF y Excel con ticket, cantidad, fecha, 
+destino y respaldo.
+Certificado Escombros/RESCON Escombros / RESCON PDF institucional con folio/QR.
+Registro de reciclables Reciclables PDF y Excel con material, kg, unidad y 
+respaldo.
+Eco-equivalencia Reciclables PDF institucional con beneficios 
+ambientales.
+Estado de pago Todos los módulos habilitados
+PDF interno generado desde servicios 
+validados, sin exponer configuración 
+restringida a perfiles no autorizados.
+10. Dashboard e indicadores
+ Debe tener filtros por cliente, período, módulo, tipo de residuo, operador, destino y estado.
+ Debe separar kg retirados/dispuestos de kg reciclados/valorizados.
+ Debe mostrar cantidad de servicios, cantidad de tickets, total por tipo de residuo y documentos emitidos.
+ Debe mostrar eco-equivalencia solo dentro del módulo de reciclables.
+ Debe permitir descargar reportes en PDF y Excel.
+11. Interfaz y usabilidad
+Pantalla Debe mostrar
+Inicio administrador Resumen por módulo, servicios pendientes, validaciones pendientes 
+y cierres mensuales.
+Operador móvil Mis retiros de hoy, botón registrar retiro, subir ticket/foto, ingresar 
+cantidad y guardar.
+Cliente Solicitar retiro, revisar estado, ver historial y descargar documentos 
+emitidos.
+Cierre mensual Selector cliente + período + módulo + botón generar paquete 
+documental.
+ Debe ser mobile first para operadores.
+ Debe usar formularios por pasos cuando el registro sea largo.
+ Debe usar botones claros: Solicitar retiro, Registrar retiro, Validar, Emitir documento, Descargar cierre.
+ Debe marcar estados con color y etiqueta visible.
+12. Identidad visual Redimir
+Lixander debe aplicar identidad Redimir en plataforma y documentos generados.
+Requerimientos de implementación - Plataforma Redimir
+REDIMIR SpA | Documento para desarrollo por módulos
+Elemento Uso requerido
+Logo Redimir Login, panel principal, certificados, eco-equivalencias, registros 
+mensuales y estados de pago.
+Montserrat Tipografía principal de interfaz y documentos.
+Azul #006BB8 Encabezados, navegación y botones principales.
+Verde #95BF3C Acciones completadas, validaci
+--- EXCEL ---
+('14.675.8 kg', None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+('TABLA Eco-equivalencia', None, None, None, None, None, None, None, None, 'Para fabricar una tonelada de papel celulosa se necesita talar 17 árboles. De cada árbol se obtienen 58,85 kilos de papel/cartón.', None, None, 'ARBOLES', None, None, None, None, 'sumar kg de la madera de los palett y agregar la equivalencia en los arboles rescatados')
+('Recurso/Residuo', 'Plástico', None, 'Pallets', 'vidrio', 'Cartón ', 'total', None, None, None, None, None, 1000.0, None, None, None, None, None)
+('energia Kw', '5160', None, 'x', '0', '30863', '36023.000', 'energia Kw', None, None, None, None, 17.0, None, None, None, None, None)
+('arboles ', 'x', None, '47.8', 0.0, '75', '122.8', 'arboles ', None, 'Reciclar una tonelada de papel ahorra el consumo de 270.000 litros de agua y 7.000 Kw/Hora de energía.', None, None, 'agua', 'energía', None, None, None, None)
+('agua lts', '37420', None, 'x', 0.0, '1190430', '1227850', 'agua lts', None, None, None, None, 1000.0, 1000.0, None, None, None, None)
+('petroleo lts', '2064', None, 'x', 0.0, 'x', '2064', 'petroleo lts', None, None, None, None, 270000.0, 7000.0, None, None, None, None)
+('CO2 kg', '2580', None, 'x', '0', '30863', '33443', 'CO2 kg', None, None, None, None, None, None, None, None, None, None)
+(None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+(None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+('insertar valores', None, None, None, None, None, None, None, None, 'Reciclar un kilo de plástico ahorra 39,26 litros de agua, evita emitir 2,5\nKg de CO2 a la atmósfera y el consumo de 5,0 Kw de energía.', None, None, 'agua', 'co2 ', 'energía', 'petroleo', None, None)
+('residuo', 'cantidad y kg', None, None, None, 'Se han recuperado: 1.416 Kg de Film. 234 Kg de papel y cartón. 188 Kg de Botellas desechables. 50 Kg de Latas de aluminio.', None, None, None, None, None, None, 1.0, 1.0, 1.0, 500.0, None, None)
+('plastico kg.', 1032.0, None, None, None, None, None, None, None, None, None, None, 36.26, 2.5, 5.0, 1000.0, None, None)
+('carton -papel kg.', 4409.0, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None)
+('vidrio kg.', None, None, None, 'Residuos', 'Cantidad', None, None, None, None, None, None, None, None, None, None, None, None)

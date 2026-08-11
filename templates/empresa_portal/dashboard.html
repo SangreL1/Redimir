@@ -1,0 +1,195 @@
+{% extends 'base.html' %}
+{% block title %}Portal Empresa — Redimir{% endblock %}
+{% block nav_empresa_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title">{{ empresa.nombre }}</h1>
+        <p class="page-subtitle">RUT: {{ empresa.rut }} | Portal de Gestión</p>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+        <a href="/empresa/como-reciclar/" class="btn-outline-green btn d-flex align-items-center gap-2" style="border-color:var(--secondary); color:var(--secondary);">
+            <i class="fas fa-recycle"></i>¿Cómo debo reciclar?
+        </a>
+        <a href="/empresa/solicitudes/crear/" class="btn-green btn d-flex align-items-center gap-2">
+            <i class="fas fa-plus"></i>Pedir Recolección
+        </a>
+    </div>
+</div>
+
+<!-- KPIs -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card-redimir text-center py-3">
+            <div style="font-size:2rem;color:var(--primary);margin-bottom:.25rem;"><i class="fas fa-weight"></i></div>
+            <div style="font-size:1.5rem;font-weight:800;color:#e2e8f0;">{{ kg_mes|floatformat:1 }}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;">kg este mes</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-redimir text-center py-3">
+            <div style="font-size:2rem;color:#3b82f6;margin-bottom:.25rem;"><i class="fas fa-truck-loading"></i></div>
+            <div style="font-size:1.5rem;font-weight:800;color:#e2e8f0;">{{ rec_mes }}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;">Recolecciones (mes)</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-redimir text-center py-3">
+            <div style="font-size:2rem;color:#fbbf24;margin-bottom:.25rem;"><i class="fas fa-clock"></i></div>
+            <div style="font-size:1.5rem;font-weight:800;color:#e2e8f0;">{{ sol_pend }}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;">Solicitudes Activas</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-redimir text-center py-3">
+            <div style="font-size:2rem;color:#a855f7;margin-bottom:.25rem;"><i class="fas fa-globe"></i></div>
+            <div style="font-size:1.5rem;font-weight:800;color:#e2e8f0;">{{ kg_total|floatformat:1 }}</div>
+            <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;font-weight:600;">Total histórico (kg)</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <!-- Chart: Tendencia 7 dias -->
+    <div class="col-12 col-md-8">
+        <div class="card-redimir" style="height:100%;">
+            <div class="section-title">Nuestras Recolecciones (Últimos 7 días)</div>
+            <div class="chart-container" style="position:relative; height:250px; width:100%;">
+                <canvas id="trendChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <!-- Chart: Tipo de Residuo -->
+    <div class="col-12 col-md-4">
+        <div class="card-redimir" style="height:100%;">
+            <div class="section-title">Residuos Emitidos (Mes)</div>
+            <div class="chart-container" style="position:relative; height:250px; width:100%;">
+                <canvas id="typeChart"></canvas>
+            </div>
+            {% if not rec_mes %}
+            <div style="text-align:center;font-size:.8rem;color:var(--text-muted);margin-top:1rem;">Sin datos este mes</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+
+<div class="row g-3 mt-1">
+    <div class="col-12 col-md-6">
+        <div class="card-redimir">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <div class="section-title mb-0">Últimas Solicitudes</div>
+                <a href="/empresa/solicitudes/" class="btn-outline-green btn btn-sm">Ver Todas</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table-dark-custom w-100">
+                    <thead><tr><th>Fecha</th><th>Desc.</th><th>Estado</th></tr></thead>
+                    <tbody>
+                        {% for s in ultimas_sols %}
+                        <tr>
+                            <td style="font-size:.77rem;color:var(--text-muted);">{{ s.fecha_solicitada|date:"d/m H:i" }}</td>
+                            <td style="font-size:.85rem;">{{ s.descripcion|truncatechars:20 }}</td>
+                            <td>
+                                <span class="badge-pill {% if s.estado == 'completada' %}badge-green{% elif s.estado == 'pendiente' %}badge-amber{% elif s.estado == 'asignada' %}badge-blue{% else %}badge-red{% endif %}">
+                                    {{ s.get_estado_display }}
+                                </span>
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">No has realizado solicitudes</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-12 col-md-6">
+        <div class="card-redimir">
+            <div class="section-title mb-3">Últimas Recolecciones Completadas</div>
+            <div class="table-responsive">
+                <table class="table-dark-custom w-100">
+                    <thead><tr><th>Lote</th><th>Kg</th><th>Fecha</th></tr></thead>
+                    <tbody>
+                        {% for l in ultimas %}
+                        <tr>
+                            <td style="font-family:monospace;font-size:.8rem;">
+                                <a href="/lotes/{{ l.codigo_lote }}/" style="color:var(--primary);text-decoration:none;">{{ l.codigo_lote }}</a>
+                            </td>
+                            <td><strong style="color:#4ade80;">{{ l.cantidad_kg }}</strong> <small class="text-muted">kg</small></td>
+                            <td style="font-size:.77rem;color:var(--text-muted);">{{ l.fecha_creacion|date:"d/m/Y" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="3" class="text-center text-muted py-3">Aún no hay recolecciones de tu empresa</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.font.family = 'Inter, sans-serif';
+
+    // Trend chart
+    const trendCtx = document.getElementById('trendChart').getContext('2d');
+    new Chart(trendCtx, {
+        type: 'line',
+        data: {
+            labels: {{ trend_labels|safe }},
+            datasets: [{
+                label: 'Recolecciones (kg) diarios',
+                data: {{ trend_values|safe }},
+                borderColor: '#22c55e',
+                backgroundColor: 'rgba(34,197,94,0.1)',
+                borderWidth: 2,
+                pointBackgroundColor: '#22c55e',
+                pointBorderColor: '#1e293b',
+                pointRadius: 4,
+                pointHoverRadius: 6,
+                fill: true,
+                tension: 0.3
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                x: { grid: { display: false } }
+            },
+            plugins: { legend: { display:false } }
+        }
+    });
+
+    // Type chart
+    const typeCtx = document.getElementById('typeChart').getContext('2d');
+    new Chart(typeCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ tipos_labels|safe }},
+            datasets: [{
+                data: {{ tipos_values|safe }},
+                backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7'],
+                borderWidth: 2, borderColor: '#1e293b',
+                hoverOffset: 4
+            }]
+        },
+        options: {
+            responsive: true, maintainAspectRatio: false,
+            cutout: '65%',
+            plugins: {
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } }
+            }
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,238 @@
+{% extends "base.html" %}
+{% block title %}Crear Servicio — Redimir{% endblock %}
+{% block nav_crear_sol %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.modulo-selector { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:1.5rem; }
+@media(max-width:576px){ .modulo-selector { grid-template-columns:1fr; } }
+.modulo-card {
+    border:2px solid var(--border); border-radius:var(--radius); padding:1.25rem;
+    cursor:pointer; transition:all .2s; background:var(--white); text-align:center;
+    position:relative;
+}
+.modulo-card:hover { border-color:var(--primary); background:var(--primary-light); }
+.modulo-card.selected-rsd { border-color:var(--primary); background:var(--primary-light); }
+.modulo-card.selected-escombros { border-color:var(--accent-dark); background:#FFF8E1; }
+.modulo-card.selected-reciclables { border-color:var(--secondary); background:var(--secondary-light); }
+.modulo-icon { font-size:2rem; margin-bottom:.5rem; }
+.modulo-title { font-weight:800; font-size:.95rem; }
+.modulo-sub { font-size:.75rem; color:var(--text-muted); margin-top:.25rem; }
+.modulo-card .check-mark {
+    position:absolute; top:.5rem; right:.5rem;
+    width:22px; height:22px; border-radius:50%;
+    background:var(--primary); color:#fff;
+    display:none; align-items:center; justify-content:center;
+    font-size:.7rem;
+}
+.modulo-card.selected-rsd .check-mark,
+.modulo-card.selected-escombros .check-mark,
+.modulo-card.selected-reciclables .check-mark { display:flex; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in-up" style="max-width:860px;">
+
+  <div class="d-flex align-items-center gap-3 mb-4">
+    <a href="/servicios/" style="color:var(--text-muted);text-decoration:none;"><i class="fas fa-arrow-left"></i></a>
+    <div>
+      <h1 class="page-title"><i class="fas fa-plus-circle text-primary-redimir me-2"></i>Crear Servicio de Retiro</h1>
+      <p class="page-subtitle">Completa todos los campos para programar un retiro</p>
+    </div>
+  </div>
+
+  {% if errores %}
+  <div class="alert-redimir-danger mb-3">
+    <i class="fas fa-exclamation-circle me-2"></i>
+    <strong>Revisa los siguientes errores:</strong>
+    <ul class="mb-0 mt-1 ps-4">
+      {% for e in errores %}<li>{{ e }}</li>{% endfor %}
+    </ul>
+  </div>
+  {% endif %}
+
+  <form method="post" class="card-redimir">
+    {% csrf_token %}
+
+    <!-- PASO 1: MÓDULO -->
+    <h5 class="section-title mb-3"><span style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;margin-right:.5rem;">1</span>Selecciona el módulo de residuo <span class="required-mark">*</span></h5>
+
+    <div class="modulo-selector">
+      <!-- RSD -->
+      <div class="modulo-card" id="card-rsd" onclick="seleccionarModulo('rsd')">
+        <div class="check-mark"><i class="fas fa-check"></i></div>
+        <div class="modulo-icon" style="color:var(--primary);">🗑️</div>
+        <div class="modulo-title" style="color:var(--primary);">RSD / Basura</div>
+        <div class="modulo-sub">Residuos Sólidos Domiciliarios<br>Unidad: kg</div>
+      </div>
+      <!-- Escombros -->
+      <div class="modulo-card" id="card-escombros" onclick="seleccionarModulo('escombros')">
+        <div class="check-mark" style="background:var(--accent-dark);"></div>
+        <div class="modulo-icon" style="color:var(--accent-dark);">🏗️</div>
+        <div class="modulo-title" style="color:var(--accent-dark);">Escombros / RESCON</div>
+        <div class="modulo-sub">Escombros, áridos, voluminosos<br>Unidad: kg/m³/sacos</div>
+      </div>
+      <!-- Reciclables -->
+      <div class="modulo-card" id="card-reciclables" onclick="seleccionarModulo('reciclables')">
+        <div class="check-mark" style="background:var(--secondary);"></div>
+        <div class="modulo-icon" style="color:var(--secondary);">♻️</div>
+        <div class="modulo-title" style="color:var(--secondary);">Reciclables</div>
+        <div class="modulo-sub">Cartón, PET, latas, film, vidrio<br>+ Eco-equivalencia automática</div>
+      </div>
+    </div>
+    <input type="hidden" name="modulo" id="modulo-hidden" value="{{ form_data.modulo }}" required>
+
+    <hr class="my-4" style="border-color:var(--gray-bg);">
+
+    <!-- PASO 2: EMPRESA Y DIRECCIÓN -->
+    <h5 class="section-title mb-3"><span style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;margin-right:.5rem;">2</span>Datos del servicio</h5>
+
+    <div class="row g-3">
+      {% if user.rol == 'admin' or user.is_staff %}
+      <div class="col-12 col-md-6">
+        <label class="form-label">Empresa cliente <span class="required-mark">*</span></label>
+        <select name="empresa" class="form-select" required>
+          <option value="">-- Selecciona empresa --</option>
+          {% for emp in empresas %}
+          <option value="{{ emp.pk }}" {% if form_data.empresa == emp.pk|stringformat:"s" %}selected{% endif %}>
+            {{ emp.nombre }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+
+      <div class="col-12 col-md-6">
+        <label class="form-label">Dirección de retiro <span class="required-mark">*</span></label>
+        <input type="text" name="direccion" class="form-control" required minlength="10"
+               placeholder="Ej: Av. El Bosque Norte 123, Las Condes"
+               value="{{ form_data.direccion|default:'' }}">
+        <div class="form-text">Ingresa la dirección completa (mínimo 10 caracteres)</div>
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">Contacto responsable</label>
+        <input type="text" name="contacto_responsable" class="form-control"
+               placeholder="Nombre del encargado"
+               value="{{ form_data.contacto_responsable|default:'' }}">
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">Teléfono contacto</label>
+        <input type="tel" name="telefono_contacto" class="form-control"
+               placeholder="+56 9 1234 5678"
+               value="{{ form_data.telefono_contacto|default:'' }}">
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label">Cantidad estimada</label>
+        <input type="number" name="cantidad_estimada" class="form-control" step="0.01" min="0"
+               placeholder="Ej: 1120"
+               value="{{ form_data.cantidad_estimada|default:'' }}">
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label">Unidad</label>
+        <select name="unidad_estimada" class="form-select">
+          <option value="kg" {% if form_data.unidad_estimada == 'kg' %}selected{% endif %}>kg</option>
+          <option value="m3" {% if form_data.unidad_estimada == 'm3' %}selected{% endif %}>m³</option>
+          <option value="sacos" {% if form_data.unidad_estimada == 'sacos' %}selected{% endif %}>sacos</option>
+          <option value="batea" {% if form_data.unidad_estimada == 'batea' %}selected{% endif %}>batea</option>
+          <option value="camion" {% if form_data.unidad_estimada == 'camion' %}selected{% endif %}>camión</option>
+        </select>
+      </div>
+    </div>
+
+    <hr class="my-4" style="border-color:var(--gray-bg);">
+
+    <!-- PASO 3: PROGRAMACIÓN Y ASIGNACIÓN (solo admin) -->
+    {% if user.rol == 'admin' or user.is_staff %}
+    <h5 class="section-title mb-3"><span style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;margin-right:.5rem;">3</span>Programación y asignación <small class="text-muted fw-400 ms-2" style="font-size:.75rem;">(opcional)</small></h5>
+
+    <div class="row g-3">
+      <div class="col-12 col-md-4">
+        <label class="form-label">Fecha y hora programada</label>
+        <input type="datetime-local" name="fecha_programada" class="form-control"
+               value="{{ form_data.fecha_programada|default:'' }}">
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label">Ventana desde</label>
+        <input type="time" name="ventana_inicio" class="form-control"
+               value="{{ form_data.ventana_inicio|default:'' }}">
+      </div>
+
+      <div class="col-6 col-md-2">
+        <label class="form-label">Ventana hasta</label>
+        <input type="time" name="ventana_fin" class="form-control"
+               value="{{ form_data.ventana_fin|default:'' }}">
+      </div>
+
+      <div class="col-12 col-md-4">
+        <label class="form-label">Asignar operador</label>
+        <select name="operador" class="form-select">
+          <option value="">-- Sin asignar aún --</option>
+          {% for op in operadores %}
+          <option value="{{ op.pk }}" {% if form_data.operador == op.pk|stringformat:"s" %}selected{% endif %}>
+            {{ op.nombre_completo }}
+          </option>
+          {% endfor %}
+        </select>
+        <div class="form-text">Si asignas un operador, se le enviará una notificación.</div>
+      </div>
+    </div>
+    {% endif %}
+
+    <hr class="my-4" style="border-color:var(--gray-bg);">
+
+    <!-- Observaciones -->
+    <div class="mb-4">
+      <label class="form-label">Observaciones adicionales</label>
+      <textarea name="observaciones" class="form-control" rows="3"
+                placeholder="Instrucciones especiales, notas de acceso, etc.">{{ form_data.observaciones|default:'' }}</textarea>
+    </div>
+
+    <!-- Botones -->
+    <div class="d-flex gap-2 justify-content-end">
+      <a href="/servicios/" class="btn btn-outline-secondary">Cancelar</a>
+      <button type="submit" class="btn-primary-redimir" id="btn-crear">
+        <i class="fas fa-check me-1"></i>Crear Servicio
+      </button>
+    </div>
+  </form>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const moduloHidden = document.getElementById('modulo-hidden');
+
+function seleccionarModulo(modulo) {
+    // Reset todos
+    document.querySelectorAll('.modulo-card').forEach(c => {
+        c.classList.remove('selected-rsd','selected-escombros','selected-reciclables');
+    });
+
+    // Aplicar selección
+    const card = document.getElementById('card-' + modulo);
+    if (card) card.classList.add('selected-' + modulo);
+    moduloHidden.value = modulo;
+}
+
+// Restaurar selección en error de formulario
+if (moduloHidden.value) {
+    seleccionarModulo(moduloHidden.value);
+}
+
+// Validar módulo antes de submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    if (!moduloHidden.value) {
+        e.preventDefault();
+        alert('⚠️ Debes seleccionar el módulo de residuo.');
+        return;
+    }
+});
+</script>
+{% endblock %}

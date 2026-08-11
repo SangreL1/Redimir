@@ -1,0 +1,549 @@
+{% extends 'base.html' %}
+{% block title %}¿Cómo debo reciclar? — Guía de Segregación Redimir{% endblock %}
+{% block nav_empresa_guia %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+  /* ══════════════════════════════════════════════════
+     EFECTO PAPEL RASGADO ORGÁNICO Y SUAVE (PURE CSS + SVG BEZIER)
+  ══════════════════════════════════════════════════ */
+  .guia-card {
+    background: var(--white);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.75rem;
+    box-shadow: var(--shadow-sm);
+    position: relative;
+  }
+
+  .block-si {
+    background: #F0F9EE;
+    border: 1.5px solid #C2E2B0;
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+    position: relative;
+  }
+  .block-si .si-title {
+    color: #386616;
+    font-weight: 800;
+    font-size: .85rem;
+    letter-spacing: .5px;
+  }
+  .block-si ul li {
+    color: #2D4E12;
+    font-size: .9rem;
+    margin-bottom: .4rem;
+  }
+
+  .block-no {
+    background: #FDF2F2;
+    border: 1.5px solid #F8C4C4;
+    border-radius: var(--radius-sm);
+    padding: 1.25rem;
+    position: relative;
+  }
+  .block-no .no-title {
+    color: #9B1C1C;
+    font-weight: 800;
+    font-size: .85rem;
+    letter-spacing: .5px;
+  }
+  .block-no ul li {
+    color: #771D1D;
+    font-size: .9rem;
+    margin-bottom: .4rem;
+  }
+
+  .nav-pills-guia .nav-link {
+    background: var(--white);
+    color: var(--text-body);
+    border: 1.5px solid var(--border);
+    font-weight: 700;
+    font-size: .88rem;
+    padding: .6rem 1.1rem;
+    border-radius: var(--radius-sm);
+    transition: all .2s ease;
+  }
+  .nav-pills-guia .nav-link:hover {
+    border-color: var(--primary);
+    color: var(--primary);
+    background: var(--primary-light);
+  }
+  .nav-pills-guia .nav-link.active {
+    background: var(--primary);
+    color: #ffffff !important;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(0, 107, 184, .25);
+  }
+
+  .guia-title {
+    color: var(--primary);
+    font-weight: 800;
+    font-size: 1.4rem;
+  }
+  .guia-text {
+    color: var(--text-body);
+    font-size: .95rem;
+    line-height: 1.6;
+  }
+  .pasos-list {
+    color: var(--text-body);
+    font-size: .92rem;
+    line-height: 1.8;
+  }
+  .pasos-list li strong {
+    color: var(--primary-dark);
+  }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+  <!-- Header -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <span class="badge-pill badge-green mb-2" style="font-size: .85rem;">
+        <i class="fas fa-leaf me-1"></i> GUÍA OFICIAL DE SEGREGACIÓN REDIMIR
+      </span>
+      <h1 class="page-title"><i class="fas fa-recycle text-secondary-redimir me-2"></i>¿Cómo debo reciclar mis residuos?</h1>
+      <p class="page-subtitle">Instrucciones claras y buenas prácticas para segregación en origen antes de la recolección</p>
+    </div>
+    <a href="/empresa/dashboard/" class="btn-outline-green btn btn-sm">
+      <i class="fas fa-arrow-left me-1"></i> Volver a Mi Portal
+    </a>
+  </div>
+
+  <!-- Pestañas de Navegación por Material -->
+  <ul class="nav nav-pills nav-pills-guia mb-4 gap-2 flex-wrap" id="reciclajeTabs" role="tablist">
+    <li class="nav-item" role="presentation">
+      <button class="nav-link active d-flex align-items-center gap-2" id="carton-tab" data-bs-toggle="tab" data-bs-target="#carton" type="button" role="tab">
+        <i class="fas fa-box" style="color:#d97706;"></i> Cartón & Papel
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link d-flex align-items-center gap-2" id="plastico-tab" data-bs-toggle="tab" data-bs-target="#plastico" type="button" role="tab">
+        <i class="fas fa-bottle-water" style="color:#0284c7;"></i> Plásticos (PET/Film)
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link d-flex align-items-center gap-2" id="latas-tab" data-bs-toggle="tab" data-bs-target="#latas" type="button" role="tab">
+        <i class="fas fa-wine-can" style="color:#64748b;"></i> Latas & Aluminio
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link d-flex align-items-center gap-2" id="vidrio-tab" data-bs-toggle="tab" data-bs-target="#vidrio" type="button" role="tab">
+        <i class="fas fa-glass-martini-alt" style="color:#0ea5e9;"></i> Vidrio
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link d-flex align-items-center gap-2" id="tetrapak-tab" data-bs-toggle="tab" data-bs-target="#tetrapak" type="button" role="tab">
+        <i class="fas fa-prescription-bottle" style="color:#9333ea;"></i> Tetrapak
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link d-flex align-items-center gap-2" id="pallets-tab" data-bs-toggle="tab" data-bs-target="#pallets" type="button" role="tab">
+        <i class="fas fa-pallet" style="color:#ea580c;"></i> Pallets & Carretes
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link d-flex align-items-center gap-2" id="escombros-tab" data-bs-toggle="tab" data-bs-target="#escombros" type="button" role="tab">
+        <i class="fas fa-dumpster" style="color:#475569;"></i> Escombros / RESCON
+      </button>
+    </li>
+    <li class="nav-item" role="presentation">
+      <button class="nav-link d-flex align-items-center gap-2" id="rsd-tab" data-bs-toggle="tab" data-bs-target="#rsd" type="button" role="tab">
+        <i class="fas fa-trash-alt" style="color:#dc2626;"></i> RSD / Basura
+      </button>
+    </li>
+  </ul>
+
+  <!-- Contenido de las Ventanas -->
+  <div class="tab-content" id="reciclajeTabContent">
+
+    <!-- 1. CARTÓN Y PAPEL -->
+    <div class="tab-pane fade show active" id="carton" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <div class="guia-card h-100">
+            <h3 class="guia-title mb-3"><i class="fas fa-box me-2" style="color:#d97706;"></i>Cartón Corrugado & Papeles</h3>
+            <p class="guia-text mb-4">
+              El cartón es uno de los materiales más valiosos para el reciclaje industrial. Para garantizar que sea procesable y mantenga su valor, debe estar completamente seco y libre de contaminantes grasos.
+            </p>
+            <h5 class="fw-bold mb-2" style="color:var(--text-body);"><i class="fas fa-list-check text-primary me-2"></i>Pasos de Preparación:</h5>
+            <ol class="pasos-list ps-3 mb-4">
+              <li><strong>Desarmar las cajas:</strong> Aplasta las cajas por completo para optimizar el volumen en tu centro de acopio.</li>
+              <li><strong>Retirar adhesivos excesivos:</strong> Quita la cinta plástica gruesa y los corchetes metálicos grandes.</li>
+              <li><strong>Proteger de la lluvia:</strong> Mantén el cartón bajo techo. El cartón mojado o mohoso no se puede reciclar.</li>
+              <li><strong>Amarrar o Enfardar:</strong> Apila las cajas aplanadas en fardos o atados amarrados con pita.</li>
+            </ol>
+            <div class="p-3" style="background:var(--primary-light); border-left:4px solid var(--primary); border-radius:var(--radius-sm);">
+              <div class="d-flex align-items-center gap-3">
+                <i class="fas fa-lightbulb fa-2x text-primary"></i>
+                <div style="color:var(--primary-dark); font-size:.88rem;">
+                  <strong>Dato Impacto Redimir:</strong><br>
+                  Por cada tonelada de cartón reciclado, tu empresa evita la tala de <strong>17 árboles</strong> y ahorra <strong>270.000 litros de agua</strong>.
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="guia-card h-100 d-flex flex-column gap-3">
+            <div class="block-si">
+              <div class="si-title mb-2"><i class="fas fa-check-circle me-1"></i> SI RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Cajas de cartón corrugado limpias.</li>
+                <li>Papel kraft y embalajes de papel.</li>
+                <li>Hojas de oficio, cartas y cuadernos sin espiral.</li>
+                <li>Tubos de cartón de rollos de embalaje.</li>
+              </ul>
+            </div>
+            <div class="block-no">
+              <div class="no-title mb-2"><i class="fas fa-times-circle me-1"></i> NO RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Cartón manchado con aceite, grasa o comida (ej. cajas de pizza sucias).</li>
+                <li>Papel plastificado, carbónico o térmico de vales.</li>
+                <li>Servilletas o papel higiénico usado.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. PLÁSTICOS -->
+    <div class="tab-pane fade" id="plastico" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <div class="guia-card h-100">
+            <h3 class="guia-title mb-3"><i class="fas fa-bottle-water me-2" style="color:#0284c7;"></i>Plásticos Industrial & PET</h3>
+            <p class="guia-text mb-4">
+              Aceptamos botellas PET transparentes o de color, Film Strech (LDPE transparentes de embalaje pallet) y sunchos plásticos de amarre.
+            </p>
+            <h5 class="fw-bold mb-2" style="color:var(--text-body);"><i class="fas fa-list-check text-primary me-2"></i>Pasos de Preparación:</h5>
+            <ol class="pasos-list ps-3 mb-4">
+              <li><strong>Vaciar y Enjuagar:</strong> Las botellas PET deben estar libres de residuos líquidos.</li>
+              <li><strong>Aplanar:</strong> Aplasta las botellas longitudinalmente y coloca la tapa para mantener la compresión.</li>
+              <li><strong>Film de Embalaje:</strong> Junta el film strech transparente en bolsas grandes de acopio bien apretadas.</li>
+              <li><strong>Sunchos:</strong> Corta y enrolla los sunchos plásticos para evitar enredos en el camión.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="guia-card h-100 d-flex flex-column gap-3">
+            <div class="block-si">
+              <div class="si-title mb-2"><i class="fas fa-check-circle me-1"></i> SI RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Botellas de bebidas y agua (PET N° 1).</li>
+                <li>Film strech transparente de envolver pallets.</li>
+                <li>Sunchos de amarre de plástico duro.</li>
+                <li>Bidones HDPE limpios sin químicos peligrosos.</li>
+              </ul>
+            </div>
+            <div class="block-no">
+              <div class="no-title mb-2"><i class="fas fa-times-circle me-1"></i> NO RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Envases de aceites de motor o químicos tóxicos.</li>
+                <li>Plásticos quebradizos o unicel / plumavit.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. LATAS -->
+    <div class="tab-pane fade" id="latas" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <div class="guia-card h-100">
+            <h3 class="guia-title mb-3"><i class="fas fa-wine-can me-2" style="color:#64748b;"></i>Latas de Aluminio & Metales</h3>
+            <p class="guia-text mb-4">
+              El aluminio es 100% reciclable de forma infinita sin perder sus propiedades mecánicas.
+            </p>
+            <h5 class="fw-bold mb-2" style="color:var(--text-body);"><i class="fas fa-list-check text-primary me-2"></i>Pasos de Preparación:</h5>
+            <ol class="pasos-list ps-3 mb-4">
+              <li><strong>Escurrir:</strong> Asegúrate de que no contengan restos de bebida.</li>
+              <li><strong>Aplastar:</strong> Presiona la lata para ahorrar un 80% de espacio de almacenamiento.</li>
+              <li><strong>Acopio:</strong> Deposita las latas en sacos o contenedores secos.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="guia-card h-100 d-flex flex-column gap-3">
+            <div class="block-si">
+              <div class="si-title mb-2"><i class="fas fa-check-circle me-1"></i> SI RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Latas de aluminio de bebidas y jugos.</li>
+                <li>Latas de conserva de hojalata lavadas.</li>
+              </ul>
+            </div>
+            <div class="block-no">
+              <div class="no-title mb-2"><i class="fas fa-times-circle me-1"></i> NO RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Tarros de pintura con restos secos o solventes.</li>
+                <li>Sprays de aerosol bajo presión.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. VIDRIO -->
+    <div class="tab-pane fade" id="vidrio" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <div class="guia-card h-100">
+            <h3 class="guia-title mb-3"><i class="fas fa-glass-martini-alt me-2" style="color:#0ea5e9;"></i>Vidrio Botellas y Envases</h3>
+            <p class="guia-text mb-4">
+              El vidrio se derrite a altas temperaturas para crear nuevos envases idénticos.
+            </p>
+            <h5 class="fw-bold mb-2" style="color:var(--text-body);"><i class="fas fa-list-check text-primary me-2"></i>Pasos de Preparación:</h5>
+            <ol class="pasos-list ps-3 mb-4">
+              <li><strong>Retirar Tapas:</strong> Quita tapas metálicas, corchos o sellos plásticos.</li>
+              <li><strong>No Romper A Propósito:</strong> Las botellas enteras facilitan la manipulación segura del operador.</li>
+              <li><strong>Separar por Color:</strong> Si es posible, separa transparente, verde y café.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="guia-card h-100 d-flex flex-column gap-3">
+            <div class="block-si">
+              <div class="si-title mb-2"><i class="fas fa-check-circle me-1"></i> SI RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Botellas de vidrio de refrescos, jugos y conservas.</li>
+                <li>Frascos de café o mermelada lavados.</li>
+              </ul>
+            </div>
+            <div class="block-no">
+              <div class="no-title mb-2"><i class="fas fa-times-circle me-1"></i> NO RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Espejos, vidrios de ventana o parabrisas.</li>
+                <li>Ampolletas o tubos fluorescentes (Residuos Peligrosos).</li>
+                <li>Cerámica, loza o cristal refinado.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. TETRAPAK -->
+    <div class="tab-pane fade" id="tetrapak" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <div class="guia-card h-100">
+            <h3 class="guia-title mb-3"><i class="fas fa-prescription-bottle me-2" style="color:#9333ea;"></i>Envases Multicapa Tetrapak</h3>
+            <p class="guia-text mb-4">
+              Compuestos por cartón, polietileno y aluminio. Requieren estar limpios para evitar hongos.
+            </p>
+            <h5 class="fw-bold mb-2" style="color:var(--text-body);"><i class="fas fa-list-check text-primary me-2"></i>Pasos de Preparación:</h5>
+            <ol class="pasos-list ps-3 mb-4">
+              <li><strong>Desplegar las pestañas:</strong> Abre las esquinas superiores e inferiores del envase.</li>
+              <li><strong>Enjuagar y Escurrir:</strong> Agrega un chorro de agua, agita y vacía.</li>
+              <li><strong>Aplanar:</strong> Aplasta el envase plano para reducir volumen.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="guia-card h-100 d-flex flex-column gap-3">
+            <div class="block-si">
+              <div class="si-title mb-2"><i class="fas fa-check-circle me-1"></i> SI RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Cajas de leche, jugos y cremas aplanadas y secas.</li>
+              </ul>
+            </div>
+            <div class="block-no">
+              <div class="no-title mb-2"><i class="fas fa-times-circle me-1"></i> NO RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Envases con líquidos adentro o con mal olor a fermentado.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 6. PALLETS Y CARRETES -->
+    <div class="tab-pane fade" id="pallets" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <div class="guia-card h-100">
+            <h3 class="guia-title mb-3"><i class="fas fa-pallet me-2" style="color:#ea580c;"></i>Pallets de Madera & Carretes</h3>
+            <p class="guia-text mb-4">
+              La madera de embalaje se reutiliza o se muele para biomasa y tableros aglomerados.
+            </p>
+            <h5 class="fw-bold mb-2" style="color:var(--text-body);"><i class="fas fa-list-check text-primary me-2"></i>Pasos de Preparación:</h5>
+            <ol class="pasos-list ps-3 mb-4">
+              <li><strong>Apilar Ordenadamente:</strong> Apila los pallets en torres no superiores a 15 unidades por seguridad.</li>
+              <li><strong>Verificar Integridad:</strong> Separa los pallets enteros de la madera rota.</li>
+              <li><strong>Carretes de Cable:</strong> Mantén los carretes de madera en zona plana accesible para grúa horquilla.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="guia-card h-100 d-flex flex-column gap-3">
+            <div class="block-si">
+              <div class="si-title mb-2"><i class="fas fa-check-circle me-1"></i> SI RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Pallets estándar Europallet o 120x100 cm.</li>
+                <li>Carretes de madera de bobinas de cable.</li>
+                <li>Cajas de madera de embalaje limpias.</li>
+              </ul>
+            </div>
+            <div class="block-no">
+              <div class="no-title mb-2"><i class="fas fa-times-circle me-1"></i> NO RECICLAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Madera podrida o impregnada con químicos tóxicos creosotados.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 7. ESCOMBROS / RESCON -->
+    <div class="tab-pane fade" id="escombros" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <div class="guia-card h-100">
+            <h3 class="guia-title mb-3"><i class="fas fa-dumpster me-2" style="color:#475569;"></i>Escombros / RESCON (Construcción)</h3>
+            <p class="guia-text mb-4">
+              Residuos inertes de obras, remodelaciones y demoliciones trasladados con Ticket RESCON Autorizado.
+            </p>
+            <h5 class="fw-bold mb-2" style="color:var(--text-body);"><i class="fas fa-list-check text-primary me-2"></i>Pasos de Preparación:</h5>
+            <ol class="pasos-list ps-3 mb-4">
+              <li><strong>Acopio en Batea o Sacos:</strong> Utiliza sacos escombreros resistentes o contenedor batea.</li>
+              <li><strong>Sin Basura Orgánica:</strong> El escombro debe estar libre de madera, plásticos o basura domiciliaria.</li>
+              <li><strong>Acceso de Camión:</strong> Despeja el área para el estacionamiento del camión tolva.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="guia-card h-100 d-flex flex-column gap-3">
+            <div class="block-si">
+              <div class="si-title mb-2"><i class="fas fa-check-circle me-1"></i> SI RETIRAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Hormigón, ladrillos, baldosas y cerámicos.</li>
+                <li>Áridos, tierra, arena y grava inerte.</li>
+              </ul>
+            </div>
+            <div class="block-no">
+              <div class="no-title mb-2"><i class="fas fa-times-circle me-1"></i> NO RETIRAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Asbesto / Pizarreño (Residuo Peligroso Ley N° 148).</li>
+                <li>Envases de pintura líquida o adhesivos.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 8. RSD / BASURA -->
+    <div class="tab-pane fade" id="rsd" role="tabpanel">
+      <div class="row g-4">
+        <div class="col-md-7">
+          <div class="guia-card h-100">
+            <h3 class="guia-title mb-3"><i class="fas fa-trash-alt me-2" style="color:#dc2626;"></i>RSD / Basura Domiciliaria</h3>
+            <p class="guia-text mb-4">
+              Residuos sólidos generales no valorizables destinados a disposición final en Relleno Sanitario Autorizado (SOCSAL).
+            </p>
+            <h5 class="fw-bold mb-2" style="color:var(--text-body);"><i class="fas fa-list-check text-primary me-2"></i>Pasos de Preparación:</h5>
+            <ol class="pasos-list ps-3 mb-4">
+              <li><strong>Bolsas Selladas:</strong> Almacena la basura en bolsas institucionales resistentes bien amarradas.</li>
+              <li><strong>Protección Antiderrames:</strong> Evita líquidos escurriendo en la zona de acopio.</li>
+            </ol>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <div class="guia-card h-100 d-flex flex-column gap-3">
+            <div class="block-si">
+              <div class="si-title mb-2"><i class="fas fa-check-circle me-1"></i> SI RETIRAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Basura no reciclable de casino u oficinas.</li>
+                <li>Restos orgánicos y empaques sucios.</li>
+              </ul>
+            </div>
+            <div class="block-no">
+              <div class="no-title mb-2"><i class="fas fa-times-circle me-1"></i> NO RETIRAR</div>
+              <ul class="ps-3 mb-0">
+                <li>Residuos Biológicos o Hospitalarios.</li>
+                <li>Aceites usados o baterías químicas.</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Bloque de Contactos Redimir: Sección "Contacta a nuestro Equipo de Ingeniería" -->
+  <div class="mt-4" style="background: #ffffff; border-radius: 12px 12px 0 0; border: 1px solid var(--border); border-top: 4px solid var(--secondary); box-shadow: var(--shadow-sm); position: relative;">
+    
+    <!-- Contenido Intacto (Textos, Botones, Íconos y Estructura Funcional) -->
+    <div class="p-4 p-md-5 pb-3">
+      <div class="row align-items-center g-4">
+        <div class="col-md-7">
+          <span class="badge-pill badge-blue mb-2" style="font-size: .8rem;">
+            <i class="fas fa-headset me-1"></i> ATENCIÓN Y ASESORÍA AMBIENTAL REDIMIR
+          </span>
+          <h3 class="fw-bold mb-2" style="color: var(--primary-dark); font-size: 1.35rem;">
+            <i class="fas fa-id-card text-secondary-redimir me-2"></i>Contacta a nuestro Equipo de Ingeniería
+          </h3>
+          <p class="text-body mb-3" style="font-size: .92rem; line-height: 1.5;">
+            ¿Tienes dudas con la clasificación de tus residuos o necesitas una visita técnica en planta? Estamos para ayudarte.
+          </p>
+
+          <div class="row g-3" style="font-size: .88rem;">
+            <div class="col-6 col-sm-6">
+              <div class="d-flex align-items-center gap-2" style="color: var(--primary-dark); font-weight: 700;">
+                <i class="fab fa-whatsapp text-success" style="font-size: 1.2rem;"></i>
+                <span>+56 9 3178 0868</span>
+              </div>
+              <div class="text-muted" style="font-size: .78rem; margin-left: 1.6rem;">Teléfono & WhatsApp</div>
+            </div>
+            <div class="col-6 col-sm-6">
+              <div class="d-flex align-items-center gap-2" style="color: var(--primary-dark); font-weight: 700;">
+                <i class="fas fa-envelope text-primary" style="font-size: 1.1rem;"></i>
+                <span>contacto@redimir.cl</span>
+              </div>
+              <div class="text-muted" style="font-size: .78rem; margin-left: 1.6rem;">Correo Oficial</div>
+            </div>
+            <div class="col-12">
+              <div class="d-flex align-items-center gap-2" style="color: var(--primary-dark); font-weight: 700;">
+                <i class="fas fa-clock text-warning" style="font-size: 1.1rem;"></i>
+                <span>Lun a Vie: 08:30 - 18:00</span>
+              </div>
+              <div class="text-muted" style="font-size: .78rem; margin-left: 1.6rem;">Horario Operativo</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-md-5 text-center text-md-end">
+          <div class="d-flex flex-column gap-2 justify-content-center align-items-md-end">
+            <a href="https://wa.me/56931780868" target="_blank" class="btn-outline-green btn d-inline-flex align-items-center gap-2 px-4 py-2" style="border-color: #22c55e; color: #166534; background: #f0fdf4; font-weight: 700;">
+              <i class="fab fa-whatsapp fa-lg text-success"></i> Hablar por WhatsApp
+            </a>
+            <a href="/empresa/solicitudes/crear/" class="btn-green btn d-inline-flex align-items-center gap-2 px-4 py-2" style="font-weight: 700;">
+              <i class="fas fa-truck"></i> Pedir Recolección
+            </a>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TRANSIÓN ONDULADA ORGÁNICA SVG EN EL BORDE INFERIOR EXACTO -->
+    <div style="line-height: 0; width: 100%; overflow: hidden; margin-bottom: -1px;">
+      <svg viewBox="0 0 1200 40" preserveAspectRatio="none" style="width: 100%; height: 35px; display: block;">
+        <path d="M0,0 Q200,32 450,14 T850,28 T1200,10 L1200,40 L0,40 Z" fill="var(--gray-bg, #E1E4E7)"/>
+      </svg>
+    </div>
+
+  </div>
+
+</div>
+{% endblock %}

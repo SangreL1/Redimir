@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}Registrar Retiro Escombros — Redimir{% endblock %}
+
+{% block extra_css %}
+<style>
+body { background: var(--gray-bg); }
+.registro-container { max-width: 540px; margin: 0 auto; padding: 0 0 4rem 0; }
+.paso-card { background: var(--white); border-radius: var(--radius-lg); box-shadow: var(--shadow); padding: 1.75rem; display: none; }
+.paso-card.active { display: block; animation: fadeInUp .3s ease; }
+.header-servicio { background: linear-gradient(135deg, var(--accent-dark) 0%, #D68000 100%); border-radius: var(--radius-lg) var(--radius-lg) 0 0; padding: 1.25rem 1.75rem; color: #fff; }
+.paso-nav { background: var(--white); padding: .75rem 1.75rem; border-bottom: 1px solid var(--border); position: sticky; top: 60px; z-index: 100; }
+.foto-zone { border: 2.5px dashed var(--border); border-radius: var(--radius); padding: 2.5rem 1.5rem; text-align: center; cursor: pointer; transition: all .2s; background: var(--gray-bg); }
+.foto-zone.has-foto { border-color: var(--accent-dark); background: #FFF8E1; }
+.foto-preview-grid { display: grid; grid-template-columns: repeat(3,1fr); gap:.5rem; margin-top:1rem; }
+.foto-thumb { width:100%; aspect-ratio:1; object-fit:cover; border-radius:var(--radius-sm); border:2px solid var(--border); }
+.btn-nav { min-height: 52px; font-size: 1rem; font-weight: 700; border-radius: var(--radius-sm); }
+.campo-grande { font-size: 1.1rem; padding: .85rem 1rem; }
+.resumen-row { display:flex; justify-content:space-between; align-items:center; padding:.65rem 0; border-bottom:1px solid var(--gray-bg); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="registro-container">
+
+  <div class="header-servicio">
+    <div class="d-flex align-items-start justify-content-between">
+      <div>
+        <div style="font-size:.75rem; opacity:.8; font-weight:600; letter-spacing:.5px;">REGISTRAR RETIRO</div>
+        <h2 style="font-size:1.2rem; font-weight:800; margin:.25rem 0;">{{ servicio.empresa.nombre }}</h2>
+        <div style="font-size:.85rem; opacity:.85;"><i class="fas fa-map-marker-alt me-1"></i>{{ servicio.direccion }}</div>
+      </div>
+      <span class="badge-estado badge-escombros" style="font-size:.7rem;">🏗️ Escombros</span>
+    </div>
+  </div>
+
+  <div class="paso-nav">
+    <div class="step-indicator mb-0">
+      <div class="step-dot" id="dot1">1</div><div class="step-line" id="line12"></div>
+      <div class="step-dot" id="dot2">2</div><div class="step-line" id="line23"></div>
+      <div class="step-dot" id="dot3">3</div><div class="step-line" id="line34"></div>
+      <div class="step-dot" id="dot4">4</div>
+    </div>
+    <div class="text-center mt-1" style="font-size:.72rem; color:var(--text-muted); font-weight:600;" id="paso-label">
+      Paso 1 de 4 — Tipo y cantidad
+    </div>
+  </div>
+
+  <form method="post" enctype="multipart/form-data" id="form-esc" style="padding:1rem;">
+    {% csrf_token %}
+    <input type="hidden" name="ubicacion_gps" id="gps-h">
+
+    <!-- PASO 1 -->
+    <div class="paso-card active" id="paso-1">
+      <h5 class="fw-bold mb-3" style="color:var(--accent-dark);"><i class="fas fa-hard-hat me-2"></i>Tipo de escombros y cantidad</h5>
+
+      <div class="mb-3">
+        <label class="form-label">Tipo de residuo <span class="required-mark">*</span></label>
+        <select name="tipo_residuo" class="form-select campo-grande" required>
+          <option value="escombros">🏗️ Escombros</option>
+          <option value="rescon">🏛️ RESCON</option>
+          <option value="aridos">🪨 Áridos</option>
+          <option value="tierra">🌍 Tierra</option>
+          <option value="voluminoso">📦 Voluminoso</option>
+          <option value="mixto">🔀 Mixto</option>
+        </select>
+      </div>
+
+      <div class="row g-2 mb-3">
+        <div class="col-8">
+          <label class="form-label">Cantidad <span class="required-mark">*</span></label>
+          <input type="number" name="cantidad" id="cantidad" class="form-control campo-grande" step="0.01" min="0.01" placeholder="Ej: 3.5" required>
+        </div>
+        <div class="col-4">
+          <label class="form-label">Unidad <span class="required-mark">*</span></label>
+          <select name="unidad" class="form-select campo-grande" id="unidad-sel" required>
+            <option value="kg">kg</option>
+            <option value="m3">m³</option>
+            <option value="sacos">sacos</option>
+            <option value="batea">batea</option>
+            <option value="camion">camión</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="mb-3">
+        <label class="form-label">N° Ticket externo <span class="required-mark">*</span></label>
+        <input type="text" name="ticket_externo" id="ticket" class="form-control campo-grande" placeholder="Ej: ESC-001234" required>
+      </div>
+
+      <div class="mb-4">
+        <label class="form-label">Destino receptor <span class="required-mark">*</span></label>
+        <select name="destino_receptor" class="form-select campo-grande" id="dest-sel">
+          <option value="municipalidad">Municipalidad</option>
+          <option value="rescon">RESCON Autorizado</option>
+          <option value="esavi">ESAVI</option>
+          <option value="otro">Otro receptor autorizado</option>
+        </select>
+      </div>
+
+      <div class="mb-3" id="div-otro" style="display:none;">
+        <label class="form-label">Especificar destino</label>
+        <input type="text" name="destino_otro" class="form-control" placeholder="Nombre del receptor">
+      </div>
+
+      <div class="mb-3">
+        <button type="button" class="btn btn-outline-secondary w-100" id="btn-gps">
+          <i class="fas fa-map-marker-alt me-1"></i>GPS (opcional)
+        </button>
+        <div id="gps-o" class="form-text text-center"></div>
+      </div>
+
+      <div class="d-grid">
+        <button type="button" class="btn-warning-redimir btn-nav" onclick="validarPaso1()">Siguiente → Fotos</button>
+      </div>
+    </div>
+
+    <!-- PASO 2: FOTOS -->
+    <div class="paso-card" id="paso-2">
+      <h5 class="fw-bold mb-3" style="color:var(--accent-dark);"><i class="fas fa-camera me-2"></i>Evidencia fotográfica</h5>
+
+      {% if error_foto %}
+      <div class="alert-redimir-warning mb-3"><i class="fas fa-exclamation-triangle me-2"></i>Debes subir al menos 1 foto.</div>
+      {% endif %}
+
+      <div class="foto-zone" id="foto-zone" onclick="document.getElementById('inp-fotos').click()">
+        <i class="fas fa-camera fa-2x mb-2" style="color:var(--text-light);"></i>
+        <p class="fw-bold mb-1" style="color:var(--text-muted);">📸 FOTO OBLIGATORIA</p>
+        <p class="text-muted mb-0" style="font-size:.85rem;">Toca aquí para foto o galería</p>
+      </div>
+      <input type="file" name="fotos" id="inp-fotos" accept="image/*" multiple capture="environment" style="display:none;" onchange="showPrev(this)">
+      <div class="foto-preview-grid" id="prev-grid"></div>
+      <div class="alert-redimir-warning mt-3" id="warn-foto" style="display:none;"><i class="fas fa-exclamation-triangle me-1"></i>Mínimo 1 foto.</div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(1)">← Atrás</button>
+        <button type="button" class="btn-warning-redimir btn-nav flex-fill" onclick="validarPaso2()">Siguiente →</button>
+      </div>
+    </div>
+
+    <!-- PASO 3: RESUMEN -->
+    <div class="paso-card" id="paso-3">
+      <h5 class="fw-bold mb-3" style="color:var(--accent-dark);"><i class="fas fa-list-check me-2"></i>Resumen — Confirmar</h5>
+
+      <div class="mb-3">
+        <label class="form-label">Observaciones <small class="text-muted">(opcional)</small></label>
+        <textarea name="observaciones" class="form-control" rows="3" placeholder="Estado del material, condiciones..."></textarea>
+      </div>
+
+      <div class="card-redimir p-3 mb-4" style="background:var(--gray-bg);">
+        <div class="resumen-row"><span style="font-size:.82rem;color:var(--text-muted);">Empresa</span><strong>{{ servicio.empresa.nombre }}</strong></div>
+        <div class="resumen-row"><span style="font-size:.82rem;color:var(--text-muted);">Cantidad</span><strong id="r-cant">—</strong></div>
+        <div class="resumen-row"><span style="font-size:.82rem;color:var(--text-muted);">Ticket</span><strong id="r-ticket">—</strong></div>
+        <div class="resumen-row" style="border:none;"><span style="font-size:.82rem;color:var(--text-muted);">Fotos</span><strong id="r-fotos">—</strong></div>
+      </div>
+
+      <div class="alert-redimir-info mb-3" style="font-size:.82rem;">
+        <i class="fas fa-info-circle me-2"></i>Al guardar, el administrador recibirá una notificación de validación.
+      </div>
+
+      <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary btn-nav flex-fill" onclick="irPaso(2)">← Atrás</button>
+        <button type="submit" class="btn-warning-redimir btn-nav flex-fill" id="btn-save">
+          <i class="fas fa-check-circle me-1"></i>Guardar Retiro
+        </button>
+      </div>
+    </div>
+
+  </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let paso = 1;
+const labels = ['Paso 1 de 3 — Tipo y cantidad','Paso 2 de 3 — Fotos evidencia','Paso 3 de 3 — Resumen'];
+
+function irPaso(n) {
+    document.getElementById('paso-' + paso).classList.remove('active');
+    document.getElementById('paso-' + n).classList.add('active');
+    paso = n;
+    document.getElementById('paso-label').textContent = labels[n-1];
+    for (let i=1;i<=3;i++) {
+        const d = document.getElementById('dot'+i);
+        if (!d) continue;
+        d.classList.remove('active','done');
+        if (i<n) d.classList.add('done'); else if (i===n) d.classList.add('active');
+    }
+    window.scrollTo(0,0);
+}
+
+document.getElementById('dest-sel').addEventListener('change', function(){
+    document.getElementById('div-otro').style.display = this.value === 'otro' ? 'block' : 'none';
+});
+
+function validarPaso1() {
+    const cant = document.getElementById('cantidad').value;
+    const tick = document.getElementById('ticket').value.trim();
+    if (!cant || parseFloat(cant) <= 0) { alert('Ingresa una cantidad válida.'); return; }
+    if (!tick) { alert('El número de ticket es obligatorio.'); return; }
+    const unidad = document.getElementById('unidad-sel').options[document.getElementById('unidad-sel').selectedIndex].text;
+    document.getElementById('r-cant').textContent = cant + ' ' + unidad;
+    document.getElementById('r-ticket').textContent = tick;
+    irPaso(2);
+}
+
+function validarPaso2() {
+    const fotos = document.getElementById('inp-fotos').files;
+    if (!fotos.length) { document.getElementById('warn-foto').style.display='flex'; return; }
+    document.getElementById('warn-foto').style.display='none';
+    document.getElementById('r-fotos').textContent = fotos.length + ' foto(s) ✓';
+    irPaso(3);
+}
+
+function showPrev(input) {
+    const grid = document.getElementById('prev-grid');
+    document.getElementById('foto-zone').classList.toggle('has-foto', input.files.length > 0);
+    grid.innerHTML = '';
+    Array.from(input.files).forEach(f => {
+        const r = new FileReader();
+        r.onload = e => { const img = document.createElement('img'); img.src = e.target.result; img.className = 'foto-thumb'; grid.appendChild(img); };
+        r.readAsDataURL(f);
+    });
+}
+
+document.getElementById('btn-gps').addEventListener('click', () => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(pos => {
+        document.getElementById('gps-h').value = `${pos.coords.latitude},${pos.coords.longitude}`;
+        document.getElementById('gps-o').innerHTML = '<i class="fas fa-check-circle text-success me-1"></i>GPS capturado';
+    });
+});
+
+document.getElementById('form-esc').addEventListener('submit', () => {
+    document.getElementById('btn-save').disabled = true;
+    document.getElementById('btn-save').innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Guardando...';
+});
+
+irPaso(1);
+</script>
+{% endblock %}

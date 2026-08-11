@@ -1,0 +1,22 @@
+# Byte-compiled / optimized files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# CIL / Visual Studio / IDEs
+.vscode/
+.idea/
+
+# Environment / Local settings
+.env
+db.sqlite3
+backups/
+logs/
+
+# Media & Static collection
+media/
+staticfiles/
+
+# Temp
+tmp/
+*.log

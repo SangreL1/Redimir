@@ -1,0 +1,196 @@
+{% extends "base.html" %}
+{% block title %}Servicios — Redimir{% endblock %}
+{% block nav_servicios %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.modulo-badge { display:inline-flex; align-items:center; gap:.35rem; padding:.3rem .75rem; border-radius:99px; font-size:.72rem; font-weight:700; }
+.filtros-bar { background:var(--white); border:1px solid var(--border); border-radius:var(--radius); padding:1rem 1.25rem; margin-bottom:1.5rem; box-shadow:var(--shadow-sm); }
+.servicio-row:hover .acciones-row { opacity:1 !important; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+  <!-- Page Header -->
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-3 mb-4">
+    <div>
+      <h1 class="page-title"><i class="fas fa-clipboard-list text-primary-redimir me-2"></i>Servicios de Retiro</h1>
+      <p class="page-subtitle">{% if es_admin %}Todos los servicios registrados{% else %}Tus servicios asignados{% endif %} · {{ total }} resultado{{ total|pluralize }}</p>
+    </div>
+    {% if user.rol == 'admin' or user.is_staff %}
+    <a href="/servicios/crear/" class="btn-primary-redimir d-flex align-items-center gap-2 text-decoration-none" style="padding:.6rem 1.25rem;border-radius:var(--radius-sm);">
+      <i class="fas fa-plus"></i> Nuevo Servicio
+    </a>
+    {% endif %}
+  </div>
+
+  <!-- Filtros -->
+  <form method="get" class="filtros-bar">
+    <div class="row g-2 align-items-end">
+      <div class="col-12 col-md-3">
+        <label class="form-label">Buscar</label>
+        <input type="text" name="q" class="form-control" placeholder="Empresa, dirección, operador..." value="{{ q }}">
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Estado</label>
+        <select name="estado" class="form-select">
+          <option value="">Todos</option>
+          {% for val, lab in estados %}
+          <option value="{{ val }}" {% if estado_sel == val %}selected{% endif %}>{{ lab }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-6 col-md-2">
+        <label class="form-label">Módulo</label>
+        <select name="modulo" class="form-select">
+          <option value="">Todos</option>
+          {% for val, lab in modulos %}
+          <option value="{{ val }}" {% if modulo_sel == val %}selected{% endif %}>{{ lab }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% if user.rol == 'admin' or user.is_staff %}
+      <div class="col-md-3">
+        <label class="form-label">Empresa</label>
+        <select name="empresa" class="form-select">
+          <option value="">Todas las empresas</option>
+          {% for emp in empresas %}
+          <option value="{{ emp.pk }}" {% if empresa_sel == emp.pk|stringformat:"s" %}selected{% endif %}>{{ emp.nombre }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      {% endif %}
+      <div class="col-auto">
+        <button type="submit" class="btn-primary-redimir" style="padding:.57rem 1.25rem;border-radius:var(--radius-sm);">
+          <i class="fas fa-search me-1"></i>Filtrar
+        </button>
+        {% if q or estado_sel or modulo_sel or empresa_sel %}
+        <a href="/solicitudes/" class="btn btn-outline-secondary ms-1">Limpiar</a>
+        {% endif %}
+      </div>
+    </div>
+  </form>
+
+  <!-- Tabla -->
+  <div class="card-redimir p-0" style="overflow:hidden;">
+    {% if servicios %}
+    <div class="table-responsive">
+      <table class="table-redimir" id="tabla-servicios">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Empresa / Dirección</th>
+            <th>Módulo</th>
+            <th>Estado</th>
+            {% if user.rol == 'admin' or user.is_staff %}<th>Operador</th>{% endif %}
+            <th>Fecha Prog.</th>
+            <th>Cantidad Est.</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in servicios %}
+          <tr class="servicio-row">
+            <td><span class="fw-700" style="color:var(--primary);">#{{ s.pk }}</span></td>
+            <td>
+              <div class="fw-bold" style="font-size:.875rem;">{{ s.empresa.nombre }}</div>
+              <small class="text-muted"><i class="fas fa-map-marker-alt me-1"></i>{{ s.direccion|truncatechars:40 }}</small>
+            </td>
+            <td>
+              {% if s.modulo == 'rsd' %}
+              <span class="badge-estado badge-rsd"><i class="fas fa-trash-alt me-1"></i>RSD</span>
+              {% elif s.modulo == 'escombros' %}
+              <span class="badge-estado badge-escombros"><i class="fas fa-hard-hat me-1"></i>Escombros</span>
+              {% else %}
+              <span class="badge-estado badge-reciclable"><i class="fas fa-recycle me-1"></i>Reciclables</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.estado == 'validado' or s.estado == 'documento_emitido' or s.estado == 'cerrado' %}
+              <span class="badge-estado badge-validado"><i class="fas fa-check-circle me-1"></i>{{ s.get_estado_display }}</span>
+              {% elif s.estado == 'pendiente_validacion' %}
+              <span class="badge-estado badge-pendiente"><i class="fas fa-clock me-1"></i>Pend. Validación</span>
+              {% elif s.estado == 'observado' %}
+              <span class="badge-estado badge-observado"><i class="fas fa-eye me-1"></i>Observado</span>
+              {% elif s.estado == 'asignado' or s.estado == 'programado' %}
+              <span class="badge-estado badge-programado"><i class="fas fa-calendar me-1"></i>{{ s.get_estado_display }}</span>
+              {% elif s.estado == 'en_ruta' %}
+              <span class="badge-estado badge-en-ruta"><i class="fas fa-truck me-1"></i>En Ruta</span>
+              {% elif s.estado == 'cancelado' %}
+              <span class="badge-estado badge-rechazado"><i class="fas fa-ban me-1"></i>Cancelado</span>
+              {% else %}
+              <span class="badge-estado badge-solicitado"><i class="fas fa-circle me-1"></i>{{ s.get_estado_display }}</span>
+              {% endif %}
+            </td>
+            {% if user.rol == 'admin' or user.is_staff %}
+            <td>
+              {% if s.operador %}
+              <div style="font-size:.82rem;">{{ s.operador.nombre_completo }}</div>
+              {% else %}
+              <span class="text-muted fst-italic" style="font-size:.8rem;">Sin asignar</span>
+              {% endif %}
+            </td>
+            {% endif %}
+            <td>
+              {% if s.fecha_programada %}
+              <div style="font-size:.82rem;">{{ s.fecha_programada|date:"d/m/Y" }}</div>
+              <small class="text-muted">{{ s.fecha_programada|date:"H:i" }}</small>
+              {% else %}
+              <span class="text-muted" style="font-size:.8rem;">—</span>
+              {% endif %}
+            </td>
+            <td>
+              {% if s.cantidad_estimada %}
+              <span style="font-size:.875rem; font-weight:700;">{{ s.cantidad_estimada }} {{ s.unidad_estimada }}</span>
+              {% else %}<span class="text-muted">—</span>{% endif %}
+            </td>
+            <td>
+              <div class="d-flex gap-1">
+                <a href="/servicios/{{ s.pk }}/" class="btn btn-sm" style="background:var(--primary-light);color:var(--primary);border:1px solid #b3d6f0;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
+                   title="Ver detalle"><i class="fas fa-eye"></i></a>
+                {% if s.estado in 'asignado,programado,en_ruta' and user.pk == s.operador.pk or user.rol == 'admin' or user.is_staff %}
+                {% if s.estado not in 'validado,cerrado,cancelado,documento_emitido' %}
+                <a href="/servicios/{{ s.pk }}/registrar/" class="btn btn-sm"
+                   style="background:var(--secondary-light);color:var(--secondary-dark);border:1px solid #c5e1a5;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
+                   title="Registrar retiro"><i class="fas fa-edit"></i></a>
+                {% endif %}
+                {% endif %}
+                {% if s.estado == 'pendiente_validacion' and user.rol == 'admin' or user.is_staff and s.estado == 'pendiente_validacion' %}
+                <a href="/validaciones/" class="btn btn-sm"
+                   style="background:#FFF8E1;color:#E0A800;border:1px solid #FFE082;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
+                   title="Validar"><i class="fas fa-check-double"></i></a>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-5">
+      {% if user.rol == 'recolector' or user.rol == 'operador' %}
+      <div style="font-size: 5rem; color: var(--secondary); margin-bottom: -15px; animation: floatUp 3s ease-in-out infinite;">🌳</div>
+      <div style="font-size: 3rem; color: rgba(149,191,60,0.3); margin-bottom: 20px;">
+          <i class="fas fa-truck"></i>
+      </div>
+      <h3 style="font-family: 'Montserrat', sans-serif; font-weight: 800; color: var(--primary);">¡Asombroso!</h3>
+      <p class="text-muted fw-600 mb-4" style="font-size: 1.1rem;">No hay retiros pendientes para hoy.<br>Tómate un respiro verde.</p>
+      {% else %}
+      <div style="font-size: 5rem; color: var(--border); margin-bottom: 10px;">
+          <i class="fas fa-leaf"></i>
+      </div>
+      <h3 style="font-family: 'Montserrat', sans-serif; font-weight: 800; color: var(--primary);">Todo Despejado</h3>
+      <p class="text-muted fw-600 mb-4">No se encontraron servicios registrados con estos parámetros.</p>
+      <a href="/servicios/crear/" class="btn-primary-redimir text-decoration-none" style="padding:.7rem 1.4rem;border-radius:var(--radius-sm);">
+        <i class="fas fa-plus me-1"></i>Crear nuevo servicio
+      </a>
+      {% endif %}
+    </div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

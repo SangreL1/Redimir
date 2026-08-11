@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+{% block title %}Calculadora Eco-Equivalencia — Redimir{% endblock %}
+{% block nav_calculadora %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.eco-hero {
+    background: linear-gradient(135deg, var(--secondary-dark) 0%, var(--primary) 100%);
+    border-radius: var(--radius-lg); padding: 2rem 2.5rem;
+    color: #fff; margin-bottom: 2rem; position: relative; overflow: hidden;
+}
+.eco-hero::before {
+    content: '🌱';
+    position: absolute; right: 2rem; top: 50%;
+    transform: translateY(-50%);
+    font-size: 5rem; opacity: .15;
+}
+.material-row {
+    display: flex; align-items: center; gap: 1rem;
+    background: var(--white); border: 1.5px solid var(--border);
+    border-radius: var(--radius-sm); padding: .75rem 1rem;
+    transition: border-color .2s;
+}
+.material-row:hover { border-color: var(--secondary); }
+.material-row input[type=number]:focus { border-color: var(--secondary); box-shadow: 0 0 0 3px rgba(149,191,60,.12); }
+.material-icon { font-size: 1.5rem; width: 36px; text-align: center; flex-shrink: 0; }
+.material-name { flex: 1; font-weight: 700; font-size: .875rem; }
+.material-input { width: 100px; text-align: right; padding: .4rem .6rem; font-weight: 700; }
+
+/* Resultado */
+.resultado-hero {
+    background: linear-gradient(160deg, #E8F5E9 0%, var(--primary-light) 100%);
+    border: 2px solid var(--secondary); border-radius: var(--radius-lg);
+    padding: 2rem; margin-top: 1.5rem;
+}
+.eco-kpi-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 1rem; margin: 1.5rem 0; }
+@media(min-width:768px){ .eco-kpi-grid { grid-template-columns: repeat(3, 1fr); } }
+.eco-kpi {
+    background: var(--white); border-radius: var(--radius);
+    padding: 1.25rem; text-align: center;
+    box-shadow: var(--shadow-sm); border: 1px solid var(--border);
+}
+.eco-kpi-icon { font-size: 2rem; margin-bottom: .5rem; }
+.eco-kpi-num { font-size: 1.4rem; font-weight: 800; color: var(--primary); letter-spacing:-1px; }
+.eco-kpi-nm2 { color: var(--secondary); }
+.eco-kpi-label { font-size: .72rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: .4px; }
+
+.desglose-table { width:100%; border-collapse:separate; border-spacing:0; }
+.desglose-table th { background:var(--primary); color:#fff; font-size:.72rem; text-transform:uppercase; padding:.75rem 1rem; font-weight:700; }
+.desglose-table td { padding:.7rem 1rem; border-bottom:1px solid var(--gray-bg); font-size:.875rem; }
+.desglose-table tr:hover td { background: var(--primary-light); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+  <!-- Hero -->
+  <div class="eco-hero">
+    <div style="font-size:.8rem; font-weight:700; opacity:.8; letter-spacing:.5px; text-transform:uppercase; margin-bottom:.5rem;">
+      ♻️ Módulo Reciclables
+    </div>
+    <h1 style="font-size:1.75rem; font-weight:800; margin-bottom:.5rem;">Calculadora Eco-Equivalencia</h1>
+    <p style="font-size:.9rem; opacity:.85; max-width:500px; font-weight:500;">
+      Calcula el impacto ambiental positivo de los materiales reciclados.<br>
+      Ingresa los kilogramos por material para ver los beneficios.
+    </p>
+  </div>
+
+  <div class="row g-4">
+
+    <!-- Formulario izquierdo -->
+    <div class="col-12 col-lg-5">
+      <form method="post" class="card-redimir">
+        {% csrf_token %}
+
+        {% if user.rol == 'admin' or user.is_staff %}
+        <div class="mb-3">
+          <label class="form-label">Empresa (opcional)</label>
+          <select name="empresa" class="form-select">
+            <option value="">— Sin especificar —</option>
+            {% for emp in empresas %}
+            <option value="{{ emp.pk }}" {% if form_data.empresa == emp.pk|stringformat:"s" %}selected{% endif %}>{{ emp.nombre }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        {% endif %}
+
+        <h6 class="section-title mb-3">Materiales (ingresar kg)</h6>
+
+        <div class="d-flex flex-column gap-2 mb-4">
+
+          {% for mat_val, mat_nom in materiales %}
+          <div class="material-row">
+            <div class="material-icon">
+              {% if mat_val == 'carton' %}📦
+              {% elif mat_val == 'papel' %}📄
+              {% elif mat_val == 'pet' %}🧴
+              {% elif mat_val == 'latas' %}🥫
+              {% elif mat_val == 'film' %}🎞️
+              {% elif mat_val == 'carretes' %}🧵
+              {% elif mat_val == 'sunchos' %}📎
+              {% elif mat_val == 'vidrio' %}🍶
+              {% elif mat_val == 'tetrapak' %}🧃
+              {% elif mat_val == 'plastico' %}♻️
+              {% elif mat_val == 'pallets' %}🪵
+              {% else %}📦{% endif %}
+            </div>
+            <div class="material-name">{{ mat_nom }}</div>
+            <input type="number" name="kg_{{ mat_val }}" class="form-control material-input"
+                   step="0.1" min="0" placeholder="0"
+                   value="{{ form_data|default:'' }}">
+            <small style="font-size:.72rem; color:var(--text-muted); width:20px;">kg</small>
+          </div>
+          {% endfor %}
+
+        </div>
+
+        <button type="submit" class="btn-success-redimir w-100" style="padding:.75rem; border-radius:var(--radius-sm); font-size:1rem;">
+          <i class="fas fa-leaf me-2"></i>Calcular Eco-Equivalencia
+        </button>
+
+        {% if user.rol == 'admin' or user.is_staff %}
+        <div class="mt-2 text-center">
+          <a href="/calculadora/factores/" class="link-alt" style="font-size:.78rem; color:var(--text-muted); font-weight:600;">
+            <i class="fas fa-cog me-1"></i>Configurar factores
+          </a>
+        </div>
+        {% endif %}
+      </form>
+    </div>
+
+    <!-- Resultado derecho -->
+    <div class="col-12 col-lg-7">
+
+      {% if resultado %}
+      <div class="resultado-hero fade-in-up">
+
+        {% if empresa %}
+        <div class="d-flex align-items-center gap-2 mb-3">
+          <div style="width:40px;height:40px;background:var(--secondary);border-radius:10px;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;">
+            {{ empresa.nombre|first }}
+          </div>
+          <div>
+            <div style="font-size:.72rem; color:var(--secondary-dark); font-weight:700; text-transform:uppercase;">RESULTADO PARA</div>
+            <div style="font-weight:800; font-size:1rem;">{{ empresa.nombre }}</div>
+          </div>
+        </div>
+        {% endif %}
+
+        <div class="text-center mb-1" style="font-size:.8rem; font-weight:700; color:var(--secondary-dark); text-transform:uppercase; letter-spacing:.5px;">
+          Beneficios Ambientales Calculados
+        </div>
+        <div class="text-center mb-3" style="font-size:2.5rem; font-weight:800; color:var(--primary);">
+          {{ resultado.kg_total|floatformat:0 }} kg
+          <span style="font-size:.9rem; font-weight:600; color:var(--secondary);">reciclados</span>
+        </div>
+
+        <!-- KPIs eco -->
+        <div class="eco-kpi-grid">
+          <div class="eco-kpi">
+            <div class="eco-kpi-icon">💧</div>
+            <div class="eco-kpi-num">{{ resultado.agua_L|floatformat:0 }}</div>
+            <div class="eco-kpi-label">Litros de agua ahorrados</div>
+          </div>
+          <div class="eco-kpi">
+            <div class="eco-kpi-icon">💨</div>
+            <div class="eco-kpi-num eco-kpi-nm2">{{ resultado.co2_kg|floatformat:1 }}</div>
+            <div class="eco-kpi-label">kg de CO₂ evitado</div>
+          </div>
+          <div class="eco-kpi">
+            <div class="eco-kpi-icon">⚡</div>
+            <div class="eco-kpi-num">{{ resultado.energia_kwh|floatformat:1 }}</div>
+            <div class="eco-kpi-label">kWh de energía ahorrados</div>
+          </div>
+          <div class="eco-kpi">
+            <div class="eco-kpi-icon">🔥</div>
+            <div class="eco-kpi-num eco-kpi-nm2">{{ resultado.petroleo_L|floatformat:1 }}</div>
+            <div class="eco-kpi-label">Litros de petróleo ahorrados</div>
+          </div>
+          <div class="eco-kpi">
+            <div class="eco-kpi-icon">🌳</div>
+            <div class="eco-kpi-num" style="color:var(--secondary);">{{ resultado.arboles|floatformat:1 }}</div>
+            <div class="eco-kpi-label">Árboles no talados</div>
+          </div>
+          <div class="eco-kpi" style="background:linear-gradient(135deg,var(--secondary-light),var(--primary-light)); border-color:var(--secondary);">
+            <div class="eco-kpi-icon">🏆</div>
+            <div class="eco-kpi-num" style="font-size:1.1rem; color:var(--primary);">{{ resultado.kg_total|floatformat:0 }}</div>
+            <div class="eco-kpi-label">kg totales reciclados</div>
+          </div>
+        </div>
+
+        <!-- Desglose por material -->
+        {% if resultado.desglose %}
+        <h6 class="section-title mt-3 mb-2">Desglose por material</h6>
+        <div style="border-radius:var(--radius-sm); overflow:hidden; border:1px solid var(--border);">
+          <table class="desglose-table">
+            <thead>
+              <tr>
+                <th>Material</th>
+                <th class="text-end">Cantidad (kg)</th>
+                <th class="text-end">Agua (L)</th>
+                <th class="text-end">CO₂ (kg)</th>
+                <th class="text-end">Energía (kWh)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for item in resultado.desglose %}
+              <tr>
+                <td class="fw-bold">{{ item.material }}</td>
+                <td class="text-end">{{ item.kg|floatformat:1 }}</td>
+                <td class="text-end" style="color:var(--primary);">{{ item.agua|floatformat:0 }}</td>
+                <td class="text-end" style="color:var(--secondary);">{{ item.co2|floatformat:1 }}</td>
+                <td class="text-end">{{ item.energia|floatformat:1 }}</td>
+              </tr>
+              {% endfor %}
+            </tbody>
+            <tfoot>
+              <tr style="background:var(--gray-bg); font-weight:800;">
+                <td>TOTAL</td>
+                <td class="text-end">{{ resultado.kg_total|floatformat:1 }} kg</td>
+                <td class="text-end" style="color:var(--primary);">{{ resultado.agua_L|floatformat:0 }}</td>
+                <td class="text-end" style="color:var(--secondary);">{{ resultado.co2_kg|floatformat:1 }}</td>
+                <td class="text-end">{{ resultado.energia_kwh|floatformat:1 }}</td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+        {% endif %}
+
+        <div class="text-center mt-3">
+          <small class="text-muted" style="font-size:.72rem;">
+            Los valores son estimados basados en los factores configurados en el sistema.<br>
+            <a href="/calculadora/factores/" style="color:var(--secondary);">Ver factores actuales</a>
+          </small>
+        </div>
+      </div>
+
+      {% else %}
+      <!-- Empty state -->
+      <div class="card-redimir text-center py-5" style="border: 2px dashed var(--border);">
+        <div style="font-size:4rem; margin-bottom:1rem; opacity:.4;">♻️</div>
+        <h5 class="fw-bold text-muted">Ingresa los materiales</h5>
+        <p class="text-muted" style="max-width:300px; margin:0 auto; font-size:.875rem;">
+          Completa los kg de cada material en el formulario y presiona "Calcular" para ver el impacto ambiental.
+        </p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+</div>
+{% endblock %}

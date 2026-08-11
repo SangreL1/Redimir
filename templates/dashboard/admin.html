@@ -1,0 +1,213 @@
+{% extends 'base.html' %}
+{% block title %}Dashboard Admin — Redimir{% endblock %}
+{% block nav_dashboard %}active{% endblock %}
+
+{% block extra_css %}
+<style>
+.dashboard-title { font-weight: 800; font-size: 1.5rem; color: var(--primary); }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<!-- Header -->
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+    <div>
+        <h1 class="dashboard-title"><i class="fas fa-chart-line me-2"></i>Dashboard Administrativo</h1>
+        <p class="text-muted mb-0" style="font-weight:500;">Visión general del sistema de gestión de residuos Redimir.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+        <a href="/servicios/crear/" class="btn-primary-redimir" style="padding:.5rem 1rem;border-radius:var(--radius-sm);"><i class="fas fa-plus me-2"></i>Crear Servicio</a>
+        <a href="/api/reportes/exportar-excel/" class="btn btn-outline-secondary" style="padding:.5rem 1rem;border-radius:var(--radius-sm);">
+            <i class="fas fa-file-excel me-2" style="color:#107c41;"></i>Exportar Cierre Mensual
+        </a>
+    </div>
+</div>
+
+<!-- Barra de Filtros GET Dinámicos (Fase 8) -->
+<div class="card-redimir p-3 mb-4" style="background: var(--bg-card); border: 1px solid var(--dark-border);">
+    <form method="GET" action="." class="row g-2 align-items-center">
+        <div class="col-md-2">
+            <label class="form-label text-muted small fw-bold mb-1"><i class="fas fa-building me-1"></i>Empresa</label>
+            <select name="empresa" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="">Todas las empresas</option>
+                {% for emp in all_empresas %}
+                <option value="{{ emp.id }}" {% if f_empresa == emp.id|stringformat:"s" %}selected{% endif %}>{{ emp.nombre }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted small fw-bold mb-1"><i class="fas fa-cubes me-1"></i>Módulo</label>
+            <select name="modulo" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="">Todos los módulos</option>
+                <option value="rsd" {% if f_modulo == 'rsd' %}selected{% endif %}>RSD</option>
+                <option value="escombros" {% if f_modulo == 'escombros' %}selected{% endif %}>RESCON / Escombros</option>
+                <option value="reciclables" {% if f_modulo == 'reciclables' %}selected{% endif %}>Reciclables</option>
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted small fw-bold mb-1"><i class="fas fa-user-cog me-1"></i>Operador</label>
+            <select name="operador" class="form-select form-select-sm bg-dark text-white border-secondary">
+                <option value="">Todos los operadores</option>
+                {% for op in all_operadores %}
+                <option value="{{ op.id }}" {% if f_operador == op.id|stringformat:"s" %}selected{% endif %}>{{ op.nombre_completo }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted small fw-bold mb-1"><i class="fas fa-calendar-alt me-1"></i>Desde</label>
+            <input type="date" name="inicio" class="form-control form-control-sm bg-dark text-white border-secondary" value="{{ f_inicio|default:'' }}">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label text-muted small fw-bold mb-1"><i class="fas fa-calendar-alt me-1"></i>Hasta</label>
+            <input type="date" name="fin" class="form-control form-control-sm bg-dark text-white border-secondary" value="{{ f_fin|default:'' }}">
+        </div>
+        <div class="col-md-2 d-flex align-items-end gap-1">
+            <button type="submit" class="btn btn-sm btn-primary-redimir w-100 mt-4">
+                <i class="fas fa-filter me-1"></i>Filtrar
+            </button>
+            <a href="." class="btn btn-sm btn-outline-secondary mt-4" title="Limpiar Filtros">
+                <i class="fas fa-undo"></i>
+            </a>
+        </div>
+    </form>
+</div>
+
+<!-- KPIs Globales -->
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card green">
+            <div class="kpi-number" style="color:var(--secondary-dark);">{{ rsd_total_kg|floatformat:0 }} <small style="font-size:1rem;font-weight:500;">kg</small></div>
+            <div class="kpi-label">RSD Total Recuperado</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card amber">
+            <div class="kpi-number" style="color:var(--accent-dark);">{{ escombros_total }}</div>
+            <div class="kpi-label">Servicios Escombros</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card text-center" style="background:var(--primary-light);border-color:var(--primary);">
+            <div class="kpi-number" style="color:var(--primary);">{{ reciclables_kg|floatformat:0 }} <small style="font-size:1rem;font-weight:500;">kg</small></div>
+            <div class="kpi-label">Reciclables Procesados</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="kpi-card red position-relative">
+            {% if pendientes_validacion > 0 %}
+            <span class="position-absolute top-0 start-100 translate-middle p-2 bg-danger border border-light rounded-circle">
+                <span class="visually-hidden">Alert</span>
+            </span>
+            {% endif %}
+            <div class="kpi-number" style="color:var(--danger);">{{ pendientes_validacion }}</div>
+            <div class="kpi-label">Validaciones Pendientes</div>
+        </div>
+    </div>
+</div>
+
+<!-- Impacto Ambiental (Eco) -->
+<h5 class="section-title mb-3"><i class="fas fa-leaf me-2" style="color:var(--secondary);"></i>Impacto Ambiental Global (Reciclaje)</h5>
+<div class="row g-3 mb-4">
+    <div class="col-6 col-md-3">
+        <div class="card-redimir text-center py-4" style="background:#EAF6FF; border:1px solid #BEE1FF;">
+            <div style="font-size:2rem;margin-bottom:.5rem;">💧</div>
+            <h4 class="fw-bold mb-0" style="color:#005490;">{{ eco_agua|floatformat:0 }} L</h4>
+            <div style="font-size:.75rem;font-weight:700;color:#006BB8;text-transform:uppercase;">Agua Ahorrada</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-redimir text-center py-4" style="background:#F3FAEB; border:1px solid #D6EFAF;">
+            <div style="font-size:2rem;margin-bottom:.5rem;">💨</div>
+            <h4 class="fw-bold mb-0" style="color:#4B7100;">{{ eco_co2|floatformat:1 }} kg</h4>
+            <div style="font-size:.75rem;font-weight:700;color:#6A9A00;text-transform:uppercase;">CO₂ Evitado</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-redimir text-center py-4" style="background:#FFF8E1; border:1px solid #FFE082;">
+            <div style="font-size:2rem;margin-bottom:.5rem;">⚡</div>
+            <h4 class="fw-bold mb-0" style="color:#B28000;">{{ eco_energia|floatformat:1 }} kWh</h4>
+            <div style="font-size:.75rem;font-weight:700;color:#E6A800;text-transform:uppercase;">Energía Ahorrada</div>
+        </div>
+    </div>
+    <div class="col-6 col-md-3">
+        <div class="card-redimir text-center py-4" style="background:#F0FDF4; border:1px solid #BBF7D0;">
+            <div style="font-size:2rem;margin-bottom:.5rem;">🌳</div>
+            <h4 class="fw-bold mb-0" style="color:#166534;">{{ eco_arboles|floatformat:1 }}</h4>
+            <div style="font-size:.75rem;font-weight:700;color:#22C55E;text-transform:uppercase;">Árboles Preservados</div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Últimos Servicios -->
+    <div class="col-12 col-lg-8">
+        <div class="card-redimir">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h5 class="fw-bold mb-0">Últimos Servicios</h5>
+                <a href="/servicios/" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+            </div>
+            
+            <div class="table-responsive">
+                <table class="table-custom w-100">
+                    <thead>
+                        <tr>
+                            <th>Módulo</th>
+                            <th>Empresa</th>
+                            <th>Operador</th>
+                            <th>Estado</th>
+                            <th>Fecha</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in ultimos %}
+                        <tr>
+                            <td>
+                                {% if s.modulo == 'rsd' %}<span class="badge-estado badge-rsd">🗑️ RSD</span>
+                                {% elif s.modulo == 'escombros' %}<span class="badge-estado badge-escombros">🏗️ Escombros</span>
+                                {% else %}<span class="badge-estado badge-reciclable">♻️ Reciclables</span>{% endif %}
+                            </td>
+                            <td class="fw-bold text-dark">{{ s.empresa.nombre|default:"—"|truncatechars:18 }}</td>
+                            <td class="text-muted" style="font-size:.85rem;">{{ s.operador.nombre_completo|default:"Sin asignar"|truncatechars:15 }}</td>
+                            <td>
+                                {% if s.estado == 'pendiente' %}<span class="badge-estado badge-pendiente">En ruta</span>
+                                {% elif s.estado == 'pendiente_validacion' %}<span class="badge-estado badge-observado">A validar</span>
+                                {% elif s.estado == 'validado' %}<span class="badge-estado badge-reciclable">Validado</span>
+                                {% elif s.estado == 'observado' %}<span class="badge-estado badge-observado">Obs.</span>
+                                {% else %}<span class="badge-estado" style="background:#E1E4E7;color:#64748B;">Cancelado</span>{% endif %}
+                            </td>
+                            <td class="text-muted" style="font-size:.8rem;">{{ s.fecha_programada|date:"d/M H:i"|default:"—" }}</td>
+                        </tr>
+                        {% empty %}
+                        <tr><td colspan="5" class="text-center text-muted py-4">No hay servicios registrados.</td></tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Top Empresas -->
+    <div class="col-12 col-lg-4">
+        <div class="card-redimir">
+            <h5 class="fw-bold mb-3">Top Empresas (Servicios)</h5>
+            {% for emp in empresas %}
+            <div class="d-flex align-items-center justify-content-between mb-3 pb-2" style="border-bottom:1px solid var(--gray-bg);">
+                <div class="d-flex align-items-center gap-2">
+                    <div style="width:32px;height:32px;background:var(--primary-light);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--primary);font-weight:700;">
+                        {{ forloop.counter }}
+                    </div>
+                    <span class="fw-bold" style="font-size:.9rem;">{{ emp.nombre }}</span>
+                </div>
+                <div class="fw-bold" style="color:var(--secondary-dark);">{{ emp.total_servicios }}</div>
+            </div>
+            {% empty %}
+            <div class="text-center text-muted py-3">Sin datos</div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}

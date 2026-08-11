@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block title %}Empresa Pendiente — Redimir{% endblock %}
+{% block nav_empresa_dashboard %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+    <div style="max-width:500px;margin:3rem auto;text-align:center;">
+        <i class="fas fa-clock" style="font-size:4rem;color:#f59e0b;margin-bottom:1.5rem;"></i>
+        <h2 style="font-weight:800;margin-bottom:1rem;">Cuenta en Revisión</h2>
+        <p style="color:var(--text-muted);margin-bottom:1.5rem;">
+            Tu empresa <strong>{{ empresa.nombre }}</strong> está siendo revisada por nuestro equipo de administración.
+            Una vez que sea aprobada, podrás acceder a los gráficos y realizar solicitudes de recolección.
+        </p>
+        <div style="background:rgba(255,255,255,.05);padding:1rem;border-radius:10px;border:1px solid var(--dark-border);">
+            <div style="font-size:.85rem;color:var(--text-muted);"><i class="fas fa-info-circle me-1"></i>Estado actual:</div>
+            <span class="badge-pill badge-amber mt-2" style="font-size:.9rem;padding:.4rem 1rem;">Pendiente de Aprobación</span>
+        </div>
+    </div>
+</div>
+{% endblock %}

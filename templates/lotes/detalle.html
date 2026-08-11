@@ -1,0 +1,128 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ lote.codigo_lote }} — Redimir{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<a href="/recolecciones/" class="btn-outline-green btn btn-sm mb-3">
+    <i class="fas fa-arrow-left me-1"></i>Historial
+</a>
+
+<div class="row g-3">
+    <!-- Info Card -->
+    <div class="col-12 col-md-4">
+        <div class="card-redimir text-center">
+            <div style="font-size:.75rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:.5px;margin-bottom:.25rem;">Código de Lote</div>
+            <div style="font-size:1.3rem;font-weight:800;color:var(--primary);font-family:monospace;margin-bottom:1rem;">{{ lote.codigo_lote }}</div>
+
+            <!-- QR Code -->
+            <img src="https://api.qrserver.com/v1/create-qr-code/?size=140x140&data={{ request.scheme }}://{{ request.get_host }}/lotes/{{ lote.codigo_lote }}/&bgcolor=1e293b&color=22c55e&margin=4"
+                 alt="QR {{ lote.codigo_lote }}" style="border-radius:8px;border:1px solid var(--dark-border);margin-bottom:1rem;width:140px;">
+
+            <div style="background:rgba(255,255,255,.03);border:1px solid var(--dark-border);border-radius:10px;padding:1rem;text-align:left;">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span style="font-size:.78rem;color:var(--text-muted);">Empresa</span>
+                    <span style="font-size:.85rem;font-weight:600;">{{ lote.empresa_origen.nombre|truncatechars:20 }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span style="font-size:.78rem;color:var(--text-muted);">Tipo Residuo</span>
+                    <span class="badge-pill badge-blue" style="font-size:.72rem;">{{ lote.get_tipo_residuo_display }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span style="font-size:.78rem;color:var(--text-muted);">Cantidad</span>
+                    <span style="font-weight:700;color:#4ade80;">{{ lote.cantidad_kg }} kg</span>
+                </div>
+                {% if lote.peso_final_procesado %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span style="font-size:.78rem;color:var(--text-muted);">Peso Procesado</span>
+                    <span style="font-weight:600;color:#fbbf24;">{{ lote.peso_final_procesado }} kg</span>
+                </div>
+                {% endif %}
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span style="font-size:.78rem;color:var(--text-muted);">Operador</span>
+                    <span style="font-size:.85rem;">{{ lote.operador.nombre|default:"—" }}</span>
+                </div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <span style="font-size:.78rem;color:var(--text-muted);">Estado</span>
+                    <span class="badge-pill {% if lote.estado == 'procesado' %}badge-green{% elif lote.estado == 'procesando' %}badge-blue{% else %}badge-amber{% endif %}">
+                        {{ lote.get_estado_display }}
+                    </span>
+                </div>
+            </div>
+
+            <!-- Photos -->
+            {% if lote.foto_recoleccion %}
+            <div class="mt-3">
+                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem;">📸 Fotos de Recolección (Evidencia)</div>
+                <div class="d-flex flex-wrap gap-2">
+                    <a href="{{ lote.foto_recoleccion.url }}" target="_blank" style="flex:1;">
+                        <img src="{{ lote.foto_recoleccion.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;">
+                    </a>
+                    {% for ev in lote.fotos_extra.all %}
+                    <a href="{{ ev.foto.url }}" target="_blank" style="flex:1;">
+                        <img src="{{ ev.foto.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;opacity:0.9;">
+                    </a>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+
+            {% if lote.foto_procesamiento %}
+            <div class="mt-3">
+                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem;">🏭 Foto Procesamiento</div>
+                <img src="{{ lote.foto_procesamiento.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;">
+            </div>
+            {% endif %}
+
+            {% if lote.estado != 'procesado' and lote.estado != 'vendido' %}
+                {% if user.rol == 'admin' or user.is_staff %}
+                <a href="/lotes/{{ lote.codigo_lote }}/procesar/" class="btn-green btn w-100 mt-3">
+                    <i class="fas fa-industry me-2"></i>Procesar Lote
+                </a>
+                {% endif %}
+            {% endif %}
+        </div>
+    </div>
+
+    <!-- Timeline -->
+    <div class="col-12 col-md-8">
+        <div class="card-redimir">
+            <div class="section-title">🔍 Trazabilidad del Lote</div>
+
+            {% for evento in eventos %}
+            <div class="timeline-item">
+                <div class="timeline-dot">
+                    {% if evento.tipo_evento == 'recolectado' %}<i class="fas fa-leaf"></i>
+                    {% elif evento.tipo_evento == 'recibido' %}<i class="fas fa-warehouse"></i>
+                    {% elif evento.tipo_evento == 'procesando' %}<i class="fas fa-cog"></i>
+                    {% elif evento.tipo_evento == 'procesado' %}<i class="fas fa-check"></i>
+                    {% elif evento.tipo_evento == 'vendido' %}<i class="fas fa-handshake"></i>
+                    {% else %}<i class="fas fa-circle"></i>{% endif %}
+                </div>
+                <div style="flex:1;">
+                    <div style="background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:.75rem 1rem;">
+                        <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                            <span style="font-weight:600;font-size:.9rem;">{{ evento.get_tipo_evento_display }}</span>
+                            <span style="font-size:.75rem;color:var(--text-muted);">{{ evento.timestamp|date:"d/m/Y H:i" }}</span>
+                        </div>
+                        {% if evento.descripcion %}
+                        <div style="font-size:.82rem;color:var(--text-muted);margin-top:.3rem;">{{ evento.descripcion }}</div>
+                        {% endif %}
+                        {% if evento.usuario %}
+                        <div style="font-size:.75rem;color:#475569;margin-top:.25rem;">
+                            <i class="fas fa-user me-1"></i>{{ evento.usuario.nombre_completo }}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <p style="color:var(--text-muted);">No hay eventos registrados.</p>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+</div>
+{% endblock %}

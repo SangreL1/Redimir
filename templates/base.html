@@ -1,0 +1,890 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+    <title>{% block title %}Redimir — Gestión de Residuos{% endblock %}</title>
+    <meta name="description" content="Asesoría, Logística e Infraestructura para la GESTIÓN de RESIDUOS. Plataforma profesional Redimir SpA.">
+
+    <!-- Bootstrap 5 -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <!-- Google Fonts: Montserrat -->
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+
+    <style>
+        /* ══════════════════════════════════════════════════
+           SISTEMA DE DISEÑO REDIMIR — PALETA OFICIAL
+        ══════════════════════════════════════════════════ */
+        :root {
+            --primary:        #006BB8;   /* Azul Redimir */
+            --primary-dark:   #005490;
+            --primary-light:  #EAF4FF;
+            --primary-glow:   rgba(0, 107, 184, .12);
+            --secondary:      #95BF3C;   /* Verde Redimir */
+            --secondary-dark: #7AA030;
+            --secondary-light:#F0F8E2;
+            --accent:         #FFC20A;   /* Amarillo Redimir */
+            --accent-dark:    #E0A800;
+            --danger:         #DC3545;
+            --black:          #000000;
+            --gray-bg:        #E1E4E7;   /* Gris Fondo Redimir */
+            --white:          #FFFFFF;
+            --text-body:      #2C3E50;
+            --text-muted:     #6C7A89;
+            --text-light:     #95A5A6;
+            --border:         #D5D9DC;
+            --dark-card:      #1E293B;   /* Fondo Sólido para Modales */
+            --dark-border:    #334155;   /* Borde Sólido para Modales */
+            --radius:         12px;
+            --radius-sm:      8px;
+            --radius-lg:      18px;
+            --shadow:         0 4px 20px rgba(0, 107, 184, .12);
+            --shadow-sm:      0 2px 8px rgba(0,0,0,.08);
+            --shadow-lg:      0 8px 40px rgba(0, 107, 184, .18);
+            --transition:     .2s ease;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+        html { scroll-behavior: smooth; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: var(--gray-bg);
+            color: var(--text-body);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            font-size: 14px;
+        }
+
+        /* ── Scrollbar ─────────────────────────────── */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: var(--gray-bg); }
+        ::-webkit-scrollbar-thumb { background: #B8C0C6; border-radius: 3px; }
+
+        /* ══════════════════════════════════════════════
+           NAVBAR REDIMIR
+        ══════════════════════════════════════════════ */
+        .navbar-redimir {
+            background: var(--primary);
+            padding: .65rem 1.25rem;
+            position: sticky;
+            top: 0;
+            z-index: 1030;
+            box-shadow: 0 2px 12px rgba(0,107,184,.25);
+        }
+
+        .navbar-brand-redimir {
+            font-weight: 800;
+            font-size: 1.3rem;
+            color: #fff !important;
+            letter-spacing: -0.3px;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+        }
+
+        /* Logo SVG inline */
+        .logo-r {
+            width: 34px;
+            height: 34px;
+            background: var(--secondary);
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 800;
+            font-size: 1.1rem;
+            color: #fff;
+            position: relative;
+            overflow: hidden;
+        }
+        .logo-r::after {
+            content: '';
+            position: absolute;
+            bottom: 0; right: 0;
+            width: 0; height: 0;
+            border-left: 14px solid transparent;
+            border-bottom: 14px solid rgba(255,255,255,.25);
+        }
+
+        .nav-link-top {
+            color: rgba(255,255,255,.85) !important;
+            font-weight: 600;
+            font-size: .82rem;
+            padding: .4rem .75rem !important;
+            border-radius: var(--radius-sm);
+            transition: background var(--transition), color var(--transition);
+            text-decoration: none;
+            letter-spacing: .2px;
+        }
+        .nav-link-top:hover, .nav-link-top.active {
+            background: rgba(255,255,255,.18);
+            color: #fff !important;
+        }
+
+        /* Notification bell */
+        .notif-bell { position: relative; display: inline-flex; }
+        .notif-badge {
+            position: absolute; top: -5px; right: -7px;
+            background: var(--accent); color: var(--black);
+            font-size: .6rem; font-weight: 800;
+            min-width: 17px; height: 17px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            padding: 0 3px;
+            border: 2px solid var(--primary);
+        }
+
+        /* Mobile hamburger */
+        .navbar-toggler-redimir {
+            border: 1px solid rgba(255,255,255,.3);
+            background: transparent;
+            padding: .4rem .6rem;
+            border-radius: var(--radius-sm);
+            color: #fff;
+            cursor: pointer;
+        }
+
+        /* ══════════════════════════════════════════════
+           SIDEBAR LAYOUT
+        ══════════════════════════════════════════════ */
+        @media (min-width: 992px) {
+            .layout-with-sidebar { display: flex; min-height: calc(100vh - 60px); }
+            .sidebar {
+                width: 220px;
+                flex-shrink: 0;
+                background: var(--white);
+                border-right: 1px solid var(--border);
+                padding: 1.25rem .75rem;
+                display: flex;
+                flex-direction: column;
+                gap: .15rem;
+                box-shadow: 2px 0 8px rgba(0,0,0,.04);
+            }
+            .main-content { flex: 1; padding: 1.75rem; overflow-x: hidden; }
+        }
+        @media (max-width: 991px) {
+            .sidebar { display: none; }
+            .main-content { padding: 1rem; }
+        }
+
+        /* Sidebar nav item */
+        .sidebar-item {
+            display: flex;
+            align-items: center;
+            gap: .65rem;
+            padding: .55rem .85rem;
+            border-radius: var(--radius-sm);
+            color: var(--text-muted);
+            font-weight: 600;
+            font-size: .82rem;
+            text-decoration: none;
+            transition: background var(--transition), color var(--transition);
+        }
+        .sidebar-item i { width: 15px; text-align: center; flex-shrink: 0; }
+        .sidebar-item:hover, .sidebar-item.active {
+            background: var(--primary-glow);
+            color: var(--primary);
+        }
+        .sidebar-item.active { border-left: 3px solid var(--primary); padding-left: calc(.85rem - 3px); }
+        .sidebar-section {
+            font-size: .65rem;
+            font-weight: 800;
+            text-transform: uppercase;
+            letter-spacing: .8px;
+            color: var(--text-light);
+            padding: 1rem .85rem .35rem;
+        }
+
+        /* ── Mobile nav drawer ──────────────────────── */
+        .mobile-nav-drawer {
+            display: none;
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,.5);
+            z-index: 2000;
+        }
+        .mobile-nav-drawer.open { display: flex; }
+        .mobile-nav-panel {
+            background: var(--white);
+            border-right: 1px solid var(--border);
+            width: 260px; height: 100%;
+            padding: 1.25rem .75rem;
+            display: flex; flex-direction: column; gap: .15rem;
+            overflow-y: auto;
+        }
+
+        /* ══════════════════════════════════════════════
+           CARDS Y KPI
+        ══════════════════════════════════════════════ */
+        .card-redimir {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem;
+            transition: transform var(--transition), box-shadow var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        .card-redimir:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .kpi-card {
+            background: var(--white);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 1.25rem 1.5rem;
+            position: relative;
+            overflow: hidden;
+            transition: transform var(--transition), box-shadow var(--transition);
+            box-shadow: var(--shadow-sm);
+        }
+        .kpi-card::before {
+            content: '';
+            position: absolute; top: 0; left: 0; right: 0;
+            height: 4px; border-radius: var(--radius) var(--radius) 0 0;
+        }
+        .kpi-card.blue::before   { background: linear-gradient(90deg, var(--primary), #1a8cff); }
+        .kpi-card.green::before  { background: linear-gradient(90deg, var(--secondary), #abe339); }
+        .kpi-card.amber::before  { background: linear-gradient(90deg, var(--accent), #FFD650); }
+        .kpi-card.red::before    { background: linear-gradient(90deg, var(--danger), #f87171); }
+        .kpi-card:hover { transform: translateY(-3px); box-shadow: var(--shadow); }
+
+        .kpi-number {
+            font-size: 1.9rem; font-weight: 800;
+            letter-spacing: -1px; line-height: 1.1;
+            color: var(--text-body);
+        }
+        .kpi-label {
+            font-size: .72rem; color: var(--text-muted);
+            font-weight: 700; text-transform: uppercase;
+            letter-spacing: .5px; margin-bottom: .3rem;
+        }
+        .kpi-icon { font-size: 1.8rem; opacity: .12; }
+
+        /* ══════════════════════════════════════════════
+           BOTONES
+        ══════════════════════════════════════════════ */
+        .btn-primary-redimir {
+            background: var(--primary); border: none;
+            color: #fff; font-weight: 700;
+            border-radius: var(--radius-sm);
+            padding: .6rem 1.4rem; font-family: 'Montserrat', sans-serif;
+            font-size: .875rem;
+            transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+        }
+        .btn-primary-redimir:hover {
+            background: var(--primary-dark); color: #fff;
+            transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0,107,184,.3);
+        }
+        .btn-primary-redimir:active { transform: translateY(0); }
+
+        .btn-success-redimir {
+            background: var(--secondary); border: none;
+            color: #fff; font-weight: 700;
+            border-radius: var(--radius-sm); padding: .6rem 1.4rem;
+            font-family: 'Montserrat', sans-serif; font-size: .875rem;
+            transition: background var(--transition), transform var(--transition);
+        }
+        .btn-success-redimir:hover { background: var(--secondary-dark); color: #fff; transform: translateY(-1px); }
+
+        .btn-warning-redimir {
+            background: var(--accent); border: none;
+            color: var(--black); font-weight: 700;
+            border-radius: var(--radius-sm); padding: .6rem 1.4rem;
+            font-family: 'Montserrat', sans-serif; font-size: .875rem;
+            transition: background var(--transition), transform var(--transition);
+        }
+        .btn-warning-redimir:hover { background: var(--accent-dark); color: var(--black); transform: translateY(-1px); }
+
+        .btn-danger-redimir {
+            background: var(--danger); border: none;
+            color: #fff; font-weight: 700;
+            border-radius: var(--radius-sm); padding: .6rem 1.4rem;
+            font-family: 'Montserrat', sans-serif; font-size: .875rem;
+        }
+        .btn-danger-redimir:hover { background: #b02a37; color: #fff; }
+
+        .btn-outline-redimir {
+            border: 2px solid var(--primary); color: var(--primary);
+            background: transparent; font-weight: 700;
+            border-radius: var(--radius-sm); padding: .55rem 1.3rem;
+            font-family: 'Montserrat', sans-serif; font-size: .875rem;
+            transition: background var(--transition), color var(--transition);
+        }
+        .btn-outline-redimir:hover { background: var(--primary); color: #fff; }
+
+        /* Bootstrap override for Redimir palette */
+        .btn-primary { background: var(--primary); border-color: var(--primary); font-family: 'Montserrat', sans-serif; font-weight: 700; }
+        .btn-primary:hover { background: var(--primary-dark); border-color: var(--primary-dark); }
+        .btn-success { background: var(--secondary); border-color: var(--secondary); font-family: 'Montserrat', sans-serif; font-weight: 700; }
+        .btn-success:hover { background: var(--secondary-dark); border-color: var(--secondary-dark); }
+        .btn-warning { background: var(--accent); border-color: var(--accent); color: #000; font-family: 'Montserrat', sans-serif; font-weight: 700; }
+
+        /* ══════════════════════════════════════════════
+           FORMULARIOS
+        ══════════════════════════════════════════════ */
+        .form-control, .form-select {
+            border: 1.5px solid var(--border);
+            border-radius: var(--radius-sm);
+            color: var(--text-body);
+            padding: .6rem 1rem;
+            font-size: .875rem;
+            font-family: 'Montserrat', sans-serif;
+            background: var(--white);
+            transition: border-color var(--transition), box-shadow var(--transition);
+        }
+        .form-control:focus, .form-select:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px var(--primary-glow);
+            outline: none;
+        }
+        .form-label {
+            font-weight: 700; font-size: .8rem;
+            color: var(--text-body); margin-bottom: .35rem;
+        }
+        .form-text { font-size: .75rem; color: var(--text-muted); }
+        .required-mark { color: var(--danger); }
+
+        /* ══════════════════════════════════════════════
+           TABLAS
+        ══════════════════════════════════════════════ */
+        .table-redimir { width: 100%; border-collapse: separate; border-spacing: 0; }
+        .table-redimir thead th {
+            background: var(--primary);
+            color: #fff; font-size: .72rem;
+            text-transform: uppercase; letter-spacing: .5px;
+            font-weight: 700; padding: .85rem 1rem;
+            border: none; white-space: nowrap;
+        }
+        .table-redimir thead th:first-child { border-radius: var(--radius-sm) 0 0 0; }
+        .table-redimir thead th:last-child  { border-radius: 0 var(--radius-sm) 0 0; }
+        .table-redimir tbody tr { border-bottom: 1px solid var(--gray-bg); transition: background var(--transition); }
+        .table-redimir tbody tr:nth-child(even) { background: rgba(225,228,231,.35); }
+        .table-redimir tbody tr:hover { background: var(--primary-glow); }
+        .table-redimir tbody td { padding: .8rem 1rem; vertical-align: middle; font-size: .875rem; }
+
+        /* ══════════════════════════════════════════════
+           BADGES DE ESTADO
+        ══════════════════════════════════════════════ */
+        .badge-estado {
+            display: inline-flex; align-items: center; gap: .3rem;
+            padding: .25rem .7rem; border-radius: 99px;
+            font-size: .72rem; font-weight: 700; letter-spacing: .3px;
+        }
+        .badge-validado    { background: var(--secondary-light); color: var(--secondary-dark); border: 1px solid #c8e299; }
+        .badge-pendiente   { background: #FFF8E1; color: #E0A800; border: 1px solid #FFE082; }
+        .badge-programado  { background: var(--primary-light); color: var(--primary); border: 1px solid #b3d6f0; }
+        .badge-rechazado   { background: #FFF5F5; color: var(--danger); border: 1px solid #f5c6cb; }
+        .badge-solicitado  { background: var(--gray-bg); color: var(--text-muted); border: 1px solid var(--border); }
+        .badge-cerrado     { background: #f8f9fa; color: #495057; border: 1px solid #dee2e6; }
+        .badge-observado   { background: #FFF8E1; color: #E65100; border: 1px solid #FFB74D; }
+        .badge-en-ruta     { background: var(--primary-light); color: var(--primary-dark); border: 1px solid #90CAF9; }
+        .badge-emitido     { background: var(--secondary-light); color: #2E7D32; border: 1px solid #A5D6A7; }
+
+        /* Módulo badges */
+        .badge-rsd        { background: #EBF5FE; color: var(--primary); border: 1px solid #90CAF9; }
+        .badge-escombros  { background: #FFF8E1; color: #E65100; border: 1px solid #FFCC80; }
+        .badge-reciclable { background: var(--secondary-light); color: var(--secondary-dark); border: 1px solid #C5E1A5; }
+
+        /* ══════════════════════════════════════════════
+           ALERTAS
+        ══════════════════════════════════════════════ */
+        .alert-redimir-success {
+            background: var(--secondary-light); border: 1px solid #c8e299;
+            color: var(--secondary-dark); border-radius: var(--radius-sm); padding: .8rem 1rem;
+        }
+        .alert-redimir-warning {
+            background: #FFF8E1; border: 1px solid #FFE082;
+            color: #856404; border-radius: var(--radius-sm); padding: .8rem 1rem;
+        }
+        .alert-redimir-danger {
+            background: #FFF5F5; border: 1px solid #f5c6cb;
+            color: #721c24; border-radius: var(--radius-sm); padding: .8rem 1rem;
+        }
+        .alert-redimir-info {
+            background: var(--primary-light); border: 1px solid #b3d6f0;
+            color: var(--primary-dark); border-radius: var(--radius-sm); padding: .8rem 1rem;
+        }
+
+        /* ══════════════════════════════════════════════
+           TIPOGRAFÍA
+        ══════════════════════════════════════════════ */
+        .page-title {
+            font-size: 1.5rem; font-weight: 800;
+            letter-spacing: -0.5px; color: var(--text-body);
+        }
+        .page-subtitle { color: var(--text-muted); font-size: .875rem; font-weight: 500; }
+        .section-title {
+            font-size: 1rem; font-weight: 700;
+            color: var(--text-body); margin-bottom: 1rem;
+        }
+        .tagline-redimir {
+            font-size: .8rem; font-weight: 600;
+            color: var(--secondary); letter-spacing: .3px;
+        }
+
+        /* ══════════════════════════════════════════════
+           AVATAR Y PROFILE
+        ══════════════════════════════════════════════ */
+        .avatar-circle {
+            width: 34px; height: 34px; border-radius: 50%;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            display: inline-flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: .75rem; color: #fff; flex-shrink: 0;
+        }
+
+        /* ══════════════════════════════════════════════
+           CHART CONTAINERS
+        ══════════════════════════════════════════════ */
+        .chart-wrapper { position: relative; height: 220px; }
+
+        /* ══════════════════════════════════════════════
+           UPLOAD ZONE
+        ══════════════════════════════════════════════ */
+        .upload-zone {
+            border: 2px dashed var(--border);
+            border-radius: var(--radius);
+            padding: 2rem; text-align: center; cursor: pointer;
+            transition: border-color var(--transition), background var(--transition);
+            background: var(--gray-bg);
+        }
+        .upload-zone:hover, .upload-zone.drag-over {
+            border-color: var(--primary); background: var(--primary-light);
+        }
+        .photo-preview {
+            width: 80px; height: 80px; object-fit: cover;
+            border-radius: var(--radius-sm); border: 2px solid var(--border);
+        }
+
+        /* ══════════════════════════════════════════════
+           PROGRESS STEP (para operador mobile)
+        ══════════════════════════════════════════════ */
+        .step-indicator {
+            display: flex; align-items: center; justify-content: center;
+            gap: .5rem; margin-bottom: 1.5rem; flex-wrap: wrap;
+        }
+        .step-dot {
+            width: 32px; height: 32px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: .75rem; font-weight: 700;
+            border: 2px solid var(--border); background: var(--white);
+            color: var(--text-muted); transition: all var(--transition);
+        }
+        .step-dot.active  { background: var(--primary); border-color: var(--primary); color: #fff; }
+        .step-dot.done    { background: var(--secondary); border-color: var(--secondary); color: #fff; }
+        .step-line { flex: 1; height: 2px; background: var(--border); max-width: 40px; }
+        .step-line.done   { background: var(--secondary); }
+
+        /* ══════════════════════════════════════════════
+           TIMELINE
+        ══════════════════════════════════════════════ */
+        .timeline-item { display: flex; gap: 1rem; padding-bottom: 1.25rem; position: relative; }
+        .timeline-item:not(:last-child)::after {
+            content: ''; position: absolute;
+            left: 15px; top: 32px; bottom: 0;
+            width: 2px; background: var(--gray-bg);
+        }
+        .timeline-dot {
+            width: 32px; height: 32px; border-radius: 50%;
+            background: var(--primary-light); border: 2px solid var(--primary);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0; color: var(--primary); font-size: .75rem;
+        }
+
+        /* ══════════════════════════════════════════════
+           MOBILE FIRST HELPERS
+        ══════════════════════════════════════════════ */
+        @media (max-width: 576px) {
+            .kpi-number { font-size: 1.6rem; }
+            .page-title { font-size: 1.25rem; }
+            .table-redimir td, .table-redimir th { padding: .6rem .75rem; }
+            .btn-primary-redimir, .btn-success-redimir,
+            .btn-warning-redimir, .btn-danger-redimir { min-height: 48px; }
+        }
+
+        /* ══════════════════════════════════════════════
+           ANIMACIONES
+        ══════════════════════════════════════════════ */
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(14px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .fade-in-up { animation: fadeInUp .35s ease both; }
+
+        @keyframes pulseGreen {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(149,191,60,.4); }
+            50%       { box-shadow: 0 0 0 8px rgba(149,191,60,.0); }
+        }
+        .pulse-green { animation: pulseGreen 1.8s infinite; }
+
+        /* ══════════════════════════════════════════════
+           DJANGO MESSAGES TOAST (SLIDE-IN RIGHT)
+        ══════════════════════════════════════════════ */
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(120%); }
+            to   { opacity: 1; transform: translateX(0); }
+        }
+        @keyframes slideOutRight {
+            from { opacity: 1; transform: translateX(0); }
+            to   { opacity: 0; transform: translateX(120%); }
+        }
+        .messages-container { 
+            position: fixed; 
+            top: 75px; 
+            right: 1.5rem; 
+            z-index: 9999; 
+            width: 320px; 
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .toast-redimir {
+            background: var(--white);
+            border: none;
+            border-radius: 8px;
+            padding: 16px 20px;
+            display: flex; align-items: flex-start; gap: 12px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+            animation: slideInRight .4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: relative;
+            overflow: hidden;
+        }
+        .toast-redimir.dismissing {
+            animation: slideOutRight .3s ease-in forwards;
+        }
+        .toast-success { background: var(--secondary); color: var(--black-brand); }
+        .toast-success i { color: var(--black-brand) !important; }
+        .toast-error   { background: var(--danger); color: #fff; }
+        .toast-error i { color: #fff !important; }
+        .toast-warning { background: var(--accent); color: var(--black-brand); }
+        .toast-warning i { color: var(--black-brand) !important; }
+        .toast-info    { background: var(--primary); color: #fff; }
+        .toast-info i  { color: #fff !important; }
+
+        /* ══════════════════════════════════════════════
+           SECTION DECORATIVA (papel rasgado)
+        ══════════════════════════════════════════════ */
+        .section-wave {
+            background: var(--primary);
+            color: #fff; padding: 2rem 1.5rem;
+            position: relative; margin-bottom: 1.5rem;
+        }
+        .section-wave::after {
+            content: '';
+            position: absolute; bottom: -18px; left: 0; right: 0;
+            height: 20px;
+            background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 1440 20'%3E%3Cpath fill='%23006BB8' d='M0,0 C360,20 1080,0 1440,15 L1440,0 Z'/%3E%3C/svg%3E") no-repeat center/cover;
+        }
+
+        /* ══════════════════════════════════════════════
+           MISC
+        ══════════════════════════════════════════════ */
+        .progress-bar-redimir {
+            height: 6px; background: var(--gray-bg);
+            border-radius: 3px; overflow: hidden;
+        }
+        .progress-bar-fill {
+            height: 100%; border-radius: 3px;
+            transition: width .5s ease;
+        }
+        .bg-primary-redimir { background: var(--primary); }
+        .bg-secondary-redimir { background: var(--secondary); }
+        .bg-accent-redimir { background: var(--accent); }
+        .text-primary-redimir { color: var(--primary) !important; }
+        .text-secondary-redimir { color: var(--secondary) !important; }
+        .text-accent-redimir { color: var(--accent) !important; }
+        .border-primary-redimir { border-color: var(--primary) !important; }
+    </style>
+
+    {% block extra_css %}{% endblock %}
+</head>
+<body>
+
+<!-- ──────────────── NAVBAR REDIMIR ──────────────── -->
+<nav class="navbar-redimir d-flex align-items-center justify-content-between">
+    <div class="d-flex align-items-center gap-3">
+        {% if user.is_authenticated %}
+        <button class="navbar-toggler-redimir d-lg-none" id="mobileMenuBtn" type="button">
+            <i class="fas fa-bars"></i>
+        </button>
+        {% endif %}
+        <a href="{% if user.is_authenticated %}/dashboard/{% else %}/login/{% endif %}" class="navbar-brand-redimir" style="text-decoration: none;">
+            <!-- Logo Generado por CSS Premium -->
+            <div style="display: flex; align-items: center; justify-content: center; user-select: none;">
+                <!-- Icono de R -->
+                <div style="position: relative; display: flex; align-items: center; margin-right: 6px;">
+                    <!-- Bastón verde izquierdo -->
+                    <div style="width: 5px; height: 18px; background-color: var(--secondary); border-radius: 4px; margin-right: 2px;"></div>
+                    <!-- R Fuerte -->
+                    <div style="font-family: 'Montserrat', sans-serif; font-size: 32px; font-weight: 900; color: #fff; line-height: 1; letter-spacing: -2px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">R</div>
+                    <!-- Play Arrow derecho -->
+                    <div style="width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-left: 9px solid var(--secondary); position: absolute; right: -7px; top: 12px; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.1));"></div>
+                </div>
+                <!-- Texto REDIMIR -->
+                <span style="font-family: 'Montserrat', sans-serif; font-size: 1.15rem; font-weight: 900; letter-spacing: -0.5px; color: #fff; margin-left: 8px; text-shadow: 0 2px 4px rgba(0,0,0,0.1);">REDIMIR</span>
+            </div>
+        </a>
+    </div>
+
+    {% if user.is_authenticated %}
+    <!-- Los enlaces redundantes de escritorio fueron movidos exclusivamente al Sidebar para UI más limpio -->
+
+    <div class="d-flex align-items-center gap-3">
+        <!-- Notification bell -->
+        <a href="/notificaciones/" class="nav-link-top notif-bell" title="Notificaciones">
+            <i class="fas fa-bell"></i>
+            {% if notif_sin_leer > 0 %}
+            <span class="notif-badge" id="notif-badge-count">{{ notif_sin_leer }}</span>
+            {% else %}
+            <span class="notif-badge" id="notif-badge-count" style="display:none;">0</span>
+            {% endif %}
+        </a>
+        <!-- User info -->
+        <div class="d-flex align-items-center gap-2">
+            <div class="avatar-circle">{{ user.nombre|first|upper }}{{ user.apellido|first|upper }}</div>
+            <div class="d-none d-sm-block">
+                <div style="font-size:.82rem; font-weight:700; color:#fff;">{{ user.nombre }}</div>
+                <div style="font-size:.68rem; color:rgba(255,255,255,.7); font-weight:500;">{{ user.get_rol_display }}</div>
+            </div>
+        </div>
+        <a href="/logout/" class="nav-link-top" title="Cerrar sesión">
+            <i class="fas fa-sign-out-alt"></i>
+        </a>
+    </div>
+    {% endif %}
+</nav>
+
+<!-- Mobile Side Drawer -->
+{% if user.is_authenticated %}
+<div class="mobile-nav-drawer" id="mobileDrawer" onclick="closeMobileMenu(event)">
+    <div class="mobile-nav-panel">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <div class="d-flex align-items-center gap-2">
+                <div class="logo-r">R</div>
+                <span style="font-weight:800; color:var(--primary); font-size:1.1rem;">REDIMIR</span>
+            </div>
+            <button onclick="document.getElementById('mobileDrawer').classList.remove('open')"
+                style="background:transparent;border:none;color:var(--text-muted);font-size:1.2rem;cursor:pointer;">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        <div class="d-flex align-items-center gap-2 mb-3 p-2" style="background:var(--gray-bg);border-radius:var(--radius-sm);">
+            <div class="avatar-circle">{{ user.nombre|first|upper }}{{ user.apellido|first|upper }}</div>
+            <div>
+                <div style="font-size:.85rem;font-weight:700;color:var(--text-body);">{{ user.nombre_completo }}</div>
+                <div style="font-size:.72rem;color:var(--primary);font-weight:600;">{{ user.get_rol_display }}</div>
+            </div>
+        </div>
+
+        <span class="sidebar-section">Principal</span>
+        <a href="/dashboard/" class="sidebar-item"><i class="fas fa-home"></i>Dashboard</a>
+        <a href="/notificaciones/" class="sidebar-item">
+            <i class="fas fa-bell"></i>Notificaciones
+            {% if notif_sin_leer > 0 %}<span class="badge-estado badge-pendiente ms-auto">{{ notif_sin_leer }}</span>{% endif %}
+        </a>
+
+        {% if user.rol == 'empresa' %}
+        <span class="sidebar-section">Mi Portal</span>
+        <a href="/empresa/dashboard/" class="sidebar-item"><i class="fas fa-chart-line"></i>Panel Principal</a>
+        <a href="/empresa/solicitudes/crear/" class="sidebar-item"><i class="fas fa-plus"></i>Pedir Recolección</a>
+        <a href="/empresa/solicitudes/" class="sidebar-item"><i class="fas fa-inbox"></i>Mis Solicitudes</a>
+
+        {% elif user.rol == 'recolector' or user.rol == 'operador' %}
+        <span class="sidebar-section">Mis Retiros</span>
+        <a href="/solicitudes/" class="sidebar-item"><i class="fas fa-clipboard-list"></i>Mis Retiros de Hoy</a>
+        <a href="/recolecciones/crear/" class="sidebar-item"><i class="fas fa-plus-circle"></i>Registrar Retiro</a>
+        <a href="/recolecciones/" class="sidebar-item"><i class="fas fa-history"></i>Historial</a>
+
+        {% else %}
+        <span class="sidebar-section">Servicios</span>
+        <a href="/solicitudes/crear/" class="sidebar-item"><i class="fas fa-truck"></i>Crear Servicio</a>
+        <a href="/solicitudes/" class="sidebar-item"><i class="fas fa-clipboard-list"></i>Todos los Servicios</a>
+        <a href="/validaciones/" class="sidebar-item" style="color:var(--accent-dark);">
+            <i class="fas fa-exclamation-circle"></i>Validaciones Pend.
+        </a>
+        <span class="sidebar-section">Administración</span>
+        <a href="/empresas/" class="sidebar-item"><i class="fas fa-building"></i>Empresas</a>
+        <a href="/gestion/trabajadores/" class="sidebar-item"><i class="fas fa-users"></i>Directorio</a>
+        <a href="/gestion/accesos/" class="sidebar-item"><i class="fas fa-users-cog"></i>Gestión Accesos</a>
+        <a href="/certificados/crear/" class="sidebar-item"><i class="fas fa-certificate"></i>Certificados</a>
+        <a href="/cierre-mensual/" class="sidebar-item"><i class="fas fa-file-archive"></i>Cierre Mensual</a>
+        <a href="/calculadora/eco/" class="sidebar-item"><i class="fas fa-leaf"></i>Calculadora Eco</a>
+        {% endif %}
+
+        <div class="mt-auto pt-4">
+            <a href="/logout/" class="sidebar-item" style="color:var(--danger);">
+                <i class="fas fa-sign-out-alt"></i>Cerrar Sesión
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<!-- ──────────────── LAYOUT ──────────────── -->
+<div class="{% if user.is_authenticated %}layout-with-sidebar{% endif %}" style="flex:1;">
+
+    <!-- Sidebar (desktop only) -->
+    {% if user.is_authenticated %}
+    <aside class="sidebar">
+        <span class="sidebar-section">Principal</span>
+        <a href="/dashboard/" class="sidebar-item {% block nav_dashboard %}{% endblock %}">
+            <i class="fas fa-home"></i>Dashboard
+        </a>
+        <a href="/notificaciones/" class="sidebar-item {% block nav_notif %}{% endblock %}">
+            <i class="fas fa-bell"></i>Notificaciones
+            {% if notif_sin_leer > 0 %}<span class="badge-estado badge-pendiente ms-auto">{{ notif_sin_leer }}</span>{% endif %}
+        </a>
+
+        {% if user.rol == 'empresa' %}
+        <span class="sidebar-section">Mi Portal</span>
+        <a href="/empresa/dashboard/" class="sidebar-item {% block nav_empresa_dashboard %}{% endblock %}">
+            <i class="fas fa-chart-line"></i>Panel Principal
+        </a>
+        <a href="/empresa/como-reciclar/" class="sidebar-item {% block nav_empresa_guia %}{% endblock %}">
+            <i class="fas fa-recycle" style="color:var(--secondary);"></i>¿Cómo debo reciclar?
+        </a>
+        <a href="/empresa/solicitudes/crear/" class="sidebar-item">
+            <i class="fas fa-plus"></i>Pedir Recolección
+        </a>
+        <a href="/empresa/solicitudes/" class="sidebar-item {% block nav_empresa_solicitudes %}{% endblock %}">
+            <i class="fas fa-inbox"></i>Mis Solicitudes
+        </a>
+
+        {% elif user.rol == 'recolector' or user.rol == 'operador' %}
+        <span class="sidebar-section">Mis Retiros</span>
+        <a href="/solicitudes/" class="sidebar-item {% block nav_solicitudes %}{% endblock %}">
+            <i class="fas fa-clipboard-list"></i>Mis Retiros de Hoy
+            {% if solicitudes_activas_count and solicitudes_activas_count > 0 %}
+            <span class="badge-estado badge-pendiente ms-auto">{{ solicitudes_activas_count }}</span>{% endif %}
+        </a>
+        <a href="/recolecciones/crear/" class="sidebar-item {% block nav_crear %}{% endblock %}">
+            <i class="fas fa-plus-circle"></i>Registrar Retiro
+        </a>
+        <a href="/recolecciones/" class="sidebar-item {% block nav_historial %}{% endblock %}">
+            <i class="fas fa-history"></i>Historial
+        </a>
+
+        {% else %}
+        <span class="sidebar-section">Servicios</span>
+        <a href="/solicitudes/crear/" class="sidebar-item {% block nav_crear_sol %}{% endblock %}">
+            <i class="fas fa-truck"></i>Crear Servicio
+        </a>
+        <a href="/solicitudes/" class="sidebar-item {% block nav_servicios %}{% endblock %}">
+            <i class="fas fa-clipboard-list"></i>Todos los Servicios
+        </a>
+        <a href="/validaciones/" class="sidebar-item {% block nav_validaciones %}{% endblock %}" style="color:var(--accent-dark);">
+            <i class="fas fa-exclamation-circle" style="color:var(--accent-dark);"></i>
+            Validaciones
+            {% if validaciones_count and validaciones_count > 0 %}
+            <span class="badge-estado badge-pendiente ms-auto">{{ validaciones_count }}</span>{% endif %}
+        </a>
+
+        <span class="sidebar-section">Administración</span>
+        <a href="/empresas/" class="sidebar-item {% block nav_empresas %}{% endblock %}">
+            <i class="fas fa-building"></i>Empresas
+        </a>
+        <a href="/gestion/trabajadores/" class="sidebar-item {% block nav_buscar %}{% endblock %}">
+            <i class="fas fa-users"></i>Directorio
+        </a>
+        <a href="/gestion/accesos/" class="sidebar-item {% block nav_accesos %}{% endblock %}">
+            <i class="fas fa-users-cog"></i>Gestión Accesos
+        </a>
+        <a href="/estados-de-pago/" class="sidebar-item {% block nav_edp %}{% endblock %}">
+            <i class="fas fa-file-invoice-dollar"></i>Estados de Pago
+        </a>
+        <a href="/empresas/tarifas/" class="sidebar-item {% block nav_tarifas %}{% endblock %}">
+            <i class="fas fa-tags"></i>Tarifario Comercial
+        </a>
+        <a href="/gestion/auditoria/" class="sidebar-item {% block nav_auditoria %}{% endblock %}">
+            <i class="fas fa-shield-alt"></i>Auditoría & Trazabilidad
+        </a>
+
+        <span class="sidebar-section">Documentos</span>
+        <a href="/certificados/crear/" class="sidebar-item {% block nav_certificados %}{% endblock %}">
+            <i class="fas fa-certificate"></i>Certificados
+        </a>
+        <a href="/cierre-mensual/" class="sidebar-item {% block nav_cierre %}{% endblock %}">
+            <i class="fas fa-file-archive"></i>Cierre Mensual
+        </a>
+        <a href="/calculadora/eco/" class="sidebar-item {% block nav_calculadora %}{% endblock %}">
+            <i class="fas fa-leaf" style="color:var(--secondary);"></i>Calculadora Eco
+        </a>
+        {% endif %}
+
+        <div class="mt-auto pt-3">
+            <a href="/logout/" class="sidebar-item" style="color:var(--danger);">
+                <i class="fas fa-sign-out-alt"></i>Cerrar Sesión
+            </a>
+        </div>
+    </aside>
+    {% endif %}
+
+    <!-- Main Content -->
+    <main class="main-content flex-grow-1">
+
+        <!-- Django Messages -->
+        {% if messages %}
+        <div class="messages-container" id="toast-container">
+            {% for message in messages %}
+            <div class="toast-redimir {% if 'success' in message.tags %}toast-success{% elif 'error' in message.tags %}toast-error{% elif 'warning' in message.tags %}toast-warning{% else %}toast-info{% endif %}">
+                {% if 'success' in message.tags %}
+                    <i class="fas fa-check-circle" style="color:var(--secondary);margin-top:2px;"></i>
+                {% elif 'error' in message.tags %}
+                    <i class="fas fa-exclamation-circle" style="color:var(--danger);margin-top:2px;"></i>
+                {% elif 'warning' in message.tags %}
+                    <i class="fas fa-exclamation-triangle" style="color:var(--accent-dark);margin-top:2px;"></i>
+                {% else %}
+                    <i class="fas fa-info-circle" style="color:var(--primary);margin-top:2px;"></i>
+                {% endif %}
+                <div>
+                    <span style="font-size:.875rem;font-weight:600;color:var(--text-body);">{{ message }}</span>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        {% block content %}{% endblock %}
+    </main>
+</div>
+
+<!-- Bootstrap JS Bundle -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // Mobile menu
+    const menuBtn = document.getElementById('mobileMenuBtn');
+    const drawer  = document.getElementById('mobileDrawer');
+    if (menuBtn) menuBtn.addEventListener('click', () => drawer.classList.add('open'));
+
+    function closeMobileMenu(e) {
+        if (e.target === drawer) drawer.classList.remove('open');
+    }
+
+    // Auto-dismiss toasts con animacion de slide
+    const toasts = document.querySelectorAll('.toast-redimir');
+    toasts.forEach(toast => {
+        setTimeout(() => {
+            toast.classList.add('dismissing');
+            setTimeout(() => toast.remove(), 350);
+        }, 4000);
+    });
+
+    // Active sidebar highlight
+    document.querySelectorAll('.sidebar-item, .mobile-nav-panel .sidebar-item').forEach(link => {
+        if (link.href === window.location.href) {
+            link.classList.add('active');
+        }
+    });
+</script>
+
+{% block extra_js %}{% endblock %}
+</body>
+</html>

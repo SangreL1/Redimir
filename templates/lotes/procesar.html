@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block title %}Procesar {{ lote.codigo_lote }} - Redimir{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+  <div class="col-md-7 col-lg-5">
+
+    <div class="d-flex align-items-center mb-4">
+      <a href="/lotes/{{ lote.codigo_lote }}/" class="btn btn-sm btn-outline-secondary me-3">← Volver</a>
+      <h3 class="mb-0" style="color: var(--primary); font-weight: bold;">Procesar Lote</h3>
+    </div>
+
+    {% if messages %}
+      {% for msg in messages %}
+        <div class="alert alert-{{ msg.tags }}">{{ msg }}</div>
+      {% endfor %}
+    {% endif %}
+
+    <div class="alert alert-info border-0 shadow-sm mb-4">
+      <p class="mb-1"><strong>Código:</strong> {{ lote.codigo_lote }}</p>
+      <p class="mb-1"><strong>Empresa:</strong> {{ lote.empresa_origen.nombre }}</p>
+      <p class="mb-1"><strong>Tipo:</strong> {{ lote.get_tipo_residuo_display }}</p>
+      <p class="mb-0"><strong>Peso Original:</strong> {{ lote.cantidad_kg }} kg</p>
+    </div>
+
+    {% if lote.estado == 'procesado' or lote.estado == 'vendido' %}
+      <div class="alert alert-warning">Este lote ya ha sido {{ lote.get_estado_display|lower }}.</div>
+    {% else %}
+    <div class="card shadow-sm border-0">
+      <div class="card-body p-4">
+        <form method="post" enctype="multipart/form-data">
+          {% csrf_token %}
+
+          <div class="mb-3">
+            <label for="peso_final_procesado" class="form-label">Peso Final (kg) <span class="text-danger">*</span></label>
+            <input type="number" step="0.01" min="0.1" max="5000" class="form-control"
+                   name="peso_final_procesado" id="peso_final_procesado" required>
+          </div>
+
+          <div class="mb-3">
+            <label for="foto_procesamiento" class="form-label">Foto Post-Proceso (Opcional)</label>
+            <input class="form-control" type="file" name="foto_procesamiento" id="foto_procesamiento"
+                   accept=".jpg,.jpeg,.png">
+          </div>
+
+          <div class="mb-4">
+            <label for="observaciones" class="form-label">Observaciones</label>
+            <textarea class="form-control" name="observaciones" id="observaciones" rows="2"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-success w-100">Registrar Procesamiento</button>
+        </form>
+      </div>
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

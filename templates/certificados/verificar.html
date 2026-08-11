@@ -1,0 +1,114 @@
+{% extends 'base.html' %}
+{% block title %}Verificación Oficial de Certificado — Redimir{% endblock %}
+
+{% block content %}
+<div class="fade-in-up" style="max-width: 650px; margin: 2rem auto;">
+    {% if error %}
+    <div class="card-redimir text-center py-5">
+        <div style="font-size: 4rem; color: var(--danger); margin-bottom: 1rem;">
+            <i class="fas fa-times-circle"></i>
+        </div>
+        <h2 style="font-family: 'Montserrat', sans-serif; font-weight: 800; color: var(--danger);">Certificado No Encontrado</h2>
+        <p class="text-muted mb-4">{{ error }}</p>
+        <a href="/login/" class="btn-primary-redimir text-decoration-none" style="padding: .6rem 1.25rem;">
+            <i class="fas fa-home me-1"></i> Ir al Inicio
+        </a>
+    </div>
+    {% else %}
+    <div class="card-redimir p-4" style="border-top: 5px solid {% if certificado.estado == 'anulado' %}var(--danger){% else %}var(--secondary){% endif %};">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            {% if certificado.estado == 'anulado' %}
+            <span class="badge-pill bg-danger text-white" style="font-size: .85rem; padding: 6px 12px; border-radius: 20px;">
+                <i class="fas fa-exclamation-triangle me-1"></i> CERTIFICADO REVOCADO / ANULADO
+            </span>
+            {% else %}
+            <span class="badge-pill badge-green" style="font-size: .85rem;">
+                <i class="fas fa-check-circle me-1"></i> DOCUMENTO OFICIAL AUTÉNTICO Y VIGENTE
+            </span>
+            {% endif %}
+            <span class="text-muted" style="font-size: .8rem; font-weight: 600;">
+                Folio: {{ certificado.codigo_certificado }}
+            </span>
+        </div>
+
+        {% if certificado.estado == 'anulado' %}
+        <div class="alert alert-danger mb-4" style="background: rgba(220,53,69,0.15); border: 1px solid rgba(220,53,69,0.4); color: #ff8585;">
+            <strong><i class="fas fa-ban me-1"></i> ADVERTENCIA LEGAL:</strong> Este certificado ha sido anulado por la administración.
+            {% if certificado.motivo_anulacion %}
+            <div class="mt-1"><strong>Motivo:</strong> {{ certificado.motivo_anulacion }}</div>
+            {% endif %}
+        </div>
+        {% endif %}
+
+        <div class="text-center my-3">
+            <h2 style="font-family: 'Montserrat', sans-serif; font-weight: 800; color: var(--primary); margin-bottom: 5px;">
+                Certificado de Trazabilidad Redimir
+            </h2>
+            <p class="text-muted" style="font-size: .9rem;">
+                Plataforma oficial de trazabilidad de residuos Redimir SPA.
+            </p>
+        </div>
+
+        <div class="card-redimir mb-4 p-3" style="background: rgba(255,255,255,.03); border: 1px solid var(--dark-border);">
+            <div class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                <span class="text-muted font-weight-bold">Empresa / Razón Social:</span>
+                <strong class="text-white">{{ certificado.empresa.nombre }}</strong>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                <span class="text-muted font-weight-bold">RUT Empresa:</span>
+                <strong class="text-white">{{ certificado.empresa.rut }}</strong>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                <span class="text-muted font-weight-bold">Período Certificado:</span>
+                <strong class="text-white">{{ certificado.periodo_inicio|date:"d/m/Y" }} al {{ certificado.periodo_fin|date:"d/m/Y" }}</strong>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                <span class="text-muted font-weight-bold">Servicios Validados:</span>
+                <strong class="text-white">{{ certificado.numero_servicios }} retiros</strong>
+            </div>
+            <div class="d-flex justify-content-between py-2 border-bottom border-secondary border-opacity-25">
+                <span class="text-muted font-weight-bold">Fecha de Emisión:</span>
+                <strong class="text-white">{{ certificado.fecha_generacion|date:"d/m/Y H:i" }} hrs</strong>
+            </div>
+            {% if certificado.hash_sha256 %}
+            <div class="d-flex justify-content-between py-2" style="font-size: 0.75rem;">
+                <span class="text-muted font-weight-bold">Firma Digital SHA-256:</span>
+                <span class="font-monospace text-secondary" style="word-break: break-all;">{{ certificado.hash_sha256 }}</span>
+            </div>
+            {% endif %}
+        </div>
+
+        <h5 class="fw-bold mb-2" style="color: var(--secondary); font-size: 1rem;">
+            <i class="fas fa-cubes me-1"></i> Resumen de Residuos Gestionados
+        </h5>
+
+        <div class="table-responsive mb-4">
+            <table class="table-dark-custom w-100" style="font-size: .85rem;">
+                <thead>
+                    <tr>
+                        <th>Categoría / Material</th>
+                        <th class="text-end">Cantidad Registrada</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for key, val in certificado.desglose_por_tipo.items %}
+                    <tr>
+                        <td>{{ key }}</td>
+                        <td class="text-end fw-bold" style="color: var(--secondary);">{{ val }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        {% if certificado.archivo_pdf %}
+        <div class="text-center">
+            <a href="{{ certificado.archivo_pdf.url }}" target="_blank" class="btn-green btn btn-lg w-100">
+                <i class="fas fa-file-pdf me-2"></i> Descargar Documento PDF Oficial
+            </a>
+        </div>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

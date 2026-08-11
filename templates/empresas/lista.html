@@ -1,0 +1,90 @@
+{% extends 'base.html' %}
+{% block title %}Empresas — Redimir{% endblock %}
+{% block nav_empresas %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title"><i class="fas fa-building" style="color:var(--primary);margin-right:.5rem;"></i>Empresas</h1>
+        <p class="page-subtitle">{{ empresas.count }} empresa(s) registradas</p>
+    </div>
+</div>
+
+<div class="card-redimir">
+    <div class="table-responsive">
+        <table class="table-dark-custom w-100">
+            <thead>
+                <tr>
+                    <th>Empresa</th>
+                    <th>RUT</th>
+                    <th>Rubro</th>
+                    <th>Contacto</th>
+                    <th>Trabajadores</th>
+                    <th>Estado</th>
+                    <th>Registro</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for emp in empresas %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center gap-2">
+                            {% if emp.logo %}
+                            <img src="{{ emp.logo.url }}" style="width:28px;height:28px;border-radius:6px;object-fit:cover;">
+                            {% else %}
+                            <div style="width:28px;height:28px;border-radius:6px;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;font-size:.7rem;font-weight:700;color:var(--primary);">
+                                {{ emp.nombre|first|upper }}
+                            </div>
+                            {% endif %}
+                            <span style="font-weight:600;">{{ emp.nombre|truncatechars:25 }}</span>
+                        </div>
+                    </td>
+                    <td style="font-family:monospace;font-size:.8rem;">{{ emp.rut }}</td>
+                    <td style="font-size:.85rem;">{{ emp.get_rubro_display }}</td>
+                    <td>
+                        <div style="font-size:.83rem;">{{ emp.nombre_contacto|default:"—" }}</div>
+                        <div style="font-size:.75rem;color:var(--text-muted);">{{ emp.email_contacto }}</div>
+                    </td>
+                    <td>
+                        <span class="badge-pill badge-blue">{{ emp.total_trabajadores_activos }}</span>
+                    </td>
+                    <td>
+                        <span class="badge-pill {% if emp.estado == 'aprobada' %}badge-green{% elif emp.estado == 'pendiente' %}badge-amber{% else %}badge-red{% endif %}">
+                            {{ emp.get_estado_display }}
+                        </span>
+                    </td>
+                    <td style="font-size:.77rem;color:var(--text-muted);">{{ emp.fecha_registro|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if not emp.lotes.exists %}
+                        <form method="post" action="/empresas/{{ emp.pk }}/eliminar/"
+                              onsubmit="return confirm('¿Eliminar empresa {{ emp.nombre }}? Esta acción no se puede deshacer.')">
+                            {% csrf_token %}
+                            <button type="submit" class="btn-danger-soft btn btn-sm">
+                                <i class="fas fa-trash-alt"></i>
+                            </button>
+                        </form>
+                        {% else %}
+                        <span class="badge-pill badge-slate" title="No se puede eliminar: tiene recolecciones">
+                            <i class="fas fa-lock me-1"></i>{{ emp.lotes.count }} rec.
+                        </span>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="8" style="text-align:center;color:var(--text-muted);padding:2.5rem;">
+                        <i class="fas fa-building" style="font-size:2rem;margin-bottom:.5rem;display:block;opacity:.3;"></i>
+                        No hay empresas registradas.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+</div>
+{% endblock %}

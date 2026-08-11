@@ -1,0 +1,387 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión — Redimir</title>
+    <meta name="description" content="Plataforma Redimir — Asesoría, Logística e Infraestructura para la GESTIÓN de RESIDUOS">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800;900&family=Caveat:wght@700&family=Satisfy&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #006BB8;
+            --primary-dark: #005490;
+            --secondary: #95BF3C;
+            --accent: #FFC20A;
+            --gray-bg: #E1E4E7;
+            --border: #D5D9DC;
+            --black-brand: #0f1011;
+        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: 'Montserrat', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            background: #f8f9fa;
+        }
+
+        /* ── Panel izquierdo: Diseño Azul Premium + Footer de Integración ── */
+        .brand-panel {
+            flex: 1;
+            background: linear-gradient(160deg, var(--primary) 0%, #004d87 60%, #003366 100%);
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 3rem 2rem 2rem 2rem;
+            position: relative; overflow: hidden;
+        }
+        .brand-panel::before {
+            content: '';
+            position: absolute; width: 550px; height: 550px;
+            border-radius: 50%;
+            background: rgba(149,191,60,.12);
+            top: -120px; right: -150px;
+        }
+        .brand-panel::after {
+            content: '';
+            position: absolute; width: 400px; height: 400px;
+            border-radius: 50%;
+            background: rgba(255,194,10,.08);
+            top: 40%; left: -100px;
+        }
+
+        .brand-name {
+            font-size: 3.2rem; font-weight: 900;
+            color: #fff; letter-spacing: -1.5px;
+            margin-bottom: .2rem; z-index: 1;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .brand-lema {
+            font-size: .95rem; color: rgba(255,255,255,.8);
+            text-align: center; max-width: 340px;
+            font-weight: 500; line-height: 1.5;
+            z-index: 1; margin-bottom: 2rem;
+        }
+
+        /* Módulos chips */
+        .modulo-chips { display:flex; gap:.6rem; flex-wrap:wrap; justify-content:center; z-index:1; }
+        .chip {
+            padding:.4rem 1rem; border-radius:99px;
+            font-size:.75rem; font-weight:700;
+            border: 1.5px solid rgba(255,255,255,.25); color:rgba(255,255,255,.9);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .chip-rsd      { background:rgba(255,255,255,.1); }
+        .chip-escombros{ background:rgba(255,194,10,.15); border-color:rgba(255,194,10,.4); color:var(--accent); }
+        .chip-eco      { background:rgba(149,191,60,.15); border-color:rgba(149,191,60,.4); color:#b5e05a; }
+
+        /* Íconos flotantes decorativos */
+        .floating-icons { display: flex; gap: 1.5rem; margin-top: 2.5rem; z-index: 1; }
+        .float-icon {
+            width: 50px; height: 50px; border-radius: 14px;
+            background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.15);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 1.35rem; animation: floatUp 3s ease-in-out infinite;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        .float-icon:nth-child(2) { animation-delay: .5s; }
+        .float-icon:nth-child(3) { animation-delay: 1s; }
+        @keyframes floatUp { 0%,100% { transform:translateY(0); } 50% { transform:translateY(-8px); } }
+
+        /* ── FOOTER DEL PANEL IZQUIERDO (FLYER INTEGRADO) ── */
+        .brand-footer {
+            margin-top: auto; 
+            z-index: 1; 
+            width: 100%;
+            max-width: 550px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px;
+            padding: 1.5rem;
+            backdrop-filter: blur(10px);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 1rem;
+        }
+
+        .cursive-wrapper { text-align: left; }
+        .cursive-green {
+            font-family: 'Satisfy', cursive;
+            color: var(--secondary); /* Green exactly as the flyer */
+            font-size: 2.8rem;
+            line-height: .9;
+            transform: rotate(-3deg);
+            display: inline-block;
+            margin-bottom: 2px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .cursive-white {
+            font-family: 'Caveat', cursive;
+            color: #ffffff; /* We must use white here because of the blue background */
+            font-size: 2.6rem;
+            line-height: .85;
+            font-weight: 700;
+        }
+
+        .flyer-contact-wrapper {
+            display: flex;
+            flex-direction: column;
+            gap: 0.8rem;
+            text-align: right;
+            color: rgba(255,255,255,0.9);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        .flyer-contact-list div { display: flex; align-items: center; justify-content: flex-end; gap: 8px; margin-top: 4px; }
+        .flyer-contact-list i { font-size: 1.1rem; }
+
+        /* ── Panel derecho: Formulario de Login ── */
+        .login-panel {
+            width: 460px; flex-shrink: 0;
+            background: #fff;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+            padding: 3rem 2.5rem;
+            box-shadow: -10px 0 40px rgba(0,0,0,.08);
+            z-index: 2;
+        }
+
+        .login-header { text-align: center; margin-bottom: 2.5rem; }
+        .login-title { font-size: 1.6rem; font-weight: 800; color: #1C2B3A; }
+        .login-sub   { font-size: .95rem; color: #6C7A89; margin-top: .25rem; font-weight: 500; }
+
+        .form-label {
+            font-weight: 700; font-size: .85rem;
+            color: #2C3E50; margin-bottom: .4rem;
+        }
+        .form-control {
+            border: 1.5px solid var(--border);
+            border-radius: 10px; padding: .8rem 1rem;
+            font-family: 'Montserrat', sans-serif;
+            font-size: .95rem; color: #2C3E50;
+            transition: border-color .2s, box-shadow .2s;
+        }
+        .form-control:focus {
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(0,107,184,.12);
+            outline: none;
+        }
+
+        .btn-login {
+            background: var(--primary);
+            color: #fff; border: none;
+            border-radius: 10px; padding: .85rem;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem; font-weight: 700;
+            cursor: pointer; width: 100%;
+            transition: background .2s, transform .15s, box-shadow .2s;
+        }
+        .btn-login:hover {
+            background: var(--primary-dark);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,107,184,.3);
+        }
+        .btn-login:active { transform: translateY(0); }
+
+        .error-box {
+            background: #FFF5F5; border: 1.5px solid #f5c6cb;
+            border-radius: 10px; padding: .75rem 1rem;
+            color: #721c24; font-size: .875rem; font-weight: 600;
+            display: flex; align-items: center; gap: .5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .divider { display:flex; align-items:center; gap:.75rem; margin:1.5rem 0; color:#B8C0C6; font-size:.85rem; font-weight:600; }
+        .divider::before, .divider::after { content:''; flex:1; height:1px; background:var(--border); }
+
+        .link-alt {
+            font-size: .85rem; font-weight: 600;
+            color: var(--primary); text-decoration: none;
+        }
+        .link-alt:hover { text-decoration: underline; }
+
+        .footer-brand {
+            margin-top: auto; padding-top: 2rem;
+            text-align: center; font-size: .8rem;
+            color: #95A5A6; font-weight: 500;
+        }
+
+        /* Mobile */
+        @media (max-width: 992px) {
+            body { flex-direction: column; }
+            .brand-panel { padding: 3rem 1.5rem 6rem 1.5rem; flex:none; }
+            .brand-footer { flex-direction: column; text-align: center; justify-content: center; }
+            .cursive-wrapper { text-align: center; margin-bottom:1rem; }
+            .flyer-contact-wrapper { text-align: center; }
+            .flyer-social-actions { justify-content: center; }
+            .flyer-contact-list div { justify-content: center; }
+            .login-panel { width: 100%; border-top-left-radius:30px; border-top-right-radius:30px; margin-top:-40px; }
+        }
+    </style>
+</head>
+<body>
+
+<!-- ════════════════ PANEL IZQUIERDO: DISEÑO AZUL CORPORATIVO ════════════════ -->
+<div class="brand-panel d-none d-md-flex">
+    
+    <div style="margin-top: auto; display:flex; flex-direction:column; align-items:center;">
+        <!-- Logo Generado en CSS (Escalado gigante) -->
+        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; user-select: none; margin-bottom: 15px;">
+            <!-- Icono R super-dimensionado -->
+            <div style="position: relative; display: flex; align-items: center; margin-bottom: 10px;">
+                <!-- Bastón verde -->
+                <div style="width: 14px; height: 62px; background-color: var(--secondary); border-radius: 8px; margin-right: 6px;"></div>
+                <!-- R -->
+                <div style="font-family: 'Montserrat', sans-serif; font-size: 110px; font-weight: 900; color: #fff; line-height: 0.75; letter-spacing: -6px; text-shadow: 0 4px 12px rgba(0,0,0,0.15);">R</div>
+                <!-- Play Arrow -->
+                <div style="width: 0; height: 0; border-top: 18px solid transparent; border-bottom: 18px solid transparent; border-left: 28px solid var(--secondary); position: absolute; right: -25px; top: 42px; filter: drop-shadow(0 4px 6px rgba(0,0,0,0.15));"></div>
+            </div>
+            <!-- Texto REDIMIR -->
+            <div class="brand-name" style="font-size: 3.5rem; font-weight: 900; color: #fff; letter-spacing: -1.5px; margin-top: 5px;">REDIMIR</div>
+        </div>
+        
+        <div class="brand-lema">Asesoría, Logística e Infraestructura para la <br><strong style="color:#fff;font-size:1.1rem;">GESTIÓN de RESIDUOS</strong></div>
+        
+        <div class="modulo-chips mt-2">
+            <span class="chip chip-rsd"><i class="fas fa-trash-alt me-1"></i> RSD / Basura</span>
+            <span class="chip chip-escombros"><i class="fas fa-truck-pickup me-1"></i> Escombros</span>
+            <span class="chip chip-eco"><i class="fas fa-recycle me-1"></i> Reciclables</span>
+        </div>
+
+        <div class="floating-icons">
+            <div class="float-icon">🌱</div>
+            <div class="float-icon">💧</div>
+            <div class="float-icon">⚡</div>
+            <div class="float-icon">🌳</div>
+        </div>
+    </div>
+
+    <!-- EL FOOTER AÑADIDO ESTILO FLYER -->
+    <div class="brand-footer mt-auto">
+        <div class="cursive-wrapper">
+            <span class="cursive-green">Seamos<br>el cambio</span><br>
+            <span class="cursive-white">que el planeta<br>necesita.</span>
+        </div>
+        
+        <div class="flyer-contact-wrapper">
+            <div class="flyer-contact-list">
+                <div>redimir.cl <i class="fas fa-globe ms-1"></i> <i class="fab fa-facebook"></i> <i class="fab fa-instagram"></i></div>
+                <div>+56 9 3178 0868 <i class="fab fa-whatsapp" style="color:#25D366;"></i></div>
+                <div>contacto@redimir.cl <i class="far fa-envelope"></i></div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<!-- ════════════════ PANEL DERECHO: LOGIN ════════════════ -->
+<div class="login-panel">
+    
+    <div class="d-flex d-md-none align-items-center justify-content-center w-100 mb-4 user-select-none" style="gap: 15px;">
+        <!-- Icono R CSS puro Mobile -->
+        <div style="position: relative; display: flex; align-items: center;">
+            <div style="width: 7px; height: 32px; background-color: var(--secondary); border-radius: 4px; margin-right: 4px;"></div>
+            <div style="font-family: 'Montserrat', sans-serif; font-size: 58px; font-weight: 900; color: var(--primary); line-height: 0.8; letter-spacing: -3px;">R</div>
+            <div style="width: 0; height: 0; border-top: 10px solid transparent; border-bottom: 10px solid transparent; border-left: 15px solid var(--secondary); position: absolute; right: -12px; top: 24px;"></div>
+        </div>
+        <span style="font-size: 2.2rem; font-weight: 900; letter-spacing: -1px; color: var(--primary); margin-top: 4px;">REDIMIR</span>
+    </div>
+
+    <div class="login-header w-100">
+        <div class="login-title">Ingresa a tu cuenta</div>
+        <div class="login-sub">Sistema Administrativo Redimir SpA</div>
+    </div>
+
+    <!-- Error -->
+    {% if error %}
+    <div class="error-box w-100">
+        <i class="fas fa-exclamation-circle"></i>{{ error }}
+    </div>
+    {% endif %}
+
+    <!-- Formulario -->
+    <form method="post" class="w-100">
+        {% csrf_token %}
+
+        <div class="mb-4">
+            <label class="form-label" for="id_rut">RUT o Correo Electrónico</label>
+            <div class="input-group">
+                <span class="input-group-text" style="background:#fff;border:1.5px solid var(--border);border-right:none;border-radius:10px 0 0 10px;">
+                    <i class="fas fa-id-card" style="color:var(--primary);"></i>
+                </span>
+                <input type="text" name="rut" id="id_rut" class="form-control"
+                       placeholder="12.345.678-9 o correo@empresa.cl"
+                       style="border-left:none;border-radius:0 10px 10px 0;"
+                       autocomplete="username" required autofocus>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <div class="d-flex justify-content-between mb-1">
+                <label class="form-label mb-0" for="id_password">Contraseña</label>
+            </div>
+            <div class="input-group">
+                <span class="input-group-text" style="background:#fff;border:1.5px solid var(--border);border-right:none;border-radius:10px 0 0 10px;">
+                    <i class="fas fa-lock" style="color:var(--primary);"></i>
+                </span>
+                <input type="password" name="password" id="id_password" class="form-control"
+                       placeholder="Ingresa tu contraseña"
+                       style="border-left:none;border-radius:0 10px 10px 0;"
+                       autocomplete="current-password" required>
+                <button type="button" class="input-group-text"
+                        style="background:#fff;border:1.5px solid var(--border);border-left:none;border-radius:0 10px 10px 0;cursor:pointer;"
+                        onclick="togglePass()">
+                    <i class="fas fa-eye" id="toggle-icon" style="color:var(--primary);"></i>
+                </button>
+            </div>
+            <div class="text-end mt-2">
+                <a href="#" class="link-alt">¿Olvidaste la contraseña?</a>
+            </div>
+        </div>
+
+        <div class="form-check mb-4 mt-3">
+            <input class="form-check-input" type="checkbox" name="remember" id="remember" style="accent-color:var(--primary);">
+            <label class="form-check-label" for="remember" style="font-size:.85rem; font-weight:600; color:#2C3E50;">
+                Mantener mi sesión iniciada
+            </label>
+        </div>
+
+        <button type="submit" class="btn-login mb-2">
+            <i class="fas fa-sign-in-alt me-2"></i>Acceder al Sistema
+        </button>
+    </form>
+
+    <div class="divider">Nuevos Usuarios</div>
+
+    <div class="d-flex flex-column gap-2 w-100">
+        <a href="/registro/empresa/" class="btn btn-outline-dark" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:.9rem;border-radius:10px; padding:.7rem;">
+            <i class="fas fa-building me-2" style="color:var(--primary);"></i>Registrar nueva Empresa
+        </a>
+        <a href="/registro/trabajador/" class="btn btn-outline-dark" style="font-family:'Montserrat',sans-serif;font-weight:700;font-size:.9rem;border-radius:10px; padding:.7rem;">
+            <i class="fas fa-id-badge me-2" style="color:var(--secondary);"></i>Acceso para Operadores
+        </a>
+    </div>
+
+    <div class="footer-brand d-none d-md-block">
+        Una solución oficial de Redimir SpA
+    </div>
+</div>
+
+<script>
+function togglePass() {
+    const input = document.getElementById('id_password');
+    const icon  = document.getElementById('toggle-icon');
+    if (input.type === 'password') {
+        input.type = 'text';
+        icon.classList.replace('fa-eye','fa-eye-slash');
+    } else {
+        input.type = 'password';
+        icon.classList.replace('fa-eye-slash','fa-eye');
+    }
+}
+</script>
+</body>
+</html>
