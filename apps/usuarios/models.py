@@ -52,7 +52,7 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     estado = models.CharField(max_length=20, choices=ESTADOS, default='pendiente')
 
     empresa = models.ForeignKey(
-        'empresas.Empresa', on_delete=models.SET_NULL,
+        'empresas.Empresa', on_delete=models.CASCADE,
         null=True, blank=True, related_name='trabajadores'
     )
 

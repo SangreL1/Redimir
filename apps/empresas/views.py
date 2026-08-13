@@ -45,8 +45,26 @@ class EmpresaDeleteView(View):
             )
         else:
             nombre = empresa.nombre
+            usuarios_asociados = Usuario.objects.filter(empresa=empresa)
+            cant_usuarios = usuarios_asociados.count()
+            
+            # Registrar en auditoría de seguridad
+            from apps.usuarios.models import AuditLog
+            AuditLog.registrar(
+                usuario=request.user,
+                accion='eliminacion',
+                modelo='Empresa',
+                registro_id=empresa.pk,
+                detalles=f"Empresa '{nombre}' y {cant_usuarios} usuario(s) asociado(s) eliminados permanentemente del sistema.",
+                ip=request.META.get('REMOTE_ADDR')
+            )
+            
+            usuarios_asociados.delete()
             empresa.delete()
-            messages.success(request, f'Empresa "{nombre}" eliminada exitosamente.')
+            messages.success(
+                request, 
+                f'Empresa "{nombre}" y sus {cant_usuarios} usuario(s) asociado(s) fueron eliminados permanentemente (acceso revocado).'
+            )
         return redirect('empresa-list')
 
 
@@ -131,16 +149,26 @@ class EmpresaSolicitudCrearView(View):
         if not empresa or empresa.estado != 'aprobada':
             return redirect('dashboard')
 
-        tipo_recoleccion = request.POST.get('tipo_recoleccion', '').strip()
-        descripcion = request.POST.get('descripcion', '').strip()
-        direccion   = request.POST.get('direccion_recoleccion', '').strip()
-        fecha_str   = request.POST.get('fecha_solicitada', '')
-        peso_estimado = request.POST.get('peso_estimado', '').strip()
-        observaciones = request.POST.get('observaciones', '').strip()
+        modulo         = request.POST.get('modulo', 'reciclables')
+        tipo_material  = request.POST.get('tipo_material', 'carton')
+        descripcion    = request.POST.get('descripcion', '').strip()
+        direccion      = request.POST.get('direccion_recoleccion', '').strip()
+        fecha_str      = request.POST.get('fecha_solicitada', '')
+        cant_est_raw   = request.POST.get('cantidad_estimada', '0')
+        unidad_med     = request.POST.get('unidad_medida', 'kg')
+        precio_u_raw   = request.POST.get('precio_unitario', '0')
+        total_est_raw  = request.POST.get('total_estimado', '0')
+        observaciones  = request.POST.get('observaciones', '').strip()
+
+        from decimal import Decimal
+        try:
+            cant_est  = Decimal(cant_est_raw) if cant_est_raw else Decimal('0')
+            precio_u  = Decimal(precio_u_raw) if precio_u_raw else Decimal('0')
+            total_est = Decimal(total_est_raw) if total_est_raw else Decimal('0')
+        except Exception:
+            cant_est = precio_u = total_est = Decimal('0')
 
         errores = []
-        if not tipo_recoleccion:
-            errores.append('El tipo de recolección es obligatorio.')
         if not descripcion:
             errores.append('La descripción es obligatoria.')
         if not direccion:
@@ -161,12 +189,22 @@ class EmpresaSolicitudCrearView(View):
 
         solicitud = SolicitudRecoleccion.objects.create(
             empresa=empresa,
-            descripcion=f"[{tipo_recoleccion.upper()}] {descripcion}",
+            modulo=modulo,
+            tipo_material=tipo_material,
+            cantidad_estimada=cant_est,
+            unidad_medida=unidad_med,
+            precio_unitario=precio_u,
+            total_estimado=total_est,
+            descripcion=descripcion,
             direccion_recoleccion=direccion,
             fecha_solicitada=fecha_solicitada,
-            observaciones=(f"Peso estimado: {peso_estimado} kg. " if peso_estimado else '') + observaciones,
+            observaciones=observaciones,
             creado_por=request.user,
         )
+
+        # Auto-generar/actualizar Estado de Pago único de la empresa
+        from .models import actualizar_o_crear_edp_empresa
+        actualizar_o_crear_edp_empresa(empresa, usuario=request.user)
 
         # Notify all admins
         admins = Usuario.objects.filter(rol='admin', is_active=True, estado='aprobado')
@@ -175,7 +213,7 @@ class EmpresaSolicitudCrearView(View):
                 usuario=adm,
                 tipo='nueva_solicitud',
                 titulo=f'Nueva Solicitud — {empresa.nombre}',
-                mensaje=f'Solicita recolección de {tipo_recoleccion} en {direccion}',
+                mensaje=f'Solicita recolección de {tipo_material.upper()} en {direccion}',
                 url_destino='/solicitudes/',
             )
             for adm in admins
@@ -196,7 +234,7 @@ class EmpresaSolicitudCrearView(View):
         ]
         Notificacion.objects.bulk_create(notifs_rec)
 
-        messages.success(request, f'Solicitud #{solicitud.pk} enviada. Recibirás confirmación pronto.')
+        messages.success(request, f'Solicitud #{solicitud.pk} enviada y Estado de Pago actualizado automáticamente.')
         return redirect('empresa-solicitudes')
 
 
@@ -268,11 +306,25 @@ class SolicitudCrearView(View):
         if not _es_admin(request.user):
             return redirect('dashboard')
 
-        empresa_id   = request.POST.get('empresa')
-        descripcion  = request.POST.get('descripcion', '').strip()
-        direccion    = request.POST.get('direccion_recoleccion', '').strip()
-        fecha_str    = request.POST.get('fecha_solicitada', '')
+        empresa_id    = request.POST.get('empresa')
+        modulo        = request.POST.get('modulo', 'reciclables')
+        tipo_material = request.POST.get('tipo_material', 'carton')
+        cant_est_raw  = request.POST.get('cantidad_estimada', '0')
+        unidad_med    = request.POST.get('unidad_medida', 'kg')
+        precio_u_raw  = request.POST.get('precio_unitario', '0')
+        total_est_raw = request.POST.get('total_estimado', '0')
+        descripcion   = request.POST.get('descripcion', '').strip()
+        direccion     = request.POST.get('direccion_recoleccion', '').strip()
+        fecha_str     = request.POST.get('fecha_solicitada', '')
         observaciones = request.POST.get('observaciones', '').strip()
+
+        from decimal import Decimal
+        try:
+            cant_est  = Decimal(cant_est_raw) if cant_est_raw else Decimal('0')
+            precio_u  = Decimal(precio_u_raw) if precio_u_raw else Decimal('0')
+            total_est = Decimal(total_est_raw) if total_est_raw else Decimal('0')
+        except Exception:
+            cant_est = precio_u = total_est = Decimal('0')
 
         errores = []
         if not empresa_id:   errores.append('Selecciona una empresa.')
@@ -300,10 +352,23 @@ class SolicitudCrearView(View):
             fecha_solicitada = timezone.now()
 
         solicitud = SolicitudRecoleccion.objects.create(
-            empresa=empresa, descripcion=descripcion,
-            direccion_recoleccion=direccion, fecha_solicitada=fecha_solicitada,
-            observaciones=observaciones, creado_por=request.user,
+            empresa=empresa,
+            modulo=modulo,
+            tipo_material=tipo_material,
+            cantidad_estimada=cant_est,
+            unidad_medida=unidad_med,
+            precio_unitario=precio_u,
+            total_estimado=total_est,
+            descripcion=descripcion,
+            direccion_recoleccion=direccion,
+            fecha_solicitada=fecha_solicitada,
+            observaciones=observaciones,
+            creado_por=request.user,
         )
+
+        # Auto-generar/actualizar Estado de Pago único de la empresa
+        from .models import actualizar_o_crear_edp_empresa
+        actualizar_o_crear_edp_empresa(empresa, usuario=request.user)
 
         recolectores = Usuario.objects.filter(empresa=empresa, rol='recolector', estado='aprobado', is_active=True)
         notifs = [
@@ -316,7 +381,7 @@ class SolicitudCrearView(View):
             for r in recolectores
         ]
         Notificacion.objects.bulk_create(notifs)
-        messages.success(request, f'Solicitud creada. {len(notifs)} recolector(es) notificado(s).')
+        messages.success(request, f'Solicitud #{solicitud.pk} creada y Estado de Pago actualizado automáticamente.')
         return redirect('solicitud-lista')
 
 
@@ -701,7 +766,7 @@ class TarifaEmpresaGestionView(View):
 
         try:
             from decimal import Decimal
-            from .models import Empresa, TarifaEmpresa
+            from .models import Empresa, TarifaEmpresa, actualizar_o_crear_edp_empresa
             precio = Decimal(precio_raw)
             empresa = Empresa.objects.get(pk=empresa_id)
 
@@ -715,6 +780,9 @@ class TarifaEmpresaGestionView(View):
                 }
             )
 
+            # Auto-actualizar/generar el Estado de Pago de la empresa al cambiar tarifario
+            edp = actualizar_o_crear_edp_empresa(empresa, usuario=request.user)
+
             from apps.usuarios.models import AuditLog
             AuditLog.registrar(
                 usuario=request.user,
@@ -724,15 +792,42 @@ class TarifaEmpresaGestionView(View):
                 campo='precio_unitario',
                 valor_anterior='0',
                 valor_nuevo=str(precio),
-                detalles=f"Tarifa de {material.upper()} para {empresa.nombre} configurada a ${precio}/{unidad}",
+                detalles=f"Tarifa de {material.upper()} para {empresa.nombre} configurada a ${precio}/{unidad}. Estado de Pago #{edp.numero_edp} recalculado automáticamente.",
                 ip=request.META.get('REMOTE_ADDR')
             )
 
-            messages.success(request, f"Tarifa de {material.upper()} para {empresa.nombre} configurada a ${precio:,.0f}/{unidad}.")
+            messages.success(request, f"Tarifa de {material.upper()} para {empresa.nombre} configurada a ${precio:,.0f}/{unidad}. Estado de Pago #{edp.numero_edp} actualizado automáticamente.")
         except Exception as e:
             messages.error(request, f"Error al guardar tarifa: {str(e)}")
 
         return redirect('tarifas-empresa')
+
+
+@method_decorator(login_required, name='dispatch')
+class APITarifasEmpresaView(View):
+    """API en tiempo real para retornar el tarifario configurado de una empresa en JSON."""
+    def get(self, request, pk):
+        from django.http import JsonResponse
+        from .models import Empresa, TarifaEmpresa
+        try:
+            empresa = Empresa.objects.get(pk=pk)
+            tarifas = TarifaEmpresa.objects.filter(empresa=empresa)
+            tarifas_dict = {}
+            for t in tarifas:
+                tarifas_dict[t.tipo_material.lower()] = {
+                    'modulo': t.modulo,
+                    'precio_unitario': float(t.precio_unitario),
+                    'unidad_medida': t.unidad_medida,
+                }
+            return JsonResponse({
+                'success': True,
+                'empresa_id': empresa.pk,
+                'empresa_nombre': empresa.nombre,
+                'tarifas': tarifas_dict,
+            })
+        except Empresa.DoesNotExist:
+            return JsonResponse({'success': False, 'error': 'Empresa no encontrada'}, status=404)
+
 
 
 

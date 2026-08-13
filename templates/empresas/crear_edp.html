@@ -23,7 +23,7 @@
         {% csrf_token %}
         <div class="mb-3">
             <label class="form-label-dark">Empresa / Cliente *</label>
-            <select name="empresa_id" class="form-select" style="background:rgba(255,255,255,.05);border:1px solid var(--dark-border);color:#e2e8f0;" required>
+            <select name="empresa_id" class="form-select" required>
                 <option value="">-- Seleccionar Empresa --</option>
                 {% for emp in empresas %}
                 <option value="{{ emp.pk }}">{{ emp.nombre }} ({{ emp.rut }})</option>
@@ -49,7 +49,7 @@
             </div>
             <div class="col-6">
                 <label class="form-label-dark">Estado Inicial</label>
-                <select name="estado" class="form-select" style="background:rgba(255,255,255,.05);border:1px solid var(--dark-border);color:#e2e8f0;">
+                <select name="estado" class="form-select">
                     <option value="borrador">Borrador Interno</option>
                     <option value="emitido">Emitido</option>
                     <option value="pagado">Pagado</option>

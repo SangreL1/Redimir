@@ -28,15 +28,15 @@
         <tbody>
           {% for log in logs %}
           <tr>
-            <td style="font-size:.82rem;" class="text-muted fw-bold">
-              <i class="far fa-clock me-1"></i>{{ log.fecha_registro|date:"d/m/Y H:i:s" }}
+            <td style="font-size:.85rem;color:#000000;font-weight:700;">
+              <i class="far fa-clock me-1" style="color:var(--secondary);"></i>{{ log.fecha_registro|date:"d/m/Y H:i:s" }}
             </td>
             <td>
               {% if log.usuario %}
-              <strong class="text-white">{{ log.usuario.nombre_completo }}</strong><br>
-              <small class="text-muted">{{ log.usuario.get_rol_display }} ({{ log.usuario.rut }})</small>
+              <strong style="color:#000000;font-weight:700;font-size:.95rem;">{{ log.usuario.nombre_completo }}</strong><br>
+              <small style="color:#475569;font-weight:600;">{{ log.usuario.get_rol_display }} ({{ log.usuario.rut }})</small>
               {% else %}
-              <span class="text-muted">Sistema Automático</span>
+              <span style="color:#1E293B;font-weight:700;"><i class="fas fa-robot me-1" style="color:var(--secondary);"></i>Sistema Automático</span>
               {% endif %}
             </td>
             <td>
@@ -54,9 +54,9 @@
               <span class="badge-pill badge-blue">{{ log.get_accion_display }}</span>
               {% endif %}
             </td>
-            <td><strong class="text-primary">{{ log.modelo }}</strong></td>
-            <td><code style="color:var(--secondary); background:rgba(149,191,60,.1); padding:.2rem .4rem; border-radius:4px;">#{{ log.registro_id }}</code></td>
-            <td style="font-size:.85rem; max-width:320px;" class="text-light">{{ log.detalles }}</td>
+            <td><strong style="color:#006BB8;font-weight:700;">{{ log.modelo }}</strong></td>
+            <td><code style="color:#006BB8; background:#EBF5FF; border:1px solid #BEE3F8; padding:.25rem .55rem; border-radius:6px; font-weight:700; font-family:monospace;">#{{ log.registro_id }}</code></td>
+            <td style="font-size:.85rem; max-width:320px; color:#1E293B; font-weight:500;">{{ log.detalles }}</td>
           </tr>
           {% endfor %}
         </tbody>

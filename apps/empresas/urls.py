@@ -6,7 +6,7 @@ from .views import (
     SolicitudAceptarView, SolicitudCompletarView, SolicitudCancelarView,
     EstadoDePagoListView, EstadoDePagoCrearView,
     EstadoDePagoDetalleView, EstadoDePagoEditarView, EstadoDePagoAnularView, EstadoDePagoEliminarView,
-    TarifaEmpresaGestionView,
+    TarifaEmpresaGestionView, APITarifasEmpresaView,
 )
 
 urlpatterns = [
@@ -19,7 +19,6 @@ urlpatterns = [
     path('empresa/solicitudes/', EmpresaSolicitudListView.as_view(), name='empresa-solicitudes'),
     path('empresa/solicitudes/crear/', EmpresaSolicitudCrearView.as_view(), name='empresa-solicitud-crear'),
     path('empresa/como-reciclar/', EmpresaGuiaReciclajeView.as_view(), name='empresa-guia-reciclaje'),
-
 
     # Admin + recolector: solicitudes management
     path('solicitudes/', SolicitudListView.as_view(), name='solicitud-lista'),
@@ -36,5 +35,9 @@ urlpatterns = [
     path('estados-de-pago/<int:pk>/anular/', EstadoDePagoAnularView.as_view(), name='estados-de-pago-anular'),
     path('estados-de-pago/<int:pk>/eliminar/', EstadoDePagoEliminarView.as_view(), name='estados-de-pago-eliminar'),
     path('empresas/tarifas/', TarifaEmpresaGestionView.as_view(), name='tarifas-empresa'),
+
+    # API Tarifario en tiempo real
+    path('api/empresas/<int:pk>/tarifas/', APITarifasEmpresaView.as_view(), name='api-empresa-tarifas'),
 ]
+
 

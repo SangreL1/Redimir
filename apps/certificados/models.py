@@ -43,6 +43,25 @@ class Certificado(models.Model):
     def save(self, *args, **kwargs):
         if not self.codigo_certificado:
             fecha_str = timezone.now().strftime("%Y%m%d")
-            contador = Certificado.objects.filter(fecha_generacion__date=timezone.now().date()).count() + 1
-            self.codigo_certificado = f"{fecha_str}-{contador:03d}"
+            prefix = f"{fecha_str}-"
+            
+            existentes = Certificado.objects.filter(codigo_certificado__startswith=prefix).values_list('codigo_certificado', flat=True)
+            max_num = 0
+            for code in existentes:
+                try:
+                    num = int(code.split('-')[-1])
+                    if num > max_num:
+                        max_num = num
+                except (ValueError, IndexError):
+                    pass
+            
+            nuevo_num = max_num + 1
+            nuevo_codigo = f"{prefix}{nuevo_num:03d}"
+            
+            while Certificado.objects.filter(codigo_certificado=nuevo_codigo).exists():
+                nuevo_num += 1
+                nuevo_codigo = f"{prefix}{nuevo_num:03d}"
+                
+            self.codigo_certificado = nuevo_codigo
+            
         super().save(*args, **kwargs)

@@ -66,11 +66,17 @@
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(149, 191, 60, 0.45);
   }
+  .tarifario-live-card {
+    background: linear-gradient(135deg, #F0F9FF 0%, #E0F2FE 100%);
+    border: 1.5px solid #006BB8;
+    border-radius: 14px;
+    box-shadow: 0 4px 12px rgba(0, 107, 184, 0.06);
+  }
 </style>
 {% endblock %}
 
 {% block content %}
-<div class="fade-in-up mx-auto" style="max-width:720px;">
+<div class="fade-in-up mx-auto" style="max-width:760px;">
 
   <div class="d-flex align-items-center justify-content-between mb-3">
     <a href="/solicitudes/" class="btn-outline-green btn btn-sm d-inline-flex align-items-center gap-2" style="font-weight: 700;">
@@ -97,16 +103,17 @@
   {% endif %}
 
   <div class="form-card-premium">
-    <form method="post">
+    <form method="post" id="solicitudForm">
       {% csrf_token %}
 
+      <!-- 1. Empresa Solicitante -->
       <div class="mb-3">
         <label class="form-label-custom">
           <i class="fas fa-building text-primary"></i> Empresa Solicitante *
         </label>
         <div class="input-group input-group-custom">
           <span class="input-group-text"><i class="fas fa-briefcase"></i></span>
-          <select name="empresa" class="form-control form-control-custom" required>
+          <select name="empresa" id="empresa_select" class="form-control form-control-custom" required>
             <option value="">-- Seleccionar empresa --</option>
             {% for e in empresas %}
             <option value="{{ e.pk }}" {% if form_data.empresa == e.pk|stringformat:'s' %}selected{% endif %}>
@@ -117,13 +124,107 @@
         </div>
       </div>
 
+      <!-- 2. Módulo de Residuo y Material -->
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom">
+            <i class="fas fa-cubes text-primary"></i> Módulo de Residuo *
+          </label>
+          <div class="input-group input-group-custom">
+            <span class="input-group-text"><i class="fas fa-layer-group"></i></span>
+            <select name="modulo" id="modulo_select" class="form-control form-control-custom" required>
+              <option value="reciclables">Reciclables / Eco-equivalencia</option>
+              <option value="rsd">RSD / Basura Domiciliaria</option>
+              <option value="escombros">Escombros / RESCON</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom">
+            <i class="fas fa-recycle text-success"></i> Tipo de Material / Reciclaje *
+          </label>
+          <div class="input-group input-group-custom">
+            <span class="input-group-text"><i class="fas fa-boxes-packing"></i></span>
+            <select name="tipo_material" id="material_select" class="form-control form-control-custom" required>
+              <option value="carton">Cartón / Papel</option>
+              <option value="pet">Botellas PET</option>
+              <option value="vidrio">Vidrio</option>
+              <option value="latas">Latas de Aluminio</option>
+              <option value="film">Film LDPE</option>
+              <option value="plastico">Plástico General</option>
+              <option value="rsd">RSD / Basura General</option>
+              <option value="escombros">Escombros / RESCON</option>
+              <option value="mixto">Mixto / Varios</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Cantidad Estimada & Unidad -->
+      <div class="row g-3 mb-3">
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom">
+            <i class="fas fa-weight-hanging text-info"></i> Cantidad Estimada *
+          </label>
+          <div class="input-group input-group-custom">
+            <span class="input-group-text"><i class="fas fa-scale-balanced"></i></span>
+            <input type="number" name="cantidad_estimada" id="cantidad_input" class="form-control form-control-custom" step="0.1" min="0.1" value="{{ form_data.cantidad_estimada|default:'100' }}" required>
+          </div>
+        </div>
+
+        <div class="col-12 col-md-6">
+          <label class="form-label-custom">
+            <i class="fas fa-ruler text-secondary"></i> Unidad de Medida *
+          </label>
+          <div class="input-group input-group-custom">
+            <span class="input-group-text"><i class="fas fa-tag"></i></span>
+            <select name="unidad_medida" id="unidad_select" class="form-control form-control-custom" required>
+              <option value="kg">Kilogramos (kg)</option>
+              <option value="m3">Metros Cúbicos (m³)</option>
+              <option value="sacos">Sacos</option>
+              <option value="batea">Batea</option>
+              <option value="camion">Camión</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- TARIFARIO & PRECIOS VINCULADOS CARD (LIVE AUTO-CALC) -->
+      <div class="tarifario-live-card p-3 mb-4">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+          <span class="fw-bold text-primary" style="font-size: 0.92rem;">
+            <i class="fas fa-calculator me-1"></i> Coordinación Automática con Tarifario
+          </span>
+          <span class="badge bg-primary px-2.5 py-1" id="tarifa_badge" style="font-size: 0.75rem;">Selecciona Empresa</span>
+        </div>
+
+        <div class="row text-center g-2 mt-1">
+          <div class="col-4 border-end">
+            <small class="text-muted d-block fw-semibold" style="font-size:0.75rem;">Tarifa Unitaria</small>
+            <strong class="fs-6 text-dark" id="disp_precio_unitario">$0 / kg</strong>
+            <input type="hidden" name="precio_unitario" id="input_precio_unitario" value="0">
+          </div>
+          <div class="col-4 border-end">
+            <small class="text-muted d-block fw-semibold" style="font-size:0.75rem;">Subtotal Neto</small>
+            <strong class="fs-6 text-dark" id="disp_subtotal">$0</strong>
+          </div>
+          <div class="col-4">
+            <small class="text-muted d-block fw-semibold" style="font-size:0.75rem;">Total + IVA (19%)</small>
+            <strong class="fs-5 text-success font-monospace" id="disp_total_bruto">$0</strong>
+            <input type="hidden" name="total_estimado" id="input_total_estimado" value="0">
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Descripción, Dirección, Fecha y Observaciones -->
       <div class="mb-3">
         <label class="form-label-custom">
           <i class="fas fa-file-alt text-primary"></i> Descripción de Residuos *
         </label>
         <div class="input-group input-group-custom">
           <span class="input-group-text"><i class="fas fa-pen-to-square"></i></span>
-          <textarea name="descripcion" class="form-control form-control-custom" rows="3" required
+          <textarea name="descripcion" class="form-control form-control-custom" rows="2" required
                     placeholder="Describe el tipo de residuos a recolectar y cualquier detalle relevante"
                     style="resize:vertical;">{{ form_data.descripcion|default:"" }}</textarea>
         </div>
@@ -162,7 +263,7 @@
 
       <div class="d-flex gap-3 align-items-center">
         <button type="submit" class="btn-submit-premium flex-grow-1 d-flex align-items-center justify-content-center gap-2">
-          <i class="fas fa-paper-plane fa-lg"></i> Crear Solicitud &amp; Notificar
+          <i class="fas fa-paper-plane fa-lg"></i> Crear Solicitud &amp; Actualizar EDP
         </button>
         <a href="/solicitudes/" class="btn btn-outline-secondary px-4 py-2.5" style="border-radius: 10px; font-weight: 700;">
           Cancelar
@@ -172,4 +273,130 @@
   </div>
 
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const empresaSelect = document.getElementById('empresa_select');
+    const moduloSelect  = document.getElementById('modulo_select');
+    const materialSelect= document.getElementById('material_select');
+    const cantidadInput = document.getElementById('cantidad_input');
+    const unidadSelect  = document.getElementById('unidad_select');
+
+    const tarifaBadge    = document.getElementById('tarifa_badge');
+    const dispPrecioUnit = document.getElementById('disp_precio_unitario');
+    const dispSubtotal   = document.getElementById('disp_subtotal');
+    const dispTotalBruto = document.getElementById('disp_total_bruto');
+    const inputPrecioUnit= document.getElementById('input_precio_unitario');
+    const inputTotalEst  = document.getElementById('input_total_estimado');
+
+    let currentTarifas = {};
+
+    const TARIFAS_BASE = {
+        'carton': { precio: 120, unidad: 'kg', modulo: 'reciclables' },
+        'pet': { precio: 180, unidad: 'kg', modulo: 'reciclables' },
+        'vidrio': { precio: 90, unidad: 'kg', modulo: 'reciclables' },
+        'latas': { precio: 250, unidad: 'kg', modulo: 'reciclables' },
+        'film': { precio: 150, unidad: 'kg', modulo: 'reciclables' },
+        'plastico': { precio: 140, unidad: 'kg', modulo: 'reciclables' },
+        'rsd': { precio: 120, unidad: 'kg', modulo: 'rsd' },
+        'escombros': { precio: 18000, unidad: 'm3', modulo: 'escombros' },
+        'mixto': { precio: 150, unidad: 'kg', modulo: 'reciclables' }
+    };
+
+    function updatePrecios() {
+        const empresaId = empresaSelect.value;
+        const mat = materialSelect.value || 'carton';
+        const mod = moduloSelect.value || 'reciclables';
+        const cant = parseFloat(cantidadInput.value) || 0;
+
+        let precioUnit = 0;
+        let unidad = 'kg';
+        let esCustom = false;
+
+        if (currentTarifas && currentTarifas[mat]) {
+            precioUnit = currentTarifas[mat].precio_unitario;
+            unidad = currentTarifas[mat].unidad_medida || 'kg';
+            esCustom = true;
+        } else if (TARIFAS_BASE[mat]) {
+            precioUnit = TARIFAS_BASE[mat].precio;
+            unidad = TARIFAS_BASE[mat].unidad;
+        } else {
+            precioUnit = 150;
+            unidad = 'kg';
+        }
+
+        unidadSelect.value = unidad;
+
+        if (empresaId) {
+            tarifaBadge.className = esCustom ? 'badge bg-success px-2.5 py-1' : 'badge bg-primary px-2.5 py-1';
+            tarifaBadge.textContent = esCustom ? 'Tarifario Personalizado' : 'Tarifa Base Estándar';
+        } else {
+            tarifaBadge.className = 'badge bg-secondary px-2.5 py-1';
+            tarifaBadge.textContent = 'Selecciona Empresa';
+        }
+
+        const subtotal = cant * precioUnit;
+        const iva = subtotal * 0.19;
+        const totalBruto = subtotal + iva;
+
+        dispPrecioUnit.textContent = `$${precioUnit.toLocaleString('es-CL')} / ${unidad}`;
+        dispSubtotal.textContent = `$${Math.round(subtotal).toLocaleString('es-CL')}`;
+        dispTotalBruto.textContent = `$${Math.round(totalBruto).toLocaleString('es-CL')}`;
+
+        inputPrecioUnit.value = precioUnit;
+        inputTotalEst.value = totalBruto;
+    }
+
+    function cargarTarifasEmpresa(empresaId) {
+        if (!empresaId) {
+            currentTarifas = {};
+            updatePrecios();
+            return;
+        }
+        fetch(`/api/empresas/${empresaId}/tarifas/`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.success) {
+                    currentTarifas = data.tarifas || {};
+                } else {
+                    currentTarifas = {};
+                }
+                updatePrecios();
+            })
+            .catch(err => {
+                console.error('Error al cargar tarifario:', err);
+                currentTarifas = {};
+                updatePrecios();
+            });
+    }
+
+    // Auto-ajustar módulo y unidad al seleccionar tipo de material
+    materialSelect.addEventListener('change', function() {
+        const mat = this.value;
+        if (mat === 'rsd') {
+            moduloSelect.value = 'rsd';
+        } else if (mat === 'escombros') {
+            moduloSelect.value = 'escombros';
+        } else {
+            moduloSelect.value = 'reciclables';
+        }
+        updatePrecios();
+    });
+
+    empresaSelect.addEventListener('change', function() {
+        cargarTarifasEmpresa(this.value);
+    });
+
+    moduloSelect.addEventListener('change', updatePrecios);
+    cantidadInput.addEventListener('input', updatePrecios);
+    unidadSelect.addEventListener('change', updatePrecios);
+
+    if (empresaSelect.value) {
+        cargarTarifasEmpresa(empresaSelect.value);
+    } else {
+        updatePrecios();
+    }
+});
+</script>
 {% endblock %}
+

@@ -66,6 +66,24 @@ class Empresa(models.Model):
 
 
 class SolicitudRecoleccion(models.Model):
+    MODULOS = [
+        ('rsd',         'RSD / Basura'),
+        ('escombros',   'Escombros / RESCON'),
+        ('reciclables', 'Reciclables / Eco-equivalencia'),
+    ]
+
+    MATERIALES = [
+        ('carton',      'Cartón / Papel'),
+        ('pet',         'Botellas PET'),
+        ('vidrio',      'Vidrio'),
+        ('latas',       'Latas de Aluminio'),
+        ('film',        'Film LDPE'),
+        ('plastico',    'Plástico General'),
+        ('escombros',   'Escombros / RESCON'),
+        ('rsd',         'RSD / Basura General'),
+        ('mixto',       'Mixto / Varios'),
+    ]
+
     ESTADOS = [
         ('pendiente', 'Pendiente'),
         ('asignada', 'Asignada a Operador'),
@@ -75,6 +93,13 @@ class SolicitudRecoleccion(models.Model):
 
     empresa = models.ForeignKey(Empresa, on_delete=models.CASCADE,
                                 related_name='solicitudes')
+    modulo = models.CharField(max_length=20, choices=MODULOS, default='reciclables')
+    tipo_material = models.CharField(max_length=50, choices=MATERIALES, default='carton')
+    cantidad_estimada = models.DecimalField(max_digits=10, decimal_places=2, null=True, blank=True)
+    unidad_medida = models.CharField(max_length=30, default='kg')
+    precio_unitario = models.DecimalField(max_digits=12, decimal_places=2, default=0)
+    total_estimado = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
     descripcion = models.TextField()
     direccion_recoleccion = models.CharField(max_length=255)
     fecha_solicitada = models.DateTimeField()
@@ -106,7 +131,7 @@ class SolicitudRecoleccion(models.Model):
 
 class EstadoDePago(models.Model):
     """
-    Estado de Pago Interno para consolidar cobros y valorización comercial por cliente y período.
+    Estado de Pago Interno Único por Empresa para consolidar cobros y valorización comercial.
     Punto 16 del Checklist Maestro Redimir.
     Valores comerciales restringidos únicamente a Gerencia / Admin.
     """
@@ -118,7 +143,7 @@ class EstadoDePago(models.Model):
     ]
 
     numero_edp      = models.CharField(max_length=50, unique=True, verbose_name='N° Estado de Pago')
-    empresa         = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='estados_de_pago')
+    empresa         = models.OneToOneField(Empresa, on_delete=models.CASCADE, related_name='estado_de_pago', verbose_name='Empresa Solicitante')
     periodo_inicio  = models.DateField()
     periodo_fin     = models.DateField()
     fecha_emision   = models.DateField(default=timezone.now)
@@ -201,6 +226,170 @@ class TarifaEmpresa(models.Model):
 
     def __str__(self):
         return f"{self.empresa.nombre} — {self.tipo_material.upper()} (${self.precio_unitario:,.0f}/{self.unidad_medida})"
+
+
+def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=None, usuario=None):
+    """
+    Función centralizada para calcular y actualizar automáticamente el Estado de Pago Único de una Empresa.
+    Se coordina automáticamente con el tarifario de la empresa y los servicios/solicitudes registrados.
+    """
+    from decimal import Decimal
+    from django.utils import timezone
+    from django.db.models import Q
+    from apps.servicios.models import Servicio
+    
+    today = timezone.now().date()
+    p_inicio = periodo_inicio or today.replace(day=1)
+    p_fin = periodo_fin or today
+
+    # Buscar o crear el EDP único de la empresa
+    edp = EstadoDePago.objects.filter(empresa=empresa).first()
+    if not edp:
+        year = today.strftime("%Y")
+        count = EstadoDePago.objects.filter(fecha_creacion__year=today.year).count() + 1
+        edp = EstadoDePago.objects.create(
+            empresa=empresa,
+            numero_edp=f"EDP-{year}-{count:04d}",
+            periodo_inicio=p_inicio,
+            periodo_fin=p_fin,
+            creado_por=usuario,
+            estado='borrador',
+            observaciones=f'Estado de Pago Automático generado/actualizado el {today.strftime("%d/%m/%Y")}'
+        )
+
+    # Limpiar detalles anteriores para recalcular con tarifario vigente
+    edp.detalles.all().delete()
+
+    TARIFAS_BASE = {
+        'rsd': Decimal('120'),
+        'escombros': Decimal('18000'),
+        'reciclables': Decimal('150'),
+        'carton': Decimal('120'),
+        'pet': Decimal('180'),
+        'vidrio': Decimal('90'),
+        'latas': Decimal('250'),
+        'film': Decimal('150'),
+        'plastico': Decimal('140'),
+        'mixto': Decimal('150'),
+    }
+
+    total_calculado = Decimal('0')
+    count_servicios = 0
+
+    # 1. Procesar Servicios de Retiro de la Empresa
+    servicios_qs = Servicio.objects.filter(empresa=empresa, is_active=True).distinct()
+    for s in servicios_qs:
+        reg = s.get_registro()
+        cant = Decimal('1')
+        unid = 'servicio'
+        desc = f"Retiro {s.get_modulo_display()} — Servicio #{s.id}"
+        mat_key = s.modulo
+
+        tarifa = TARIFAS_BASE.get(s.modulo, Decimal('150'))
+
+        if reg:
+            if s.modulo == 'rsd':
+                if hasattr(reg, 'cantidad_kg') and reg.cantidad_kg > 0:
+                    cant = Decimal(str(reg.cantidad_kg))
+                    unid = 'kg'
+            elif s.modulo == 'escombros':
+                if hasattr(reg, 'cantidad') and reg.cantidad > 0:
+                    cant = Decimal(str(reg.cantidad))
+                    unid = reg.get_unidad_display() if hasattr(reg, 'get_unidad_display') else 'm3'
+            elif s.modulo == 'reciclables':
+                if hasattr(reg, 'cantidad_kg') and reg.cantidad_kg > 0:
+                    cant = Decimal(str(reg.cantidad_kg))
+                    unid = 'kg'
+                if hasattr(reg, 'material') and reg.material:
+                    mat_key = str(reg.material).lower()
+                    desc = f"Reciclaje ({mat_key.upper()}) — Servicio #{s.id}"
+        elif s.cantidad_estimada:
+            cant = Decimal(str(s.cantidad_estimada))
+            unid = s.unidad_estimada or 'kg'
+
+        tarifa_custom = TarifaEmpresa.objects.filter(
+            empresa=empresa,
+            modulo=s.modulo,
+            tipo_material__iexact=mat_key
+        ).first()
+
+        if not tarifa_custom:
+            tarifa_custom = TarifaEmpresa.objects.filter(
+                empresa=empresa,
+                modulo=s.modulo
+            ).first()
+
+        if tarifa_custom:
+            tarifa = tarifa_custom.precio_unitario
+            if tarifa_custom.unidad_medida:
+                unid = tarifa_custom.unidad_medida
+
+        sub_item = cant * tarifa
+        total_calculado += sub_item
+        count_servicios += 1
+
+        DetalleEstadoDePago.objects.create(
+            estado_de_pago=edp,
+            servicio=s,
+            fecha_servicio=s.fecha_retiro_real.date() if s.fecha_retiro_real else s.fecha_solicitud.date(),
+            modulo=s.get_modulo_display(),
+            descripcion=desc,
+            cantidad=cant,
+            unidad_medida=unid,
+            tarifa_unitaria=tarifa,
+            subtotal=sub_item
+        )
+
+    # 2. Procesar Solicitudes de Recolección de la Empresa
+    solicitudes_qs = SolicitudRecoleccion.objects.filter(empresa=empresa).exclude(estado='cancelada')
+    for sol in solicitudes_qs:
+        cant = Decimal(str(sol.cantidad_estimada)) if sol.cantidad_estimada else Decimal('1')
+        unid = sol.unidad_medida or 'kg'
+        mat_key = sol.tipo_material or sol.modulo
+        desc = f"Solicitud Recolección ({sol.get_tipo_material_display() if hasattr(sol, 'get_tipo_material_display') else mat_key.upper()}) — Solicitud #{sol.id}"
+
+        tarifa = TARIFAS_BASE.get(mat_key, TARIFAS_BASE.get(sol.modulo, Decimal('150')))
+
+        tarifa_custom = TarifaEmpresa.objects.filter(
+            empresa=empresa,
+            modulo=sol.modulo,
+            tipo_material__iexact=mat_key
+        ).first()
+
+        if not tarifa_custom:
+            tarifa_custom = TarifaEmpresa.objects.filter(
+                empresa=empresa,
+                modulo=sol.modulo
+            ).first()
+
+        if tarifa_custom:
+            tarifa = tarifa_custom.precio_unitario
+            if tarifa_custom.unidad_medida:
+                unid = tarifa_custom.unidad_medida
+
+        sub_item = cant * tarifa
+        total_calculado += sub_item
+        count_servicios += 1
+
+        DetalleEstadoDePago.objects.create(
+            estado_de_pago=edp,
+            servicio=None,
+            fecha_servicio=sol.fecha_solicitada.date() if sol.fecha_solicitada else today,
+            modulo=sol.get_modulo_display() if hasattr(sol, 'get_modulo_display') else sol.modulo.upper(),
+            descripcion=desc,
+            cantidad=cant,
+            unidad_medida=unid,
+            tarifa_unitaria=tarifa,
+            subtotal=sub_item
+        )
+
+    edp.total_servicios = count_servicios
+    edp.subtotal_neto = total_calculado
+    edp.iva = round(total_calculado * Decimal('0.19'), 2)
+    edp.total_bruto = edp.subtotal_neto + edp.iva
+    edp.save()
+    return edp
+
 
 
 

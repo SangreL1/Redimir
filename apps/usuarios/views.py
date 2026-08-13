@@ -46,6 +46,19 @@ class LoginPageView(View):
             }.get(user.estado, 'Cuenta no activa.')
             return render(request, self.template_name, {'error': txt, 'tipo_activo': tipo})
 
+        # Validación estricta para usuarios tipo Empresa
+        if user.rol == 'empresa':
+            if not user.empresa:
+                return render(request, self.template_name, {
+                    'error': 'La empresa asociada a este usuario fue eliminada. Acceso revocado.',
+                    'tipo_activo': tipo,
+                })
+            if user.empresa.estado != 'aprobada' or not user.empresa.activa:
+                return render(request, self.template_name, {
+                    'error': 'La empresa asociada a esta cuenta no se encuentra aprobada o activa.',
+                    'tipo_activo': tipo,
+                })
+
         login(request, user)
         return redirect('dashboard')
 

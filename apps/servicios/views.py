@@ -118,6 +118,13 @@ class CrearServicioView(View):
             observaciones=observaciones,
         )
 
+        # Auto-generar / actualizar el Estado de Pago de la Empresa
+        try:
+            from apps.empresas.models import actualizar_o_crear_edp_empresa
+            actualizar_o_crear_edp_empresa(empresa, usuario=request.user)
+        except Exception as err_edp:
+            pass
+
         # Notificar al operador si está asignado
         if operador:
             _notificar_operador(servicio, operador)
@@ -467,7 +474,15 @@ class ValidacionesPendientesView(View):
             servicio.fecha_validacion  = timezone.now()
             servicio.save()
             _notificar_cliente(servicio, 'validado')
-            messages.success(request, f'✅ Servicio #{servicio.pk} validado correctamente.')
+
+            # Auto-generar / actualizar el Estado de Pago de la Empresa
+            try:
+                from apps.empresas.models import actualizar_o_crear_edp_empresa
+                actualizar_o_crear_edp_empresa(servicio.empresa, usuario=request.user)
+            except Exception:
+                pass
+
+            messages.success(request, f'✅ Servicio #{servicio.pk} validado correctamente y Estado de Pago actualizado.')
 
         elif accion == 'observar':
             servicio.estado = 'observado'

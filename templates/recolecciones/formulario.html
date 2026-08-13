@@ -28,8 +28,7 @@
 
         <div class="mb-3">
             <label class="form-label-dark">Empresa de Origen *</label>
-            <select name="empresa_origen" id="empresa_origen" required
-                    style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--dark-border);border-radius:8px;color:#e2e8f0;padding:.65rem 1rem;font-family:Inter,sans-serif;">
+            <select name="empresa_origen" id="empresa_origen" required class="form-select w-100">
                 <option value="">-- Seleccionar empresa --</option>
                 {% for empresa in empresas %}
                 <option value="{{ empresa.pk }}" {% if form_data.empresa_origen == empresa.pk|stringformat:'s' %}selected{% endif %}>
@@ -42,8 +41,7 @@
         <div class="row g-3 mb-3">
             <div class="col-12 col-sm-6">
                 <label class="form-label-dark">Tipo de Residuo *</label>
-                <select name="tipo_residuo" required
-                        style="width:100%;background:rgba(255,255,255,.05);border:1px solid var(--dark-border);border-radius:8px;color:#e2e8f0;padding:.65rem 1rem;font-family:Inter,sans-serif;">
+                <select name="tipo_residuo" required class="form-select w-100">
                     <option value="">-- Seleccionar --</option>
                     <option value="plastico" {% if form_data.tipo_residuo == "plastico" %}selected{% endif %}>♻️ Plástico</option>
                     <option value="metal"    {% if form_data.tipo_residuo == "metal"    %}selected{% endif %}>🔩 Metal</option>

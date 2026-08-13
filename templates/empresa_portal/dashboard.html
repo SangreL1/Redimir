@@ -137,8 +137,8 @@
 {% block extra_js %}
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script>
-    Chart.defaults.color = '#94a3b8';
-    Chart.defaults.font.family = 'Inter, sans-serif';
+    Chart.defaults.color = '#4A5568';
+    Chart.defaults.font.family = 'Montserrat, sans-serif';
 
     // Trend chart
     const trendCtx = document.getElementById('trendChart').getContext('2d');
@@ -149,11 +149,11 @@
             datasets: [{
                 label: 'Recolecciones (kg) diarios',
                 data: {{ trend_values|safe }},
-                borderColor: '#22c55e',
-                backgroundColor: 'rgba(34,197,94,0.1)',
-                borderWidth: 2,
-                pointBackgroundColor: '#22c55e',
-                pointBorderColor: '#1e293b',
+                borderColor: '#95BF3C',
+                backgroundColor: 'rgba(149,191,60,0.15)',
+                borderWidth: 2.5,
+                pointBackgroundColor: '#95BF3C',
+                pointBorderColor: '#006BB8',
                 pointRadius: 4,
                 pointHoverRadius: 6,
                 fill: true,
@@ -163,14 +163,14 @@
         options: {
             responsive: true, maintainAspectRatio: false,
             scales: {
-                y: { beginAtZero: true, grid: { color: 'rgba(255,255,255,0.05)' } },
+                y: { beginAtZero: true, grid: { color: '#E1E4E7' } },
                 x: { grid: { display: false } }
             },
             plugins: { legend: { display:false } }
         }
     });
 
-    // Type chart
+    // Type chart - Redimir Secondary Palette for Waste Types
     const typeCtx = document.getElementById('typeChart').getContext('2d');
     new Chart(typeCtx, {
         type: 'doughnut',
@@ -178,8 +178,8 @@
             labels: {{ tipos_labels|safe }},
             datasets: [{
                 data: {{ tipos_values|safe }},
-                backgroundColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444', '#a855f7'],
-                borderWidth: 2, borderColor: '#1e293b',
+                backgroundColor: ['#95BF3C', '#FFC20A', '#006BB8', '#E1E4E7', '#2D8659', '#000000'],
+                borderWidth: 2, borderColor: '#FFFFFF',
                 hoverOffset: 4
             }]
         },
@@ -187,7 +187,7 @@
             responsive: true, maintainAspectRatio: false,
             cutout: '65%',
             plugins: {
-                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15 } }
+                legend: { position: 'bottom', labels: { boxWidth: 12, padding: 15, font: { family: 'Montserrat' } } }
             }
         }
     });
