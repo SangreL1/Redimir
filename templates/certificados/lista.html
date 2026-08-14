@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}Mis Certificados — Redimir{% endblock %}
+{% block nav_certificados %}active{% endblock %}
+
+{% block content %}
+<div class="row mb-4">
+    <div class="col-12 d-flex justify-content-between align-items-center">
+        <div>
+            <h2 class="fw-bold mb-0" style="color: var(--primary);">
+                <i class="fas fa-certificate me-2" style="color: var(--secondary);"></i>Certificados Emitidos
+            </h2>
+            <p class="text-muted mb-0" style="font-size: .85rem; font-weight: 500;">Trazabilidad oficial de residuos para empresas clientes</p>
+        </div>
+        {% if user.rol == 'superadmin' %}
+        <a href="{% url 'certificado-crear' %}" class="btn btn-sm btn-success-redimir">
+            <i class="fas fa-plus me-1"></i> Generar Certificado
+        </a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card-redimir">
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background-color: #E1E4E7;">
+                <tr>
+                    <th style="color: #006BB8; font-weight: 600;">Folio / Código</th>
+                    <th style="color: #006BB8; font-weight: 600;">Empresa Cliente</th>
+                    <th style="color: #006BB8; font-weight: 600;">Período</th>
+                    <th style="color: #006BB8; font-weight: 600;">Total Residuos</th>
+                    <th style="color: #006BB8; font-weight: 600;">Fecha Emisión</th>
+                    <th style="color: #006BB8; font-weight: 600; text-align: center;">Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for cert in certificados %}
+                <tr>
+                    <td><strong style="color: #006BB8;">{{ cert.codigo_certificado }}</strong></td>
+                    <td>{{ cert.empresa.nombre }}</td>
+                    <td>{{ cert.periodo_inicio|date:"d/m/Y" }} → {{ cert.periodo_fin|date:"d/m/Y" }}</td>
+                    <td><strong style="color: #95BF3C;">{{ cert.total_reciclables_kg|add:cert.total_rsd_kg|floatformat:1 }} kg</strong></td>
+                    <td>{{ cert.fecha_generacion|date:"d/m/Y H:i" }}</td>
+                    <td class="text-center">
+                        <a href="{% url 'descargar_certificado' cert.id %}" class="btn btn-sm btn-success-redimir" style="padding: 4px 12px; font-size: 0.85rem;">
+                            <i class="fas fa-download me-1"></i> PDF
+                        </a>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" class="text-center text-muted py-4">
+                        <i class="fas fa-folder-open fa-2x mb-2 text-muted"></i><br>
+                        No se han emitido certificados aún.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+{% endblock %}

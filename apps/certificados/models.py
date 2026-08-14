@@ -42,14 +42,12 @@ class Certificado(models.Model):
     
     def save(self, *args, **kwargs):
         if not self.codigo_certificado:
-            fecha_str = timezone.now().strftime("%Y%m%d")
-            prefix = f"{fecha_str}-"
-            
+            prefix = "RG-"
             existentes = Certificado.objects.filter(codigo_certificado__startswith=prefix).values_list('codigo_certificado', flat=True)
             max_num = 0
             for code in existentes:
                 try:
-                    num = int(code.split('-')[-1])
+                    num = int(code.replace(prefix, ''))
                     if num > max_num:
                         max_num = num
                 except (ValueError, IndexError):
@@ -65,3 +63,4 @@ class Certificado(models.Model):
             self.codigo_certificado = nuevo_codigo
             
         super().save(*args, **kwargs)
+

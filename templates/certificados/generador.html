@@ -35,7 +35,7 @@
     <h5 class="fw-bold mb-1">¡Certificado Creado con Éxito!</h5>
     <p class="mb-3" style="font-size:.9rem; font-weight:600;">Folio: {{ certificado.codigo_certificado }}</p>
     
-    <a href="{{ certificado.archivo_pdf.url }}" target="_blank" class="btn-success-redimir">
+    <a href="{% url 'descargar_certificado' certificado.id %}" target="_blank" class="btn-success-redimir">
         <i class="fas fa-download me-2"></i>Descargar PDF
     </a>
 </div>
