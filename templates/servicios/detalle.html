@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% block title %}Detalle de Servicio #{{ servicio.id }} — Redimir{% endblock %}
+{% block nav_servicios %}active{% endblock %}
+
+{% block content %}
+<div class="row mb-4 align-items-center">
+    <div class="col-12 col-md-8">
+        <a href="{% url 'servicios-lista' %}" class="text-decoration-none text-muted me-2">
+            <i class="fas fa-arrow-left me-1"></i>Volver a Servicios
+        </a>
+        <h2 class="fw-bold mb-1 mt-2" style="color: var(--primary);">
+            Servicio #{{ servicio.id }} — {{ servicio.empresa.nombre }}
+        </h2>
+        <p class="text-muted mb-0" style="font-size: 0.9rem;">
+            Módulo: <strong>{{ servicio.get_modulo_display }}</strong> | Folio: <strong>{{ servicio.numero_folio }}</strong>
+        </p>
+    </div>
+    <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+        {% if servicio.estado == 'solicitado' %}
+            <span class="badge bg-secondary fs-6 px-3 py-2">Solicitado</span>
+        {% elif servicio.estado == 'programado' %}
+            <span class="badge bg-info text-dark fs-6 px-3 py-2">Programado</span>
+        {% elif servicio.estado == 'asignado' %}
+            <span class="badge bg-primary fs-6 px-3 py-2">Asignado</span>
+        {% elif servicio.estado == 'en_ruta' %}
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2">En Ruta</span>
+        {% elif servicio.estado == 'retirado' or servicio.estado == 'pendiente_validacion' %}
+            <span class="badge bg-warning text-dark fs-6 px-3 py-2">Pendiente de Validación</span>
+        {% elif servicio.estado == 'validado' %}
+            <span class="badge bg-success fs-6 px-3 py-2"><i class="fas fa-check-circle me-1"></i>Validado</span>
+        {% elif servicio.estado == 'observado' %}
+            <span class="badge bg-danger fs-6 px-3 py-2">Observado</span>
+        {% else %}
+            <span class="badge bg-dark fs-6 px-3 py-2">{{ servicio.get_estado_display }}</span>
+        {% endif %}
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Información Principal del Servicio -->
+    <div class="col-12 col-lg-7">
+        <div class="card-redimir mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-3">
+                <h5 class="fw-bold text-primary mb-0"><i class="fas fa-info-circle me-2"></i>Información del Retiro</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle mb-0">
+                        <tbody>
+                            <tr>
+                                <th style="width: 35%; color: var(--secondary);">Empresa Cliente:</th>
+                                <td><strong>{{ servicio.empresa.nombre }}</strong> (RUT: {{ servicio.empresa.rut }})</td>
+                            </tr>
+                            <tr>
+                                <th style="color: var(--secondary);">Dirección de Retiro:</th>
+                                <td>{{ servicio.direccion }}</td>
+                            </tr>
+                            <tr>
+                                <th style="color: var(--secondary);">Módulo / Tipo:</th>
+                                <td><span class="badge bg-light text-dark border">{{ servicio.get_modulo_display }}</span></td>
+                            </tr>
+                            <tr>
+                                <th style="color: var(--secondary);">Contacto en Terreno:</th>
+                                <td>{{ servicio.contacto_responsable|default:"No especificado" }} {% if servicio.telefono_contacto %}({{ servicio.telefono_contacto }}){% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th style="color: var(--secondary);">Cantidad Estimada:</th>
+                                <td>{% if servicio.cantidad_estimada %}{{ servicio.cantidad_estimada }} {{ servicio.unidad_estimada }}{% else %}No especificada{% endif %}</td>
+                            </tr>
+                            <tr>
+                                <th style="color: var(--secondary);">Fecha Solicitada/Creación:</th>
+                                <td>{{ servicio.fecha_solicitud|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                            <tr>
+                                <th style="color: var(--secondary);">Operador Asignado:</th>
+                                <td>
+                                    {% if servicio.operador %}
+                                        <i class="fas fa-user-check text-success me-1"></i>{{ servicio.operador.nombre_completo }}
+                                    {% else %}
+                                        <span class="text-muted"><i class="fas fa-user-slash me-1"></i>Sin asignar</span>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% if servicio.observaciones %}
+                            <tr>
+                                <th style="color: var(--secondary);">Observaciones:</th>
+                                <td><small class="text-muted">{{ servicio.observaciones }}</small></td>
+                            </tr>
+                            {% endif %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Registro de Retiro Real (si ya existe) -->
+        {% if registro %}
+        <div class="card-redimir border-success">
+            <div class="card-header bg-transparent border-0 pt-3 px-3 d-flex justify-content-between align-items-center">
+                <h5 class="fw-bold text-success mb-0"><i class="fas fa-clipboard-check me-2"></i>Datos del Retiro Efectuado</h5>
+                <span class="badge bg-success">Registrado</span>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle mb-0">
+                        <tbody>
+                            {% if servicio.modulo == 'rsd' %}
+                                <tr>
+                                    <th style="width: 35%;">Tipo Residuo:</th>
+                                    <td>{{ registro.get_tipo_residuo_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Cantidad (Kg):</th>
+                                    <td><strong class="text-success fs-5">{{ registro.cantidad_kg }} Kg</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Ticket Externo:</th>
+                                    <td>{{ registro.ticket_externo|default:"Sin ticket" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Destino:</th>
+                                    <td>{{ registro.get_destino_receptor_display }}</td>
+                                </tr>
+                            {% elif servicio.modulo == 'escombros' %}
+                                <tr>
+                                    <th style="width: 35%;">Tipo Residuo:</th>
+                                    <td>{{ registro.get_tipo_residuo_display }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Cantidad:</th>
+                                    <td><strong class="text-success fs-5">{{ registro.cantidad }} {{ registro.get_unidad_display }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Ticket Externo:</th>
+                                    <td>{{ registro.ticket_externo|default:"Sin ticket" }}</td>
+                                </tr>
+                                <tr>
+                                    <th>Destino:</th>
+                                    <td>{{ registro.get_destino_receptor_display }}</td>
+                                </tr>
+                            {% else %}
+                                <tr>
+                                    <th style="width: 35%;">Material:</th>
+                                    <td><strong>{{ registro.get_material_display }}</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Cantidad (Kg):</th>
+                                    <td><strong class="text-success fs-5">{{ registro.cantidad_kg }} Kg</strong></td>
+                                </tr>
+                                <tr>
+                                    <th>Destino:</th>
+                                    <td>{{ registro.get_destino_display }}</td>
+                                </tr>
+                            {% endif %}
+                            <tr>
+                                <th>Fecha Registro:</th>
+                                <td>{{ registro.fecha_registro|date:"d/m/Y H:i" }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Evidencias Fotográficas -->
+                <div class="mt-3">
+                    <h6 class="fw-bold text-muted mb-2"><i class="fas fa-camera me-1"></i>Evidencia Fotográfica</h6>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for foto_obj in registro.fotos.all %}
+                            <a href="{{ foto_obj.foto.url }}" target="_blank">
+                                <img src="{{ foto_obj.foto.url }}" class="rounded img-thumbnail" style="width: 90px; height: 90px; object-fit: cover;" alt="Evidencia">
+                            </a>
+                        {% empty %}
+                            <p class="text-muted small mb-0">Sin fotografías adjuntas.</p>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="card-redimir bg-light border-dashed p-4 text-center">
+            <i class="fas fa-truck-loading fa-2x text-muted mb-2"></i>
+            <h6 class="fw-bold text-muted">Aún no se registran datos de pesaje/retiro real</h6>
+            <p class="small text-muted mb-3">El operador debe ingresar pesaje y fotografías, o el administrador puede ingresar/validar el retiro directamente.</p>
+            {% if es_admin %}
+            <a href="{% url 'registrar-retiro' servicio.id %}" class="btn btn-sm btn-outline-primary">
+                <i class="fas fa-plus me-1"></i>Registrar Datos de Retiro
+            </a>
+            {% endif %}
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Panel Lateral de Acciones y Gestión Admin -->
+    <div class="col-12 col-lg-5">
+        {% if es_admin %}
+        <div class="card-redimir mb-4">
+            <div class="card-header bg-transparent border-0 pt-3 px-3">
+                <h5 class="fw-bold text-primary mb-0"><i class="fas fa-cogs me-2"></i>Acciones de Administración</h5>
+            </div>
+            <div class="card-body">
+                <!-- Botón de Validación Rápida -->
+                {% if servicio.estado == 'pendiente_validacion' or servicio.estado == 'observado' or registro %}
+                    {% if servicio.estado != 'validado' %}
+                    <div class="p-3 bg-light-success rounded border border-success mb-4">
+                        <h6 class="fw-bold text-success mb-2"><i class="fas fa-check-double me-1"></i>Validación Oficial</h6>
+                        <p class="small text-muted mb-3">Al validar, el retiro queda listo para la emisión de Certificado y Estado de Pago.</p>
+                        <form method="POST" action="{% url 'validaciones' %}">
+                            {% csrf_token %}
+                            <input type="hidden" name="servicio_id" value="{{ servicio.id }}">
+                            <input type="hidden" name="accion" value="validar">
+                            <button type="submit" class="btn btn-success w-100 fw-bold">
+                                <i class="fas fa-check-circle me-1"></i>Validar Servicio Ahora
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="alert alert-success d-flex align-items-center mb-4">
+                        <i class="fas fa-check-circle fa-2x me-3"></i>
+                        <div>
+                            <strong>Servicio Validado</strong><br/>
+                            <small>Este servicio está listo para la emisión del certificado.</small>
+                        </div>
+                    </div>
+                    {% endif %}
+                {% endif %}
+
+                <!-- Asignar Operador / Cambiar Estado -->
+                <form method="POST" class="mb-3">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="asignar_operador">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Asignar Operador / Chofer</label>
+                        <select name="operador_id" class="form-select">
+                            <option value="">-- Sin Operador Asignado --</option>
+                            {% for op in operadores %}
+                                <option value="{{ op.id }}" {% if servicio.operador_id == op.id %}selected{% endif %}>
+                                    {{ op.nombre_completo }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-primary w-100">
+                        <i class="fas fa-user-plus me-1"></i>Guardar Asignación
+                    </button>
+                </form>
+
+                <hr>
+
+                <form method="POST">
+                    {% csrf_token %}
+                    <input type="hidden" name="accion" value="cambiar_estado">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted">Cambiar Estado del Servicio</label>
+                        <select name="estado" class="form-select">
+                            {% for code, label in servicio.ESTADOS %}
+                                <option value="{{ code }}" {% if servicio.estado == code %}selected{% endif %}>
+                                    {{ label }}
+                                </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                    <button type="submit" class="btn btn-sm btn-outline-secondary w-100">
+                        <i class="fas fa-sync-alt me-1"></i>Actualizar Estado
+                    </button>
+                </form>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

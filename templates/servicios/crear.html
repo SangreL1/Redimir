@@ -193,6 +193,20 @@
                 placeholder="Instrucciones especiales, notas de acceso, etc.">{{ form_data.observaciones|default:'' }}</textarea>
     </div>
 
+    {% if user.rol == 'admin' or user.is_staff %}
+    <div class="card p-3 mb-4" style="background-color: #f2f9ec; border: 1px solid #95BF3C;">
+      <div class="form-check form-switch">
+        <input class="form-check-input" type="checkbox" name="auto_validar" value="1" id="autoValidarCheck" checked>
+        <label class="form-check-label fw-bold" for="autoValidarCheck" style="color: #006BB8;">
+          <i class="fas fa-check-double me-1" style="color: #95BF3C;"></i>Crear y VALIDAR Inmediatamente (Servicio Retirado)
+        </label>
+      </div>
+      <small class="text-muted ms-4 mt-1 d-block">
+        Marca esta casilla si el retiro ya fue realizado y deseas que el servicio quede en estado <strong>Validado</strong> automáticamente para generar certificados de inmediato.
+      </small>
+    </div>
+    {% endif %}
+
     <!-- Botones -->
     <div class="d-flex gap-2 justify-content-end">
       <a href="/servicios/" class="btn btn-outline-secondary">Cancelar</a>

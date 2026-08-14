@@ -97,9 +97,13 @@ class CrearServicioView(View):
             except Usuario.DoesNotExist:
                 pass
 
+        auto_validar = request.POST.get('auto_validar') == '1' and _es_admin(request.user)
+
         estado_inicial = 'programado' if fecha_prog else 'solicitado'
         if operador:
             estado_inicial = 'asignado'
+        if auto_validar:
+            estado_inicial = 'validado'
 
         servicio = Servicio.objects.create(
             empresa=empresa,
@@ -111,12 +115,50 @@ class CrearServicioView(View):
             cantidad_estimada=cantidad_est,
             unidad_estimada=unidad_est,
             fecha_programada=fecha_prog,
+            fecha_retiro_real=timezone.now() if auto_validar else None,
             ventana_inicio=ventana_ini,
             ventana_fin=ventana_fin,
             operador=operador,
             usuario_creador=request.user,
+            usuario_validador=request.user if auto_validar else None,
+            fecha_validacion=timezone.now() if auto_validar else None,
             observaciones=observaciones,
         )
+
+        if auto_validar:
+            cant_val = float(cantidad_est) if cantidad_est else 100.0
+            ticket_val = request.POST.get('ticket_externo', '').strip() or f"AUTO-{servicio.pk:04d}"
+            if modulo == 'rsd':
+                RegistroRSD.objects.create(
+                    servicio=servicio,
+                    tipo_residuo='rsd',
+                    cantidad_kg=cant_val,
+                    ticket_externo=ticket_val,
+                    destino_receptor='socsal',
+                    usuario_registro=request.user,
+                )
+            elif modulo == 'escombros':
+                RegistroEscombros.objects.create(
+                    servicio=servicio,
+                    tipo_residuo='escombros',
+                    cantidad=cant_val,
+                    unidad=unidad_est if unidad_est in ['m3', 'kg', 'sacos'] else 'm3',
+                    ticket_externo=ticket_val,
+                    destino_receptor='municipalidad',
+                    usuario_registro=request.user,
+                )
+            elif modulo == 'reciclables':
+                reg_rec = RegistroReciclables.objects.create(
+                    servicio=servicio,
+                    material=request.POST.get('material_reciclable', 'carton'),
+                    cantidad_kg=cant_val,
+                    destino='gestor',
+                    usuario_registro=request.user,
+                )
+                try:
+                    reg_rec.calcular_eco_equivalencia()
+                except Exception:
+                    pass
 
         # Auto-generar / actualizar el Estado de Pago de la Empresa
         try:
@@ -126,10 +168,14 @@ class CrearServicioView(View):
             pass
 
         # Notificar al operador si está asignado
-        if operador:
+        if operador and not auto_validar:
             _notificar_operador(servicio, operador)
 
-        messages.success(request, f'Servicio #{servicio.pk} creado exitosamente ({servicio.get_modulo_display()}).')
+        if auto_validar:
+            messages.success(request, f'✅ Servicio #{servicio.pk} creado y VALIDADO exitosamente ({servicio.get_modulo_display()}). ¡Ya disponible para certificados!')
+        else:
+            messages.success(request, f'Servicio #{servicio.pk} creado exitosamente ({servicio.get_modulo_display()}).')
+
         return redirect('servicio-detalle', pk=servicio.pk)
 
 
