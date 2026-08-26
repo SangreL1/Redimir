@@ -242,6 +242,7 @@ class DetalleEstadoDePago(models.Model):
     estado_de_pago   = models.ForeignKey(EstadoDePago, on_delete=models.CASCADE, related_name='detalles')
     servicio         = models.ForeignKey('servicios.Servicio', on_delete=models.SET_NULL, null=True, blank=True)
     fecha_servicio   = models.DateField(null=True, blank=True)
+    fechas_texto     = models.TextField(blank=True, null=True, help_text="Fechas agrupadas de los servicios realizados en formato dd/mm/aaaa")
     modulo           = models.CharField(max_length=30, blank=True)
     descripcion      = models.CharField(max_length=255)
     cantidad         = models.DecimalField(max_digits=10, decimal_places=2, default=1)
@@ -290,11 +291,10 @@ class TarifaEmpresa(models.Model):
 def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=None, usuario=None):
     """
     Función centralizada para calcular y actualizar automáticamente el Estado de Pago Único de una Empresa.
-    Se coordina automáticamente con el tarifario de la empresa y los servicios/solicitudes registrados.
+    Agrupa los servicios por módulo/tarifa, sumando cantidad y compilando sus fechas de ejecución en una sola fila.
     """
     from decimal import Decimal
     from django.utils import timezone
-    from django.db.models import Q
     from apps.servicios.models import Servicio
     
     today = timezone.now().date()
@@ -316,41 +316,47 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
             observaciones=f'Estado de Pago Automático generado/actualizado el {today.strftime("%d/%m/%Y")}'
         )
 
-    # Limpiar detalles anteriores para recalcular con tarifario vigente
+    # Limpiar detalles anteriores para recalcular agrupado
     edp.detalles.all().delete()
 
     TARIFA_RETIRO_PREDETERMINADA = Decimal('150000')
 
-    total_calculado = Decimal('0')
-    count_servicios = 0
+    grupos = {}  # key -> dict acumulador
 
     # 1. Procesar Servicios de Retiro de la Empresa
     servicios_qs = Servicio.objects.filter(empresa=empresa, is_active=True).distinct()
     for s in servicios_qs:
         cant = Decimal('1')
         unid = 'servicio'
-        desc = f"Retiro {s.get_modulo_display()} — Servicio #{s.id}"
+        modulo_disp = s.get_modulo_display()
+        desc_base = f"Servicio de Retiro — {modulo_disp}"
 
         tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa, modulo=s.modulo).first()
         if not tarifa_custom:
             tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa).first()
 
         tarifa = tarifa_custom.precio_unitario if tarifa_custom else TARIFA_RETIRO_PREDETERMINADA
-        sub_item = cant * tarifa
-        total_calculado += sub_item
-        count_servicios += 1
+        if tarifa_custom and tarifa_custom.unidad_medida:
+            unid = tarifa_custom.unidad_medida
 
-        DetalleEstadoDePago.objects.create(
-            estado_de_pago=edp,
-            servicio=s,
-            fecha_servicio=s.fecha_retiro_real.date() if s.fecha_retiro_real else s.fecha_solicitud.date(),
-            modulo=s.get_modulo_display(),
-            descripcion=desc,
-            cantidad=cant,
-            unidad_medida=unid,
-            tarifa_unitaria=tarifa,
-            subtotal=sub_item
-        )
+        fecha_obj = s.fecha_retiro_real.date() if s.fecha_retiro_real else (s.fecha_solicitud.date() if s.fecha_solicitud else today)
+        fecha_str = fecha_obj.strftime("%d/%m/%Y")
+
+        key = (desc_base, tarifa, unid)
+        if key not in grupos:
+            grupos[key] = {
+                'modulo': modulo_disp,
+                'descripcion': desc_base,
+                'tarifa': tarifa,
+                'unidad': unid,
+                'cantidad': Decimal('0'),
+                'fechas': [],
+                'servicio_obj': s,
+                'fecha_obj': fecha_obj,
+            }
+        grupos[key]['cantidad'] += cant
+        if fecha_str not in grupos[key]['fechas']:
+            grupos[key]['fechas'].append(fecha_str)
 
     # 2. Procesar Solicitudes de Recolección de la Empresa
     solicitudes_qs = SolicitudRecoleccion.objects.filter(empresa=empresa).exclude(estado='cancelada')
@@ -358,26 +364,55 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
         cant = Decimal('1')
         unid = 'servicio'
         mat_display = sol.get_tipo_material_display() if hasattr(sol, 'get_tipo_material_display') else sol.modulo.upper()
-        desc = f"Solicitud Recolección ({mat_display}) — Solicitud #{sol.id}"
+        modulo_disp = sol.get_modulo_display() if hasattr(sol, 'get_modulo_display') else sol.modulo.upper()
+        desc_base = f"Solicitud Recolección ({mat_display})"
 
         tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa, modulo=sol.modulo).first()
         if not tarifa_custom:
             tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa).first()
 
         tarifa = tarifa_custom.precio_unitario if tarifa_custom else TARIFA_RETIRO_PREDETERMINADA
-        sub_item = cant * tarifa
+        if tarifa_custom and tarifa_custom.unidad_medida:
+            unid = tarifa_custom.unidad_medida
+
+        fecha_obj = sol.fecha_solicitada.date() if sol.fecha_solicitada else today
+        fecha_str = fecha_obj.strftime("%d/%m/%Y")
+
+        key = (desc_base, tarifa, unid)
+        if key not in grupos:
+            grupos[key] = {
+                'modulo': modulo_disp,
+                'descripcion': desc_base,
+                'tarifa': tarifa,
+                'unidad': unid,
+                'cantidad': Decimal('0'),
+                'fechas': [],
+                'servicio_obj': None,
+                'fecha_obj': fecha_obj,
+            }
+        grupos[key]['cantidad'] += cant
+        if fecha_str not in grupos[key]['fechas']:
+            grupos[key]['fechas'].append(fecha_str)
+
+    total_calculado = Decimal('0')
+    count_servicios = 0
+
+    for item in grupos.values():
+        fechas_texto = ", ".join(item['fechas'])
+        sub_item = item['cantidad'] * item['tarifa']
         total_calculado += sub_item
-        count_servicios += 1
+        count_servicios += int(item['cantidad'])
 
         DetalleEstadoDePago.objects.create(
             estado_de_pago=edp,
-            servicio=None,
-            fecha_servicio=sol.fecha_solicitada.date() if sol.fecha_solicitada else today,
-            modulo=sol.get_modulo_display() if hasattr(sol, 'get_modulo_display') else sol.modulo.upper(),
-            descripcion=desc,
-            cantidad=cant,
-            unidad_medida=unid,
-            tarifa_unitaria=tarifa,
+            servicio=item['servicio_obj'],
+            fecha_servicio=item['fecha_obj'],
+            fechas_texto=fechas_texto,
+            modulo=item['modulo'],
+            descripcion=item['descripcion'],
+            cantidad=item['cantidad'],
+            unidad_medida=item['unidad'],
+            tarifa_unitaria=item['tarifa'],
             subtotal=sub_item
         )
 

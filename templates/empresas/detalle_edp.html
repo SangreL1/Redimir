@@ -84,10 +84,14 @@
           <tr style="border-bottom: 1px solid #E2E8F0;">
             <td style="padding: 12px 14px;">
               <div class="fw-bold text-dark" style="font-size: 0.92rem;">{{ det.descripcion }}</div>
-              <div class="text-muted small" style="font-size: 0.78rem;">{{ det.fecha_servicio|date:"d/m/Y"|default:"Varias fechas" }}</div>
+              {% if det.fechas_texto %}
+              <div class="text-muted small" style="font-size: 0.78rem;"><strong>Fechas:</strong> {{ det.fechas_texto }}</div>
+              {% elif det.fecha_servicio %}
+              <div class="text-muted small" style="font-size: 0.78rem;"><strong>Fecha:</strong> {{ det.fecha_servicio|date:"d/m/Y" }}</div>
+              {% endif %}
             </td>
             <td class="text-center fw-semibold" style="padding: 12px 14px; font-size: 0.92rem;">$ {{ det.tarifa_unitaria|floatformat:0 }}</td>
-            <td class="text-center fw-bold" style="padding: 12px 14px; font-size: 0.92rem;">{{ det.cantidad }}</td>
+            <td class="text-center fw-bold" style="padding: 12px 14px; font-size: 0.92rem;">{{ det.cantidad|floatformat:"-2" }}</td>
             <td class="text-end fw-bold text-dark" style="padding: 12px 14px; font-size: 0.92rem;">$ {{ det.subtotal|floatformat:0 }}</td>
           </tr>
           {% empty %}

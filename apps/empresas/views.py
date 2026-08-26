@@ -622,20 +622,20 @@ class EstadoDePagoCrearView(View):
                 creado_por=request.user
             )
 
-            total_calculado = Decimal('0')
+            grupos = {}
 
             for s in servicios_qs:
                 reg = s.get_registro()
                 cant = Decimal('1')
                 unid = 'servicio'
-                desc = f"Retiro {s.get_modulo_display()} — Solicitud #{s.id}"
+                desc_base = f"Servicio de Retiro — {s.get_modulo_display()}"
                 mat_key = s.modulo
 
                 # Tarifas por defecto si no hay tarifa personalizada
-                tarifa = Decimal('15000')
-                if s.modulo == 'rsd': tarifa = Decimal('120')
-                elif s.modulo == 'escombros': tarifa = Decimal('18000')
-                elif s.modulo == 'reciclables': tarifa = Decimal('150')
+                tarifa = Decimal('150000')
+                if s.modulo == 'rsd': tarifa = Decimal('150000')
+                elif s.modulo == 'escombros': tarifa = Decimal('180000')
+                elif s.modulo == 'reciclables': tarifa = Decimal('150000')
 
                 if reg:
                     if s.modulo == 'rsd':
@@ -652,7 +652,7 @@ class EstadoDePagoCrearView(View):
                             unid = 'kg'
                         if hasattr(reg, 'tipo_material') and reg.tipo_material:
                             mat_key = str(reg.tipo_material).lower()
-                            desc = f"Reciclaje ({mat_key.upper()}) — Solicitud #{s.id}"
+                            desc_base = f"Reciclaje ({mat_key.upper()})"
 
                 # Buscar si existe tarifa personalizada configurada para la empresa
                 tarifa_custom = TarifaEmpresa.objects.filter(
@@ -672,18 +672,42 @@ class EstadoDePagoCrearView(View):
                     if tarifa_custom.unidad_medida:
                         unid = tarifa_custom.unidad_medida
 
-                sub_item = cant * tarifa
+                fecha_obj = s.fecha_retiro_real.date() if s.fecha_retiro_real else (s.fecha_solicitud.date() if s.fecha_solicitud else timezone.now().date())
+                fecha_str = fecha_obj.strftime("%d/%m/%Y")
+
+                key = (desc_base, tarifa, unid)
+                if key not in grupos:
+                    grupos[key] = {
+                        'modulo': s.get_modulo_display(),
+                        'descripcion': desc_base,
+                        'tarifa': tarifa,
+                        'unidad': unid,
+                        'cantidad': Decimal('0'),
+                        'fechas': [],
+                        'servicio_obj': s,
+                        'fecha_obj': fecha_obj,
+                    }
+                grupos[key]['cantidad'] += cant
+                if fecha_str not in grupos[key]['fechas']:
+                    grupos[key]['fechas'].append(fecha_str)
+
+            total_calculado = Decimal('0')
+
+            for item in grupos.values():
+                fechas_texto = ", ".join(item['fechas'])
+                sub_item = item['cantidad'] * item['tarifa']
                 total_calculado += sub_item
 
                 DetalleEstadoDePago.objects.create(
                     estado_de_pago=edp,
-                    servicio=s,
-                    fecha_servicio=s.fecha_retiro_real.date() if s.fecha_retiro_real else (s.fecha_solicitud.date() if s.fecha_solicitud else None),
-                    modulo=s.get_modulo_display(),
-                    descripcion=desc,
-                    cantidad=cant,
-                    unidad_medida=unid,
-                    tarifa_unitaria=tarifa,
+                    servicio=item['servicio_obj'],
+                    fecha_servicio=item['fecha_obj'],
+                    fechas_texto=fechas_texto,
+                    modulo=item['modulo'],
+                    descripcion=item['descripcion'],
+                    cantidad=item['cantidad'],
+                    unidad_medida=item['unidad'],
+                    tarifa_unitaria=item['tarifa'],
                     subtotal=sub_item
                 )
 
