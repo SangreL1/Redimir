@@ -220,7 +220,7 @@ class EstadoDePago(models.Model):
 
     class Meta:
         db_table = 'estados_de_pago'
-        ordering = ['-fecha_creacion']
+        ordering = ['-total_bruto', '-fecha_creacion']
         verbose_name = 'Estado de Pago Interno'
         verbose_name_plural = 'Estados de Pago Internos'
 

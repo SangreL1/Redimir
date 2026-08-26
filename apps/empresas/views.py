@@ -579,11 +579,11 @@ class EstadoDePagoListView(View):
                 cnt += 1
             messages.success(request, f"Se han generado/actualizado los Estados de Pago para {cnt} empresa(s) en {MESES_NOMBRE[mes_sel-1][1]} {anio_sel}.")
 
-        # Buscar EDPs del mes y año seleccionados
+        # Buscar EDPs del mes y año seleccionados (los con dinero/servicios al inicio)
         edps = EstadoDePago.objects.filter(
             periodo_inicio__year=anio_sel,
             periodo_inicio__month=mes_sel
-        ).select_related('empresa').order_by('-fecha_creacion')
+        ).select_related('empresa').order_by('-total_bruto', '-fecha_creacion')
 
         # Totales consolidados del mes
         total_neto_mes  = sum(e.subtotal_neto for e in edps)
