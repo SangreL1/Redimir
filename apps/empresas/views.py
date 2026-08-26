@@ -750,8 +750,14 @@ class EstadoDePagoDetalleView(View):
             messages.error(request, 'Acceso restringido.')
             return redirect('dashboard')
 
-        from .models import EstadoDePago
+        from .models import EstadoDePago, actualizar_o_crear_edp_empresa
         edp = get_object_or_404(EstadoDePago, pk=pk)
+
+        # Si el EDP tiene detalles antiguos sin agrupar, recalcular automáticamente para agruparlos
+        if edp.detalles.filter(fechas_texto__isnull=True).exists():
+            actualizar_o_crear_edp_empresa(edp.empresa, periodo_inicio=edp.periodo_inicio, periodo_fin=edp.periodo_fin, usuario=request.user)
+            edp.refresh_from_db()
+
         return render(request, 'empresas/detalle_edp.html', {'edp': edp})
 
 
