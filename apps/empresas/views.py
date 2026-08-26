@@ -548,9 +548,11 @@ class EstadoDePagoListView(View):
         
         import calendar
         from django.utils import timezone
+        from django.db.models import Q
         from .models import EstadoDePago, Empresa, actualizar_o_crear_edp_empresa
 
         today = timezone.now().date()
+        query = request.GET.get('q', '').strip()
         
         # Obtener mes y año seleccionados (por defecto mes y año actual)
         try:
@@ -579,19 +581,28 @@ class EstadoDePagoListView(View):
                 cnt += 1
             messages.success(request, f"Se han generado/actualizado los Estados de Pago para {cnt} empresa(s) en {MESES_NOMBRE[mes_sel-1][1]} {anio_sel}.")
 
-        # Buscar EDPs del mes y año seleccionados (los con dinero/servicios al inicio)
-        edps = EstadoDePago.objects.filter(
-            periodo_inicio__year=anio_sel,
-            periodo_inicio__month=mes_sel
-        ).select_related('empresa').order_by('-total_bruto', '-fecha_creacion')
+        # Si hay un término de búsqueda (nombre, RUT o Folio), busca en todo el historial sin limitar a mes/año
+        if query:
+            edps = EstadoDePago.objects.filter(
+                Q(empresa__nombre__icontains=query) |
+                Q(empresa__rut__icontains=query) |
+                Q(numero_edp__icontains=query)
+            ).select_related('empresa').order_by('-total_bruto', '-fecha_creacion')
+        else:
+            # Buscar EDPs del mes y año seleccionados (los con dinero/servicios al inicio)
+            edps = EstadoDePago.objects.filter(
+                periodo_inicio__year=anio_sel,
+                periodo_inicio__month=mes_sel
+            ).select_related('empresa').order_by('-total_bruto', '-fecha_creacion')
 
-        # Totales consolidados del mes
+        # Totales consolidados
         total_neto_mes  = sum(e.subtotal_neto for e in edps)
         total_iva_mes   = sum(e.iva for e in edps)
         total_bruto_mes = sum(e.total_bruto for e in edps)
 
         return render(request, self.template_name, {
             'edps': edps,
+            'query': query,
             'mes_sel': mes_sel,
             'anio_sel': anio_sel,
             'meses_lista': MESES_NOMBRE,

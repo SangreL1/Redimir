@@ -21,16 +21,29 @@
     {% endif %}
   </div>
 
-  <!-- SELECTOR Y NAVEGACIÓN POR MES -->
+  <!-- SELECTOR, BUSCADOR Y NAVEGACIÓN -->
   <div class="card p-3 mb-4 border-0 shadow-sm" style="background:#ffffff; border-radius:12px;">
     <form method="get" action="/estados-de-pago/" class="row g-3 align-items-center">
-      <div class="col-12 col-md-auto d-flex align-items-center gap-2">
-        <label class="fw-bold text-dark mb-0 me-1" style="font-size: 0.95rem;">
-          <i class="fas fa-calendar-alt text-success me-1"></i> Período Mensual:
-        </label>
+
+      <!-- BUSCADOR HISTÓRICO GLOBAL (EMPRESA, RUT O EDP) -->
+      <div class="col-12 col-md-5">
+        <div class="input-group">
+          <span class="input-group-text bg-white border-secondary border-end-0 text-muted">
+            <i class="fas fa-search text-success"></i>
+          </span>
+          <input type="text" name="q" value="{{ query|default:'' }}" class="form-control border-secondary border-start-0 text-dark fw-semibold" placeholder="Buscar por Empresa, RUT o N° EDP..." autocomplete="off">
+          {% if query %}
+          <a href="/estados-de-pago/" class="btn btn-outline-secondary" title="Limpiar búsqueda y volver a la vista por mes">
+            <i class="fas fa-times"></i>
+          </a>
+          {% else %}
+          <button type="submit" class="btn btn-primary-redimir px-3">Buscar</button>
+          {% endif %}
+        </div>
       </div>
 
-      <div class="col-6 col-sm-4 col-md-3">
+      <!-- SELECTORES DE MES Y AÑO -->
+      <div class="col-6 col-sm-4 col-md-2">
         <select name="mes" class="form-select fw-bold border-secondary text-dark" onchange="this.form.submit()">
           {% for num, nom in meses_lista %}
           <option value="{{ num }}" {% if num == mes_sel %}selected{% endif %}>{{ nom }}</option>
@@ -53,6 +66,18 @@
       </div>
     </form>
   </div>
+
+  {% if query %}
+  <!-- AVISO DE BÚSQUEDA GLOBAL -->
+  <div class="alert alert-info d-flex flex-wrap align-items-center justify-content-between gap-2 mb-4 shadow-sm" style="border-radius:10px; background-color:#E0F2FE; border-color:#BAE6FD; color:#0369A1;">
+    <div>
+      <i class="fas fa-search-dollar me-2 fs-5 text-primary"></i> Mostrando historial completo para la búsqueda: <strong class="fs-6">"{{ query }}"</strong> ({{ edps.count }} registro(s) encontrado(s) en todos los meses/años)
+    </div>
+    <a href="/estados-de-pago/" class="btn btn-sm btn-outline-primary fw-bold text-decoration-none px-3">
+      <i class="fas fa-calendar-alt me-1"></i> Volver a filtro por mes
+    </a>
+  </div>
+  {% endif %}
 
   <!-- TARJETAS DE RESUMEN DEL MES -->
   <div class="row g-3 mb-4">
