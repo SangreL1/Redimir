@@ -965,6 +965,7 @@ class EmpresaCrearAdminView(View):
         telefono        = request.POST.get('telefono', '').strip()
         direccion       = request.POST.get('direccion', '').strip()
         rubro           = request.POST.get('rubro', 'otro')
+        rubro_otro      = request.POST.get('rubro_otro', '').strip()
         nombre_contacto = request.POST.get('nombre_contacto', '').strip()
         cargo_contacto  = request.POST.get('cargo_contacto', '').strip()
         logo            = request.FILES.get('logo')
@@ -1010,6 +1011,7 @@ class EmpresaCrearAdminView(View):
             nombre=nombre, rut=rut_empresa,
             email_contacto=email_contacto, telefono=telefono,
             direccion=direccion, rubro=rubro,
+            rubro_otro=rubro_otro if rubro == 'otro' else None,
             nombre_contacto=nombre_contacto,
             cargo_contacto=cargo_contacto,
             logo=logo if logo else None,

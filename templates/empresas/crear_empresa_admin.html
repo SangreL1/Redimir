@@ -70,11 +70,16 @@
         </div>
         <div class="col-12 col-md-4">
             <label class="form-label">Rubro</label>
-            <select name="rubro" class="form-select">
+            <select name="rubro" class="form-select" id="rubro-select" onchange="toggleOtroRubroInput(this)">
                 {% for val, label in rubros %}
-                <option value="{{ val }}" {% if form_data.rubro == val %}selected{% endif %}>{{ label }}</option>
+                <option value="{{ val }}" {% if form_data.rubro == val or not form_data.rubro and val == 'otro' %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
+            <div class="mt-2" id="div-otro-rubro" style="display: {% if form_data.rubro == 'otro' or not form_data.rubro %}block{% else %}none{% endif %};">
+                <input type="text" name="rubro_otro" class="form-control form-control-sm bg-white text-dark border"
+                       placeholder="¿De qué otro rubro se trata? (Ej: Metalurgia, Textil, etc.)"
+                       value="{{ form_data.rubro_otro|default:'' }}">
+            </div>
         </div>
         <div class="col-12 col-md-6">
             <label class="form-label">Nombre del Contacto Principal</label>
@@ -286,6 +291,17 @@ btnAdd.addEventListener('click', () => {
     updateEmptyHint();
     row.querySelector('input[type="text"]').focus();
 });
+
+function toggleOtroRubroInput(select) {
+    const div = document.getElementById('div-otro-rubro');
+    if (div) {
+        div.style.display = (select.value === 'otro') ? 'block' : 'none';
+        if (select.value === 'otro') {
+            const inp = div.querySelector('input');
+            if (inp) inp.focus();
+        }
+    }
+}
 
 updateEmptyHint();
 </script>

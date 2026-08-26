@@ -86,6 +86,7 @@ class RegistroEmpresaView(View):
         telefono        = request.POST.get('telefono', '').strip()
         direccion       = request.POST.get('direccion', '').strip()
         rubro           = request.POST.get('rubro', 'otro')
+        rubro_otro      = request.POST.get('rubro_otro', '').strip()
         nombre_contacto = request.POST.get('nombre_contacto', '').strip()
         apellido_contacto = request.POST.get('apellido_contacto', '').strip()
         cargo_contacto  = request.POST.get('cargo_contacto', '').strip()
@@ -117,7 +118,8 @@ class RegistroEmpresaView(View):
             nombre=nombre, rut=rut_empresa,
             email_contacto=email_contacto, telefono=telefono,
             direccion=direccion, rubro=rubro,
-            nombre_contacto=nombre_contacto,
+            rubro_otro=rubro_otro if rubro == 'otro' else None,
+            nombre_contacto=f"{nombre_contacto} {apellido_contacto}".strip(),
             cargo_contacto=cargo_contacto,
             logo=logo if logo else None,
             estado='pendiente',

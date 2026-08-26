@@ -30,7 +30,14 @@ class Empresa(models.Model):
     ciudad = models.CharField(max_length=100, blank=True)
     region = models.CharField(max_length=100, blank=True)
     rubro = models.CharField(max_length=30, choices=RUBROS, default='otro')
+    rubro_otro = models.CharField(max_length=100, blank=True, null=True, verbose_name='Especificar otro rubro')
     giro = models.CharField(max_length=150, blank=True, verbose_name='Giro Comercial')
+
+    @property
+    def rubro_display(self):
+        if self.rubro == 'otro' and self.rubro_otro:
+            return f"Otro ({self.rubro_otro})"
+        return self.get_rubro_display()
 
     nombre_contacto = models.CharField(max_length=100, blank=True, verbose_name='Nombre de Contacto')
     cargo_contacto = models.CharField(max_length=80, blank=True, verbose_name='Cargo')

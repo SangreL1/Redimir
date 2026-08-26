@@ -75,15 +75,21 @@
             </div>
             <div class="form-group">
                 <label>Rubro</label>
-                <select name="rubro">
+                <select name="rubro" id="rubro-select" onchange="toggleOtroRubroInput(this)">
                     <option value="manufactura">Manufactura</option>
                     <option value="construccion">Construcción</option>
                     <option value="retail">Retail / Comercio</option>
                     <option value="alimentacion">Alimentación</option>
-                    <option value="logistica">Logística</option>
+                    <option value="logistica">Logística / Transporte</option>
+                    <option value="mineria">Minería</option>
                     <option value="servicios">Servicios</option>
+                    <option value="educacion">Educación</option>
+                    <option value="salud">Salud</option>
                     <option value="otro" selected>Otro</option>
                 </select>
+                <div class="mt-2" id="div-otro-rubro" style="margin-top:.5rem;">
+                    <input type="text" name="rubro_otro" placeholder="¿De qué otro rubro se trata?" value="{{ form_data.rubro_otro|default:'' }}">
+                </div>
             </div>
         </div>
 
@@ -149,5 +155,17 @@
     </div>
     {% endif %}
 </div>
+<script>
+function toggleOtroRubroInput(select) {
+    const div = document.getElementById('div-otro-rubro');
+    if (div) {
+        div.style.display = (select.value === 'otro') ? 'block' : 'none';
+        if (select.value === 'otro') {
+            const inp = div.querySelector('input');
+            if (inp) inp.focus();
+        }
+    }
+}
+</script>
 </body>
 </html>
