@@ -229,10 +229,38 @@ class EstadoDePago(models.Model):
 
     def save(self, *args, **kwargs):
         if not self.numero_edp:
-            year = timezone.now().strftime("%Y")
-            count = EstadoDePago.objects.filter(fecha_creacion__year=timezone.now().year).count() + 1
-            self.numero_edp = f"EDP-{year}-{count:04d}"
+            year = self.periodo_inicio.strftime("%Y") if self.periodo_inicio else timezone.now().strftime("%Y")
+            self.numero_edp = generar_numero_edp(year)
         super().save(*args, **kwargs)
+
+
+def generar_numero_edp(year=None):
+    """Genera un folio único correlativo para el Estado de Pago libre de colisiones."""
+    import re
+    from django.utils import timezone
+    if not year:
+        year = timezone.now().strftime("%Y")
+    else:
+        year = str(year)
+
+    prefix = f"EDP-{year}-"
+    edps = EstadoDePago.objects.filter(numero_edp__startswith=prefix)
+    max_seq = 0
+    for e in edps:
+        match = re.search(r'EDP-\d{4}-(\d+)', e.numero_edp)
+        if match:
+            seq = int(match.group(1))
+            if seq > max_seq:
+                max_seq = seq
+
+    new_seq = max_seq + 1
+    numero = f"EDP-{year}-{new_seq:04d}"
+
+    while EstadoDePago.objects.filter(numero_edp=numero).exists():
+        new_seq += 1
+        numero = f"EDP-{year}-{new_seq:04d}"
+
+    return numero
 
 
 class DetalleEstadoDePago(models.Model):
@@ -320,10 +348,9 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
 
     if not edp:
         year = p_inicio.strftime("%Y")
-        count = EstadoDePago.objects.filter(fecha_creacion__year=p_inicio.year).count() + 1
         edp = EstadoDePago.objects.create(
             empresa=empresa,
-            numero_edp=f"EDP-{year}-{count:04d}",
+            numero_edp=generar_numero_edp(year),
             periodo_inicio=p_inicio,
             periodo_fin=p_fin,
             creado_por=usuario,
