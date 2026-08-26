@@ -15,10 +15,65 @@
         <i class="fas fa-tags text-primary"></i> Configurar Tarifario
       </a>
       <a href="/estados-de-pago/crear/" class="btn-primary-redimir d-flex align-items-center gap-2 text-decoration-none" style="padding:.6rem 1.25rem; border-radius:var(--radius-sm);">
-        <i class="fas fa-plus"></i> Generar Nuevo EDP
+        <i class="fas fa-plus"></i> Generar EDP Manual
       </a>
     </div>
     {% endif %}
+  </div>
+
+  <!-- SELECTOR Y NAVEGACIÓN POR MES -->
+  <div class="card p-3 mb-4 border-0 shadow-sm" style="background:#ffffff; border-radius:12px;">
+    <form method="get" action="/estados-de-pago/" class="row g-3 align-items-center">
+      <div class="col-12 col-md-auto d-flex align-items-center gap-2">
+        <label class="fw-bold text-dark mb-0 me-1" style="font-size: 0.95rem;">
+          <i class="fas fa-calendar-alt text-success me-1"></i> Período Mensual:
+        </label>
+      </div>
+
+      <div class="col-6 col-sm-4 col-md-3">
+        <select name="mes" class="form-select fw-bold border-secondary text-dark" onchange="this.form.submit()">
+          {% for num, nom in meses_lista %}
+          <option value="{{ num }}" {% if num == mes_sel %}selected{% endif %}>{{ nom }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-6 col-sm-3 col-md-2">
+        <select name="anio" class="form-select fw-bold border-secondary text-dark" onchange="this.form.submit()">
+          {% for a in anios_lista %}
+          <option value="{{ a }}" {% if a == anio_sel %}selected{% endif %}>{{ a }}</option>
+          {% endfor %}
+        </select>
+      </div>
+
+      <div class="col-12 col-md-auto ms-md-auto d-flex align-items-center gap-2">
+        <a href="/estados-de-pago/?mes={{ mes_sel }}&anio={{ anio_sel }}&generar=1" class="btn btn-success btn-sm fw-bold px-3 py-2 text-white shadow-sm" style="border-radius:8px;" title="Recalcular o generar EDPs para todas las empresas en este mes">
+          <i class="fas fa-sync-alt me-1"></i> Actualizar EDPs de {{ nombre_mes_sel }} {{ anio_sel }}
+        </a>
+      </div>
+    </form>
+  </div>
+
+  <!-- TARJETAS DE RESUMEN DEL MES -->
+  <div class="row g-3 mb-4">
+    <div class="col-12 col-sm-4">
+      <div class="p-3 bg-white rounded-3 border shadow-sm">
+        <div class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;">Subtotal Neto ({{ nombre_mes_sel }})</div>
+        <div class="fs-4 fw-extrabold text-dark mt-1">$ {{ total_neto_mes|floatformat:0 }}</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-4">
+      <div class="p-3 bg-white rounded-3 border shadow-sm">
+        <div class="text-muted small fw-bold text-uppercase" style="letter-spacing: 0.5px;">IVA 19% ({{ nombre_mes_sel }})</div>
+        <div class="fs-4 fw-extrabold text-muted mt-1">$ {{ total_iva_mes|floatformat:0 }}</div>
+      </div>
+    </div>
+    <div class="col-12 col-sm-4">
+      <div class="p-3 bg-white rounded-3 border border-success shadow-sm" style="background-color: #F0FDF4 !important;">
+        <div class="text-success small fw-bold text-uppercase" style="letter-spacing: 0.5px;">Total Bruto Mes ({{ nombre_mes_sel }})</div>
+        <div class="fs-4 fw-extrabold text-success mt-1">$ {{ total_bruto_mes|floatformat:0 }}</div>
+      </div>
+    </div>
   </div>
 
   <div class="card-redimir p-0" style="overflow:hidden;">
@@ -96,16 +151,13 @@
     </div>
     {% else %}
     <div class="text-center py-5">
-      <i class="fas fa-receipt fa-3x mb-3" style="color:var(--border);"></i>
-      <h3 style="font-family:'Montserrat',sans-serif;font-weight:800;color:var(--primary);">No hay Estados de Pago registrados</h3>
-      <p class="text-muted fw-600 mb-4">Genera el primer consolidado de cobro comercial para tus clientes.</p>
+      <i class="fas fa-receipt fa-3x mb-3 text-muted" style="opacity:0.5;"></i>
+      <h3 style="font-family:'Montserrat',sans-serif;font-weight:800;color:var(--primary);">No hay Estados de Pago en {{ nombre_mes_sel }} {{ anio_sel }}</h3>
+      <p class="text-muted fw-600 mb-4">No se han emitido o generado registros de cobro comercial para el período seleccionado.</p>
       {% if user.rol == 'admin' or user.rol == 'gerencia' or user.is_staff %}
       <div class="d-flex align-items-center justify-content-center gap-2">
-        <a href="/empresas/tarifas/" class="btn btn-outline-secondary text-decoration-none">
-          <i class="fas fa-tags me-1"></i>Configurar Tarifario
-        </a>
-        <a href="/estados-de-pago/crear/" class="btn-primary-redimir text-decoration-none" style="padding:.7rem 1.4rem;border-radius:var(--radius-sm);">
-          <i class="fas fa-plus me-1"></i>Crear Estado de Pago
+        <a href="/estados-de-pago/?mes={{ mes_sel }}&anio={{ anio_sel }}&generar=1" class="btn-primary-redimir text-decoration-none px-4 py-2" style="border-radius:var(--radius-sm);">
+          <i class="fas fa-magic me-2"></i> Generar Estados de Pago para {{ nombre_mes_sel }} {{ anio_sel }}
         </a>
       </div>
       {% endif %}

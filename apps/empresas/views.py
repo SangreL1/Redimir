@@ -546,9 +546,61 @@ class EstadoDePagoListView(View):
             messages.error(request, 'Acceso restringido únicamente a Gerencia y Administradores.')
             return redirect('dashboard')
         
-        from .models import EstadoDePago
-        edps = EstadoDePago.objects.all().select_related('empresa')
-        return render(request, self.template_name, {'edps': edps})
+        import calendar
+        from django.utils import timezone
+        from .models import EstadoDePago, Empresa, actualizar_o_crear_edp_empresa
+
+        today = timezone.now().date()
+        
+        # Obtener mes y año seleccionados (por defecto mes y año actual)
+        try:
+            mes_sel = int(request.GET.get('mes', today.month))
+            anio_sel = int(request.GET.get('anio', today.year))
+        except (ValueError, TypeError):
+            mes_sel = today.month
+            anio_sel = today.year
+
+        MESES_NOMBRE = [
+            (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
+            (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
+            (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
+        ]
+
+        _, last_day = calendar.monthrange(anio_sel, mes_sel)
+        p_inicio = today.replace(year=anio_sel, month=mes_sel, day=1)
+        p_fin = today.replace(year=anio_sel, month=mes_sel, day=last_day)
+
+        # Si se solicita generar o actualizar EDPs de todas las empresas para este mes
+        if request.GET.get('generar') == '1':
+            empresas_aprobadas = Empresa.objects.filter(estado='aprobada', activa=True)
+            cnt = 0
+            for emp in empresas_aprobadas:
+                actualizar_o_crear_edp_empresa(emp, periodo_inicio=p_inicio, periodo_fin=p_fin, usuario=request.user)
+                cnt += 1
+            messages.success(request, f"Se han generado/actualizado los Estados de Pago para {cnt} empresa(s) en {MESES_NOMBRE[mes_sel-1][1]} {anio_sel}.")
+
+        # Buscar EDPs del mes y año seleccionados
+        edps = EstadoDePago.objects.filter(
+            periodo_inicio__year=anio_sel,
+            periodo_inicio__month=mes_sel
+        ).select_related('empresa').order_by('-fecha_creacion')
+
+        # Totales consolidados del mes
+        total_neto_mes  = sum(e.subtotal_neto for e in edps)
+        total_iva_mes   = sum(e.iva for e in edps)
+        total_bruto_mes = sum(e.total_bruto for e in edps)
+
+        return render(request, self.template_name, {
+            'edps': edps,
+            'mes_sel': mes_sel,
+            'anio_sel': anio_sel,
+            'meses_lista': MESES_NOMBRE,
+            'nombre_mes_sel': MESES_NOMBRE[mes_sel-1][1],
+            'total_neto_mes': total_neto_mes,
+            'total_iva_mes': total_iva_mes,
+            'total_bruto_mes': total_bruto_mes,
+            'anios_lista': [today.year - 1, today.year, today.year + 1],
+        })
 
 
 @method_decorator(login_required, name='dispatch')

@@ -200,7 +200,7 @@ class EstadoDePago(models.Model):
     ]
 
     numero_edp      = models.CharField(max_length=50, unique=True, verbose_name='N° Estado de Pago')
-    empresa         = models.OneToOneField(Empresa, on_delete=models.CASCADE, related_name='estado_de_pago', verbose_name='Empresa Solicitante')
+    empresa         = models.ForeignKey(Empresa, on_delete=models.CASCADE, related_name='estados_de_pago', verbose_name='Empresa Solicitante')
     orden_compra    = models.CharField(max_length=100, blank=True, null=True, verbose_name='N° Orden de Compra')
     periodo_inicio  = models.DateField()
     periodo_fin     = models.DateField()
@@ -290,22 +290,37 @@ class TarifaEmpresa(models.Model):
 
 def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=None, usuario=None):
     """
-    Función centralizada para calcular y actualizar automáticamente el Estado de Pago Único de una Empresa.
-    Agrupa los servicios por módulo/tarifa, sumando cantidad y compilando sus fechas de ejecución en una sola fila.
+    Función centralizada para calcular y actualizar automáticamente el Estado de Pago por Mes de una Empresa.
+    Agrupa los servicios del período por módulo/tarifa, sumando cantidad y compilando sus fechas de ejecución en una sola fila.
     """
+    import calendar
     from decimal import Decimal
     from django.utils import timezone
+    from django.db.models import Q
     from apps.servicios.models import Servicio
     
     today = timezone.now().date()
-    p_inicio = periodo_inicio or today.replace(day=1)
-    p_fin = periodo_fin or today
+    if not periodo_inicio:
+        p_inicio = today.replace(day=1)
+    else:
+        p_inicio = periodo_inicio
 
-    # Buscar o crear el EDP único de la empresa
-    edp = EstadoDePago.objects.filter(empresa=empresa).first()
+    if not periodo_fin:
+        _, last_day = calendar.monthrange(p_inicio.year, p_inicio.month)
+        p_fin = p_inicio.replace(day=last_day)
+    else:
+        p_fin = periodo_fin
+
+    # Buscar o crear el EDP de la empresa para este mes/año específico
+    edp = EstadoDePago.objects.filter(
+        empresa=empresa,
+        periodo_inicio__year=p_inicio.year,
+        periodo_inicio__month=p_inicio.month
+    ).first()
+
     if not edp:
-        year = today.strftime("%Y")
-        count = EstadoDePago.objects.filter(fecha_creacion__year=today.year).count() + 1
+        year = p_inicio.strftime("%Y")
+        count = EstadoDePago.objects.filter(fecha_creacion__year=p_inicio.year).count() + 1
         edp = EstadoDePago.objects.create(
             empresa=empresa,
             numero_edp=f"EDP-{year}-{count:04d}",
@@ -313,18 +328,28 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
             periodo_fin=p_fin,
             creado_por=usuario,
             estado='borrador',
-            observaciones=f'Estado de Pago Automático generado/actualizado el {today.strftime("%d/%m/%Y")}'
+            observaciones=f'Estado de Pago Automático de {p_inicio.strftime("%B %Y")}'
         )
+    else:
+        edp.periodo_inicio = p_inicio
+        edp.periodo_fin = p_fin
+        edp.save()
 
     # Limpiar detalles anteriores para recalcular agrupado
     edp.detalles.all().delete()
 
     TARIFA_RETIRO_PREDETERMINADA = Decimal('150000')
+    grupos = {}
 
-    grupos = {}  # key -> dict acumulador
+    # 1. Procesar Servicios de Retiro dentro del rango del mes [p_inicio, p_fin]
+    servicios_qs = Servicio.objects.filter(
+        empresa=empresa,
+        is_active=True
+    ).filter(
+        Q(fecha_retiro_real__date__range=[p_inicio, p_fin]) |
+        (Q(fecha_retiro_real__isnull=True) & Q(fecha_solicitud__date__range=[p_inicio, p_fin]))
+    ).distinct()
 
-    # 1. Procesar Servicios de Retiro de la Empresa
-    servicios_qs = Servicio.objects.filter(empresa=empresa, is_active=True).distinct()
     for s in servicios_qs:
         cant = Decimal('1')
         unid = 'servicio'
@@ -358,8 +383,13 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
         if fecha_str not in grupos[key]['fechas']:
             grupos[key]['fechas'].append(fecha_str)
 
-    # 2. Procesar Solicitudes de Recolección de la Empresa
-    solicitudes_qs = SolicitudRecoleccion.objects.filter(empresa=empresa).exclude(estado='cancelada')
+    # 2. Procesar Solicitudes de Recolección dentro del rango del mes [p_inicio, p_fin]
+    solicitudes_qs = SolicitudRecoleccion.objects.filter(
+        empresa=empresa
+    ).exclude(estado='cancelada').filter(
+        fecha_solicitada__date__range=[p_inicio, p_fin]
+    ).distinct()
+
     for sol in solicitudes_qs:
         cant = Decimal('1')
         unid = 'servicio'
