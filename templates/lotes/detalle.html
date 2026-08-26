@@ -49,28 +49,74 @@
                         {{ lote.get_estado_display }}
                     </span>
                 </div>
-            </div>
 
-            <!-- Photos -->
-            {% if lote.foto_recoleccion %}
-            <div class="mt-3">
-                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem;">📸 Fotos de Recolección (Evidencia)</div>
-                <div class="d-flex flex-wrap gap-2">
-                    <a href="{{ lote.foto_recoleccion.url }}" target="_blank" style="flex:1;">
-                        <img src="{{ lote.foto_recoleccion.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;">
-                    </a>
-                    {% for ev in lote.fotos_extra.all %}
-                    <a href="{{ ev.foto.url }}" target="_blank" style="flex:1;">
-                        <img src="{{ ev.foto.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;opacity:0.9;">
-                    </a>
+                <!-- Detalle de Múltiples Residuos -->
+                {% if lote.detalles_residuos.all %}
+                <div class="mt-3 pt-2 border-top border-secondary border-opacity-25">
+                    <div style="font-size:.78rem;font-weight:700;color:var(--primary);margin-bottom:.4rem;">
+                        <i class="fas fa-boxes-packing me-1"></i> Desglose de Residuos:
+                    </div>
+                    {% for det in lote.detalles_residuos.all %}
+                    <div class="d-flex justify-content-between align-items-center small py-1" style="border-bottom:1px dashed rgba(255,255,255,0.06);">
+                        <span style="color:#CBD5E1;">{{ det.tipo_residuo }}</span>
+                        <strong style="color:#4ade80;">{{ det.cantidad }} {{ det.unidad }}</strong>
+                    </div>
                     {% endfor %}
                 </div>
+                {% endif %}
             </div>
-            {% endif %}
+
+            <!-- Fotos por Categoría -->
+            <div class="mt-3 text-start">
+                <div style="font-size:.78rem;font-weight:700;color:var(--text-muted);margin-bottom:.4rem;">📸 Fotos de Evidencia de Recolección</div>
+                
+                <!-- Ticket -->
+                {% if lote.foto_ticket %}
+                <div class="mb-2">
+                    <span class="badge bg-primary bg-opacity-25 text-primary-light border border-primary border-opacity-25 small mb-1">
+                        <i class="fas fa-receipt me-1"></i> Ticket de Pesaje
+                    </span>
+                    <a href="{{ lote.foto_ticket.url }}" target="_blank" class="d-block">
+                        <img src="{{ lote.foto_ticket.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;">
+                    </a>
+                </div>
+                {% endif %}
+
+                <!-- Residuos -->
+                {% if lote.foto_recoleccion %}
+                <div class="mb-2">
+                    <span class="badge bg-success bg-opacity-25 text-success border border-success border-opacity-25 small mb-1">
+                        <i class="fas fa-boxes-stacked me-1"></i> Foto Residuos
+                    </span>
+                    <div class="d-flex flex-wrap gap-2">
+                        <a href="{{ lote.foto_recoleccion.url }}" target="_blank" style="flex:1;">
+                            <img src="{{ lote.foto_recoleccion.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;">
+                        </a>
+                        {% for ev in lote.fotos_extra.all %}
+                        <a href="{{ ev.foto.url }}" target="_blank" style="flex:1;">
+                            <img src="{{ ev.foto.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;opacity:0.9;">
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+                {% endif %}
+
+                <!-- Camión -->
+                {% if lote.foto_camion %}
+                <div class="mb-2">
+                    <span class="badge bg-warning bg-opacity-25 text-warning border border-warning border-opacity-25 small mb-1">
+                        <i class="fas fa-truck-front me-1"></i> Foto Camión / Transporte
+                    </span>
+                    <a href="{{ lote.foto_camion.url }}" target="_blank" class="d-block">
+                        <img src="{{ lote.foto_camion.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;">
+                    </a>
+                </div>
+                {% endif %}
+            </div>
 
             {% if lote.foto_procesamiento %}
-            <div class="mt-3">
-                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem;">🏭 Foto Procesamiento</div>
+            <div class="mt-3 text-start">
+                <div style="font-size:.78rem;color:var(--text-muted);margin-bottom:.4rem;">🏭 Foto Procesamiento en Bodega</div>
                 <img src="{{ lote.foto_procesamiento.url }}" style="width:100%;border-radius:8px;border:1px solid var(--dark-border);max-height:160px;object-fit:cover;">
             </div>
             {% endif %}

@@ -1,0 +1,293 @@
+{% extends 'base.html' %}
+{% block title %}Añadir Empresa — Redimir{% endblock %}
+{% block nav_empresas %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title"><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:.5rem;"></i>Añadir Empresa</h1>
+        <p class="page-subtitle">Registra una nueva empresa cliente directamente desde el panel de administración</p>
+    </div>
+    <a href="{% url 'empresa-list' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius:10px;font-weight:600;">
+        <i class="fas fa-arrow-left"></i> Volver a Empresas
+    </a>
+</div>
+
+{% if errores %}
+<div class="alert-redimir-danger mb-4" style="border-radius:12px;padding:1rem 1.25rem;">
+    <div class="d-flex align-items-start gap-2">
+        <i class="fas fa-exclamation-circle mt-1" style="color:var(--danger);flex-shrink:0;"></i>
+        <div>
+            <strong>Por favor corrige los siguientes errores:</strong>
+            <ul class="mb-0 mt-1 ps-3">
+                {% for e in errores %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<form method="post" enctype="multipart/form-data" novalidate id="form-empresa">
+{% csrf_token %}
+
+<!-- ══ DATOS DE LA EMPRESA ══════════════════════════════════════════════════ -->
+<div class="card-redimir mb-4" style="border-top:4px solid var(--primary);">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--primary-glow);display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-building" style="color:var(--primary);"></i>
+        </div>
+        <h2 style="font-size:1rem;font-weight:700;margin:0;color:#000;">Datos de la Empresa</h2>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-md-6">
+            <label class="form-label">Razón Social <span class="required-mark">*</span></label>
+            <input type="text" name="nombre" class="form-control" placeholder="Ej: Constructora Alfa SPA"
+                   value="{{ form_data.nombre|default:'' }}" required>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">RUT Empresa <span class="required-mark">*</span></label>
+            <input type="text" name="rut_empresa" class="form-control" placeholder="Ej: 76.123.456-7"
+                   value="{{ form_data.rut_empresa|default:'' }}" required>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Email Principal de Contacto <span class="required-mark">*</span></label>
+            <input type="email" name="email_contacto" class="form-control" placeholder="contacto@empresa.cl"
+                   value="{{ form_data.email_contacto|default:'' }}" required>
+            <div class="form-text">Email general de la empresa (para acceso al sistema).</div>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Teléfono</label>
+            <input type="text" name="telefono" class="form-control" placeholder="+56 9 1234 5678"
+                   value="{{ form_data.telefono|default:'' }}">
+        </div>
+        <div class="col-12 col-md-8">
+            <label class="form-label">Dirección</label>
+            <input type="text" name="direccion" class="form-control" placeholder="Av. Principal 1234, Calama"
+                   value="{{ form_data.direccion|default:'' }}">
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">Rubro</label>
+            <select name="rubro" class="form-select">
+                {% for val, label in rubros %}
+                <option value="{{ val }}" {% if form_data.rubro == val %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Nombre del Contacto Principal</label>
+            <input type="text" name="nombre_contacto" class="form-control" placeholder="Juan Pérez"
+                   value="{{ form_data.nombre_contacto|default:'' }}">
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Cargo del Contacto Principal</label>
+            <input type="text" name="cargo_contacto" class="form-control" placeholder="Jefe de Operaciones"
+                   value="{{ form_data.cargo_contacto|default:'' }}">
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Estado inicial</label>
+            <select name="estado" class="form-select" id="estado-select">
+                {% for val, label in estados %}
+                <option value="{{ val }}" {% if form_data.estado == val or val == 'aprobada' %}selected{% endif %}>{{ label }}</option>
+                {% endfor %}
+            </select>
+            <div class="form-text">Si seleccionas "Aprobada", la empresa quedará activa de inmediato.</div>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Logo (opcional)</label>
+            <input type="file" name="logo" class="form-control" accept="image/*">
+        </div>
+    </div>
+</div>
+
+<!-- ══ CONTACTOS ADICIONALES SEGMENTADOS ════════════════════════════════════ -->
+<div class="card-redimir mb-4" style="border-top:4px solid var(--accent);">
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-1">
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:36px;height:36px;border-radius:10px;background:#FFF8E1;display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-envelope-open-text" style="color:var(--accent-dark);"></i>
+            </div>
+            <div>
+                <h2 style="font-size:1rem;font-weight:700;margin:0;color:#000;">Contactos Segmentados</h2>
+                <p style="font-size:.78rem;color:var(--text-muted);margin:0;">Define a quién le llegarán los certificados, estados de pago y reportes.</p>
+            </div>
+        </div>
+        <button type="button" id="btn-add-contacto" class="btn btn-outline-secondary d-flex align-items-center gap-2"
+                style="border-radius:10px;font-weight:600;font-size:.82rem;padding:.4rem .9rem;">
+            <i class="fas fa-plus"></i> Añadir Contacto
+        </button>
+    </div>
+
+    <!-- Leyenda de tipos -->
+    <div class="d-flex flex-wrap gap-2 my-3">
+        <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:20px;background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7;">
+            <i class="fas fa-certificate me-1"></i>Certificados
+        </span>
+        <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:20px;background:#EAF4FF;color:var(--secondary-dark);border:1px solid #90CAF9;">
+            <i class="fas fa-file-invoice-dollar me-1"></i>Estados de Pago
+        </span>
+        <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:20px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;">
+            <i class="fas fa-chart-bar me-1"></i>Reportes
+        </span>
+        <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:20px;background:var(--primary-light);color:var(--primary-dark);border:1px solid #C5E1A5;">
+            <i class="fas fa-bell me-1"></i>Notificaciones
+        </span>
+    </div>
+
+    <!-- Contenedor dinámico de filas de contacto -->
+    <div id="contactos-container">
+        <!-- Las filas se añaden aquí dinámicamente -->
+    </div>
+
+    <p id="contactos-empty-hint" style="font-size:.83rem;color:var(--text-muted);text-align:center;padding:1.5rem;border:2px dashed var(--border);border-radius:10px;margin:0;">
+        <i class="fas fa-user-plus me-2"></i>Haz clic en <strong>Añadir Contacto</strong> para registrar correos adicionales segmentados por tipo de documento.
+    </p>
+</div>
+
+<!-- ══ USUARIO DE ACCESO (OPCIONAL) ════════════════════════════════════════ -->
+<div class="card-redimir mb-4" style="border-top:4px solid var(--secondary);">
+    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
+        <div class="d-flex align-items-center gap-2">
+            <div style="width:36px;height:36px;border-radius:10px;background:var(--secondary-light);display:flex;align-items:center;justify-content:center;">
+                <i class="fas fa-user-shield" style="color:var(--secondary);"></i>
+            </div>
+            <h2 style="font-size:1rem;font-weight:700;margin:0;color:#000;">Crear Usuario de Acceso <span style="font-size:.8rem;font-weight:500;color:var(--text-muted);">(opcional)</span></h2>
+        </div>
+        <div class="form-check form-switch mb-0">
+            <input class="form-check-input" type="checkbox" id="crear-usuario-toggle" name="crear_usuario" value="1"
+                   {% if form_data.crear_usuario == '1' %}checked{% endif %}>
+            <label class="form-check-label" for="crear-usuario-toggle" style="font-size:.85rem;font-weight:600;color:#000;">Crear ahora</label>
+        </div>
+    </div>
+
+    <div id="usuario-fields" style="{% if form_data.crear_usuario != '1' %}display:none;{% endif %}">
+        <div class="row g-3">
+            <div class="col-12 col-md-6">
+                <label class="form-label">RUT del Usuario <span class="required-mark">*</span></label>
+                <input type="text" name="rut_usuario" class="form-control" placeholder="12.345.678-9"
+                       value="{{ form_data.rut_usuario|default:'' }}">
+                <div class="form-text">Con este RUT iniciará sesión en el sistema.</div>
+            </div>
+            <div class="col-12 col-md-6"></div>
+            <div class="col-12 col-md-6">
+                <label class="form-label">Contraseña <span class="required-mark">*</span></label>
+                <input type="password" name="password" class="form-control" placeholder="Mínimo 6 caracteres"
+                       autocomplete="new-password">
+            </div>
+            <div class="col-12 col-md-6">
+                <label class="form-label">Confirmar Contraseña <span class="required-mark">*</span></label>
+                <input type="password" name="password2" class="form-control" placeholder="Repite la contraseña"
+                       autocomplete="new-password">
+            </div>
+        </div>
+    </div>
+    <p class="mb-0 mt-1" id="usuario-hint" style="font-size:.83rem;color:var(--text-muted);{% if form_data.crear_usuario == '1' %}display:none;{% endif %}">
+        <i class="fas fa-info-circle me-1"></i>Activa esta opción para generar las credenciales de acceso del representante de la empresa.
+    </p>
+</div>
+
+<!-- ══ ACCIONES ══════════════════════════════════════════════════════════════ -->
+<div class="d-flex gap-3 justify-content-end">
+    <a href="{% url 'empresa-list' %}" class="btn btn-outline-secondary" style="border-radius:10px;font-weight:600;padding:.65rem 1.5rem;">
+        Cancelar
+    </a>
+    <button type="submit" class="btn-primary-redimir btn d-flex align-items-center gap-2" id="btn-submit-empresa">
+        <i class="fas fa-save"></i> Guardar Empresa
+    </button>
+</div>
+
+</form>
+</div>
+
+<!-- ══ TEMPLATE OCULTO PARA FILA DE CONTACTO ════════════════════════════════ -->
+<!-- NO use <template> con inputs: se generan dinámicamente con JS para manejar índices -->
+
+<script>
+// Toggle usuario de acceso
+const toggle = document.getElementById('crear-usuario-toggle');
+const fields = document.getElementById('usuario-fields');
+const hint   = document.getElementById('usuario-hint');
+toggle.addEventListener('change', () => {
+    fields.style.display = toggle.checked ? '' : 'none';
+    hint.style.display   = toggle.checked ? 'none' : '';
+});
+
+// ── Contactos dinámicos con índices únicos ────────────────────────────────
+const container = document.getElementById('contactos-container');
+const emptyHint = document.getElementById('contactos-empty-hint');
+const btnAdd    = document.getElementById('btn-add-contacto');
+let rowCount = 0;
+
+function updateEmptyHint() {
+    emptyHint.style.display = container.children.length === 0 ? '' : 'none';
+}
+
+function buildContactoRow(idx) {
+    const div = document.createElement('div');
+    div.className = 'contacto-row mb-3 p-3';
+    div.style.cssText = 'background:#F8FAFC;border:1.5px solid #E1E4E7;border-radius:12px;position:relative;';
+    div.innerHTML = `
+        <button type="button" class="btn-remove-contacto" title="Eliminar contacto"
+                style="position:absolute;top:.6rem;right:.75rem;background:transparent;border:none;color:var(--danger);font-size:1rem;cursor:pointer;line-height:1;">
+            <i class="fas fa-times-circle"></i>
+        </button>
+        <div class="row g-2 align-items-start">
+            <div class="col-12 col-md-4">
+                <label class="form-label" style="font-size:.8rem;">Nombre Completo <span class="required-mark">*</span></label>
+                <input type="text" name="contacto_nombre_${idx}" class="form-control form-control-sm"
+                       placeholder="María González">
+            </div>
+            <div class="col-12 col-md-3">
+                <label class="form-label" style="font-size:.8rem;">Cargo / Área</label>
+                <input type="text" name="contacto_cargo_${idx}" class="form-control form-control-sm"
+                       placeholder="Gerente de Finanzas">
+            </div>
+            <div class="col-12 col-md-5">
+                <label class="form-label" style="font-size:.8rem;">Correo Electrónico <span class="required-mark">*</span></label>
+                <input type="email" name="contacto_email_${idx}" class="form-control form-control-sm"
+                       placeholder="maria.gonzalez@empresa.cl">
+            </div>
+            <!-- Checkboxes de tipos -->
+            <div class="col-12 mt-1">
+                <input type="hidden" name="contacto_idx" value="${idx}">
+                <div class="d-flex flex-wrap gap-3" style="font-size:.8rem;">
+                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;">
+                        <input type="checkbox" name="contacto_cert_${idx}" value="1" style="accent-color:#2E7D32;">
+                        <span style="color:#2E7D32;"><i class="fas fa-certificate me-1"></i>Certificados</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;">
+                        <input type="checkbox" name="contacto_edp_${idx}" value="1" style="accent-color:var(--secondary);">
+                        <span style="color:var(--secondary);"><i class="fas fa-file-invoice-dollar me-1"></i>Estados de Pago</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;">
+                        <input type="checkbox" name="contacto_rep_${idx}" value="1" style="accent-color:#7B1FA2;">
+                        <span style="color:#7B1FA2;"><i class="fas fa-chart-bar me-1"></i>Reportes</span>
+                    </label>
+                    <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;">
+                        <input type="checkbox" name="contacto_notif_${idx}" value="1" checked style="accent-color:var(--primary-dark);">
+                        <span style="color:var(--primary-dark);"><i class="fas fa-bell me-1"></i>Notificaciones</span>
+                    </label>
+                </div>
+            </div>
+        </div>
+    `;
+    div.querySelector('.btn-remove-contacto').addEventListener('click', () => {
+        div.remove();
+        updateEmptyHint();
+    });
+    return div;
+}
+
+btnAdd.addEventListener('click', () => {
+    const row = buildContactoRow(rowCount++);
+    container.appendChild(row);
+    updateEmptyHint();
+    row.querySelector('input[type="text"]').focus();
+});
+
+updateEmptyHint();
+</script>
+{% endblock %}
+

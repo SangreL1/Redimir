@@ -10,7 +10,9 @@ class Lote(models.Model):
         ('papel', 'Papel/Cartón'),
         ('vidrio', 'Vidrio'),
         ('organico', 'Orgánico'),
-        ('mixto', 'Mixto'),
+        ('basura', 'RSD / Basura General'),
+        ('escombros', 'Escombros / RESCON'),
+        ('mixto', 'Mixto / Varios'),
     ]
     
     ESTADOS = [
@@ -26,11 +28,13 @@ class Lote(models.Model):
     
     empresa_origen = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='lotes')
     operador = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, related_name='lotes_recolectados')
-    tipo_residuo = models.CharField(max_length=20, choices=TIPOS_RESIDUO)
-    cantidad_kg = models.DecimalField(max_digits=10, decimal_places=2)
+    tipo_residuo = models.CharField(max_length=50, choices=TIPOS_RESIDUO, default='mixto')
+    cantidad_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
     fecha_recoleccion = models.DateTimeField(auto_now_add=True)
-    foto_recoleccion = models.ImageField(upload_to='fotos/recolecciones/%Y/%m/%d/')
+    foto_recoleccion = models.ImageField(upload_to='fotos/recolecciones/%Y/%m/%d/', null=True, blank=True)
+    foto_ticket = models.ImageField(upload_to='fotos/tickets/%Y/%m/%d/', null=True, blank=True)
+    foto_camion = models.ImageField(upload_to='fotos/camion/%Y/%m/%d/', null=True, blank=True)
     observaciones_recoleccion = models.TextField(blank=True)
     
     ubicacion_gps = models.CharField(max_length=255, blank=True)
@@ -96,3 +100,17 @@ class EvidenciaLote(models.Model):
     class Meta:
         db_table = 'lotes_evidencias'
         ordering = ['fecha_subida']
+
+
+class DetalleLoteResiduo(models.Model):
+    lote = models.ForeignKey(Lote, on_delete=models.CASCADE, related_name='detalles_residuos')
+    tipo_residuo = models.CharField(max_length=100)
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    unidad = models.CharField(max_length=20, default='kg')
+
+    class Meta:
+        db_table = 'lotes_detalles_residuos'
+
+    def __str__(self):
+        return f"{self.tipo_residuo}: {self.cantidad} {self.unidad}"
+

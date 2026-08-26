@@ -1,0 +1,150 @@
+{% extends 'base.html' %}
+{% block title %}Añadir Recolector — Redimir{% endblock %}
+{% block nav_buscar %}active{% endblock %}
+
+{% block content %}
+<div class="fade-in-up">
+
+<div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    <div>
+        <h1 class="page-title"><i class="fas fa-user-plus" style="color:var(--secondary);margin-right:.5rem;"></i>Añadir Recolector / Operador</h1>
+        <p class="page-subtitle">Crea un nuevo usuario de operaciones directamente desde el panel de administración</p>
+    </div>
+    <a href="{% url 'buscar-trabajador' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius:10px;font-weight:600;">
+        <i class="fas fa-arrow-left"></i> Volver al Directorio
+    </a>
+</div>
+
+{% if errores %}
+<div class="alert-redimir-danger mb-4" style="border-radius:12px;padding:1rem 1.25rem;">
+    <div class="d-flex align-items-start gap-2">
+        <i class="fas fa-exclamation-circle mt-1" style="color:var(--danger);flex-shrink:0;"></i>
+        <div>
+            <strong>Por favor corrige los siguientes errores:</strong>
+            <ul class="mb-0 mt-1 ps-3">
+                {% for e in errores %}<li>{{ e }}</li>{% endfor %}
+            </ul>
+        </div>
+    </div>
+</div>
+{% endif %}
+
+<form method="post" novalidate>
+{% csrf_token %}
+
+<div class="card-redimir mb-4" style="border-top:4px solid var(--secondary);">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--secondary-light);display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-id-card" style="color:var(--secondary);"></i>
+        </div>
+        <h2 style="font-size:1rem;font-weight:700;margin:0;color:#000;">Datos Personales</h2>
+    </div>
+
+    <div class="row g-3">
+        <div class="col-12 col-md-4">
+            <label class="form-label">RUT <span class="required-mark">*</span></label>
+            <input type="text" name="rut" class="form-control" placeholder="12.345.678-9"
+                   value="{{ form_data.rut|default:'' }}" required>
+            <div class="form-text">Con este RUT iniciará sesión.</div>
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">Nombre(s) <span class="required-mark">*</span></label>
+            <input type="text" name="nombre" class="form-control" placeholder="Juan"
+                   value="{{ form_data.nombre|default:'' }}" required>
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">Apellido(s) <span class="required-mark">*</span></label>
+            <input type="text" name="apellido" class="form-control" placeholder="Pérez González"
+                   value="{{ form_data.apellido|default:'' }}" required>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Email</label>
+            <input type="email" name="email" class="form-control" placeholder="juan.perez@redimir.cl"
+                   value="{{ form_data.email|default:'' }}">
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label">Teléfono</label>
+            <input type="text" name="telefono" class="form-control" placeholder="+56 9 1234 5678"
+                   value="{{ form_data.telefono|default:'' }}">
+        </div>
+        <div class="col-12 col-md-3">
+            <label class="form-label">Edad</label>
+            <input type="number" name="edad" class="form-control" placeholder="30" min="18" max="80"
+                   value="{{ form_data.edad|default:'' }}">
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">Género</label>
+            <select name="genero" class="form-select">
+                <option value="">— No especificado —</option>
+                <option value="M" {% if form_data.genero == 'M' %}selected{% endif %}>Masculino</option>
+                <option value="F" {% if form_data.genero == 'F' %}selected{% endif %}>Femenino</option>
+                <option value="O" {% if form_data.genero == 'O' %}selected{% endif %}>Otro</option>
+            </select>
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">Rol en el Sistema</label>
+            <select name="rol" class="form-select">
+                {% for val, label in roles %}
+                {% if val != 'admin' %}
+                <option value="{{ val }}" {% if form_data.rol == val or val == 'recolector' %}selected{% endif %}>{{ label }}</option>
+                {% endif %}
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-12 col-md-4">
+            <label class="form-label">Estado</label>
+            <select name="estado" class="form-select">
+                <option value="aprobado" {% if form_data.estado == 'aprobado' or not form_data %}selected{% endif %}>Aprobado (activo)</option>
+                <option value="pendiente" {% if form_data.estado == 'pendiente' %}selected{% endif %}>Pendiente de aprobación</option>
+            </select>
+            <div class="form-text">Se recomienda "Aprobado" para usuarios creados directamente por admin.</div>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Empresa Asignada <span style="font-size:.8rem;font-weight:400;color:var(--text-muted);">(opcional)</span></label>
+            <select name="empresa" class="form-select">
+                <option value="">— Sin empresa (staff Redimir) —</option>
+                {% for e in empresas %}
+                <option value="{{ e.pk }}" {% if form_data.empresa == e.pk|stringformat:"s" %}selected{% endif %}>
+                    {{ e.nombre }}
+                </option>
+                {% endfor %}
+            </select>
+        </div>
+    </div>
+</div>
+
+<!-- CONTRASEÑA -->
+<div class="card-redimir mb-4" style="border-top:4px solid var(--primary);">
+    <div class="d-flex align-items-center gap-2 mb-3">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--primary-glow);display:flex;align-items:center;justify-content:center;">
+            <i class="fas fa-lock" style="color:var(--primary);"></i>
+        </div>
+        <h2 style="font-size:1rem;font-weight:700;margin:0;color:#000;">Credenciales de Acceso</h2>
+    </div>
+    <div class="row g-3">
+        <div class="col-12 col-md-6">
+            <label class="form-label">Contraseña <span class="required-mark">*</span></label>
+            <input type="password" name="password" class="form-control" placeholder="Mínimo 6 caracteres"
+                   autocomplete="new-password" required>
+        </div>
+        <div class="col-12 col-md-6">
+            <label class="form-label">Confirmar Contraseña <span class="required-mark">*</span></label>
+            <input type="password" name="password2" class="form-control" placeholder="Repite la contraseña"
+                   autocomplete="new-password" required>
+        </div>
+    </div>
+</div>
+
+<!-- ACCIONES -->
+<div class="d-flex gap-3 justify-content-end">
+    <a href="{% url 'buscar-trabajador' %}" class="btn btn-outline-secondary" style="border-radius:10px;font-weight:600;padding:.65rem 1.5rem;">
+        Cancelar
+    </a>
+    <button type="submit" class="btn-secondary-redimir btn d-flex align-items-center gap-2" id="btn-submit-recolector">
+        <i class="fas fa-user-check"></i> Guardar Recolector
+    </button>
+</div>
+
+</form>
+</div>
+{% endblock %}

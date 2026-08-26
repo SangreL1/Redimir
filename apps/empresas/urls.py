@@ -1,6 +1,6 @@
 from django.urls import path
 from .views import (
-    EmpresaListView, EmpresaDeleteView,
+    EmpresaListView, EmpresaDeleteView, EmpresaCrearAdminView,
     EmpresaPortalView, EmpresaSolicitudCrearView, EmpresaSolicitudListView, EmpresaGuiaReciclajeView,
     SolicitudListView, SolicitudCrearView,
     SolicitudAceptarView, SolicitudCompletarView, SolicitudCancelarView,
@@ -12,6 +12,7 @@ from .views import (
 urlpatterns = [
     # Admin: empresa management
     path('empresas/', EmpresaListView.as_view(), name='empresa-list'),
+    path('empresas/crear/', EmpresaCrearAdminView.as_view(), name='empresa-crear'),
     path('empresas/<int:pk>/eliminar/', EmpresaDeleteView.as_view(), name='empresa-delete'),
 
     # Empresa portal (rol='empresa')

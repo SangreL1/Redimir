@@ -35,7 +35,7 @@ class CrearServicioView(View):
     template_name = 'servicios/crear.html'
 
     def get(self, request):
-        if not (_es_admin(request.user) or request.user.rol == 'empresa'):
+        if not (_es_admin(request.user) or request.user.rol == 'empresa' or _es_operador(request.user)):
             messages.error(request, 'Sin permisos para crear servicios.')
             return redirect('dashboard')
         empresas = Empresa.objects.filter(estado='aprobada', activa=True)

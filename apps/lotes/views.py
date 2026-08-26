@@ -54,22 +54,29 @@ class RecoleccionPageView(View):
 
     def post(self, request):
         empresa_id = request.POST.get('empresa_origen')
-        tipo_residuo = request.POST.get('tipo_residuo')
-        cantidad_kg = request.POST.get('cantidad_kg')
+        tipo_residuo = request.POST.get('tipo_residuo') or 'mixto'
+        cantidad_kg_raw = request.POST.get('cantidad_kg') or '0'
         observaciones = request.POST.get('observaciones_recoleccion', '')
-        fotos = request.FILES.getlist('foto_recoleccion')
         ubicacion = request.POST.get('ubicacion_gps', '')
         solicitud_id = request.POST.get('solicitud_id')
+
+        # Fotos por categoría
+        foto_ticket = request.FILES.get('foto_ticket')
+        fotos_residuos = request.FILES.getlist('foto_recoleccion')
+        foto_camion = request.FILES.get('foto_camion')
+
+        # Detalle de múltiples residuos
+        residuos_tipo = request.POST.getlist('residuos_tipo[]')
+        residuos_cantidad = request.POST.getlist('residuos_cantidad[]')
+        residuos_unidad = request.POST.getlist('residuos_unidad[]')
 
         errores = []
         if not empresa_id:
             errores.append('Selecciona una empresa.')
-        if not tipo_residuo:
-            errores.append('Selecciona el tipo de residuo.')
-        if not cantidad_kg:
-            errores.append('Ingresa la cantidad en kg.')
-        if not fotos:
-            errores.append('Debes subir al menos una foto de evidencia.')
+
+        # Debe subir al menos 1 foto en cualquiera de los 3 apartados
+        if not (foto_ticket or fotos_residuos or foto_camion):
+            errores.append('Debes subir al menos una foto de evidencia (Ticket, Residuos o Camión).')
 
         if errores:
             empresas = Empresa.objects.filter(estado='aprobada', activa=True)
@@ -78,26 +85,58 @@ class RecoleccionPageView(View):
             })
 
         try:
+            from decimal import Decimal
             empresa = Empresa.objects.get(id=empresa_id)
-            foto_principal = fotos[0] if fotos else None
+            foto_principal = fotos_residuos[0] if fotos_residuos else (foto_ticket or foto_camion)
             
+            total_kg = Decimal('0')
+            try:
+                total_kg = Decimal(str(cantidad_kg_raw))
+            except Exception:
+                total_kg = Decimal('0')
+
             lote = Lote.objects.create(
                 empresa_origen=empresa,
                 operador=request.user,
                 tipo_residuo=tipo_residuo,
-                cantidad_kg=cantidad_kg,
+                cantidad_kg=total_kg,
                 foto_recoleccion=foto_principal,
+                foto_ticket=foto_ticket,
+                foto_camion=foto_camion,
                 observaciones_recoleccion=observaciones,
                 ubicacion_gps=ubicacion,
             )
-            
-            # Guardamos las demas fotos (o todas) como evidencia
-            from .models import EvidenciaLote
-            for i, f in enumerate(fotos):
-                if i > 0: # La primera ya está como foto_recoleccion del Lote
-                    EvidenciaLote.objects.create(lote=lote, foto=f)
 
-            # Si viene gestionada de una Solicitud, marcarla completada!
+            # Guardar múltiples detalles de residuos si fueron especificados
+            from .models import DetalleLoteResiduo, EvidenciaLote
+            if residuos_tipo and residuos_cantidad:
+                sum_kg = Decimal('0')
+                for t, c, u in zip(residuos_tipo, residuos_cantidad, residuos_unidad):
+                    if t and c:
+                        try:
+                            cant_val = Decimal(str(c))
+                        except Exception:
+                            cant_val = Decimal('0')
+                        unid_val = u if u else 'kg'
+                        DetalleLoteResiduo.objects.create(
+                            lote=lote,
+                            tipo_residuo=t,
+                            cantidad=cant_val,
+                            unidad=unid_val
+                        )
+                        if unid_val == 'kg':
+                            sum_kg += cant_val
+                if sum_kg > Decimal('0') and total_kg == Decimal('0'):
+                    lote.cantidad_kg = sum_kg
+                    lote.save()
+            
+            # Guardamos fotos de residuos adicionales como evidencia extra
+            if fotos_residuos:
+                for i, f in enumerate(fotos_residuos):
+                    if i > 0:
+                        EvidenciaLote.objects.create(lote=lote, foto=f)
+
+            # Si viene gestionada de una Solicitud, marcarla completada
             if solicitud_id:
                 from apps.empresas.models import SolicitudRecoleccion
                 try:
@@ -107,6 +146,13 @@ class RecoleccionPageView(View):
                 except Exception:
                     pass
 
+            # Auto-generar/actualizar Estado de Pago (EDP) cobrando por SERVICIO
+            try:
+                from apps.empresas.models import actualizar_o_crear_edp_empresa
+                actualizar_o_crear_edp_empresa(empresa, usuario=request.user)
+            except Exception:
+                pass
+
             # Notify all admins about new collection
             admins = Usuario.objects.filter(rol='admin', is_active=True, estado='aprobado')
             notifs = [
@@ -115,7 +161,7 @@ class RecoleccionPageView(View):
                     tipo='recoleccion_confirmada',
                     titulo='Nueva Recolección Registrada',
                     mensaje=(
-                        f'{request.user.nombre_completo} registró {cantidad_kg} kg de '
+                        f'{request.user.nombre_completo} registró retiro de '
                         f'{lote.get_tipo_residuo_display()} en {empresa.nombre}'
                     ),
                     url_destino=f'/lotes/{lote.codigo_lote}/',

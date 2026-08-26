@@ -149,7 +149,10 @@ class EmpresaSolicitudCrearView(View):
         if not empresa or empresa.estado != 'aprobada':
             return redirect('dashboard')
 
-        modulo         = request.POST.get('modulo', 'reciclables')
+        modulos        = request.POST.getlist('modulo[]')
+        if not modulos and request.POST.get('modulo'):
+            modulos = [request.POST.get('modulo')]
+
         tipo_material  = request.POST.get('tipo_material', 'carton')
         descripcion    = request.POST.get('descripcion', '').strip()
         direccion      = request.POST.get('direccion_recoleccion', '').strip()
@@ -168,7 +171,15 @@ class EmpresaSolicitudCrearView(View):
         except Exception:
             cant_est = precio_u = total_est = Decimal('0')
 
+        otro_servicio_detalle = request.POST.get('otro_servicio_detalle', '').strip()
+        if otro_servicio_detalle and ('otros' in modulos or tipo_material == 'otros'):
+            if tipo_material == 'otros':
+                tipo_material = f"Otros ({otro_servicio_detalle[:40]})"
+            descripcion = f"[{otro_servicio_detalle}] {descripcion}".strip()
+
         errores = []
+        if not modulos:
+            errores.append('Debes seleccionar al menos un módulo de residuo.')
         if not descripcion:
             errores.append('La descripción es obligatoria.')
         if not direccion:
@@ -181,26 +192,61 @@ class EmpresaSolicitudCrearView(View):
                 'empresa': empresa, 'errores': errores, 'form_data': request.POST,
             })
 
-        from datetime import datetime
+        from datetime import datetime, timedelta
         try:
             fecha_solicitada = datetime.fromisoformat(fecha_str)
         except ValueError:
             fecha_solicitada = timezone.now()
 
-        solicitud = SolicitudRecoleccion.objects.create(
-            empresa=empresa,
-            modulo=modulo,
-            tipo_material=tipo_material,
-            cantidad_estimada=cant_est,
-            unidad_medida=unidad_med,
-            precio_unitario=precio_u,
-            total_estimado=total_est,
-            descripcion=descripcion,
-            direccion_recoleccion=direccion,
-            fecha_solicitada=fecha_solicitada,
-            observaciones=observaciones,
-            creado_por=request.user,
-        )
+        repetir_servicio = request.POST.get('repetir_servicio') == 'si'
+        frecuencia_recurrencia = request.POST.get('frecuencia_recurrencia', 'semanal')
+        try:
+            total_repeticiones = int(request.POST.get('total_repeticiones', '1')) if repetir_servicio else 1
+            total_repeticiones = max(1, min(total_repeticiones, 24))
+        except (ValueError, TypeError):
+            total_repeticiones = 1
+
+        def calcular_fecha_recurrente(fecha_base, frecuencia, n_iter):
+            if n_iter == 0:
+                return fecha_base
+            if frecuencia == 'semanal':
+                return fecha_base + timedelta(days=7 * n_iter)
+            elif frecuencia == 'quincenal':
+                return fecha_base + timedelta(days=14 * n_iter)
+            elif frecuencia == 'mensual':
+                year = fecha_base.year + (fecha_base.month + n_iter - 1) // 12
+                month = (fecha_base.month + n_iter - 1) % 12 + 1
+                day = min(fecha_base.day, 28)
+                return fecha_base.replace(year=year, month=month, day=day)
+            return fecha_base + timedelta(days=7 * n_iter)
+
+        num_modulos = len(modulos)
+        total_por_modulo = total_est / Decimal(num_modulos) if num_modulos > 0 else total_est
+
+        solicitudes_creadas = []
+        for rep in range(total_repeticiones):
+            fecha_iter = calcular_fecha_recurrente(fecha_solicitada, frecuencia_recurrencia, rep)
+            obs_iter = observaciones
+            if repetir_servicio and total_repeticiones > 1:
+                prefix = f"[Agendamiento Programado {rep + 1}/{total_repeticiones}]"
+                obs_iter = f"{prefix} {observaciones}".strip() if observaciones else prefix
+
+            for mod in modulos:
+                solicitud = SolicitudRecoleccion.objects.create(
+                    empresa=empresa,
+                    modulo=mod,
+                    tipo_material=tipo_material,
+                    cantidad_estimada=cant_est,
+                    unidad_medida=unidad_med,
+                    precio_unitario=precio_u,
+                    total_estimado=total_por_modulo,
+                    descripcion=descripcion,
+                    direccion_recoleccion=direccion,
+                    fecha_solicitada=fecha_iter,
+                    observaciones=obs_iter,
+                    creado_por=request.user,
+                )
+                solicitudes_creadas.append(solicitud)
 
         # Auto-generar/actualizar Estado de Pago único de la empresa
         from .models import actualizar_o_crear_edp_empresa
@@ -307,7 +353,10 @@ class SolicitudCrearView(View):
             return redirect('dashboard')
 
         empresa_id    = request.POST.get('empresa')
-        modulo        = request.POST.get('modulo', 'reciclables')
+        modulos       = request.POST.getlist('modulo[]')
+        if not modulos and request.POST.get('modulo'):
+            modulos = [request.POST.get('modulo')]
+
         tipo_material = request.POST.get('tipo_material', 'carton')
         cant_est_raw  = request.POST.get('cantidad_estimada', '0')
         unidad_med    = request.POST.get('unidad_medida', 'kg')
@@ -326,8 +375,15 @@ class SolicitudCrearView(View):
         except Exception:
             cant_est = precio_u = total_est = Decimal('0')
 
+        otro_servicio_detalle = request.POST.get('otro_servicio_detalle', '').strip()
+        if otro_servicio_detalle and ('otros' in modulos or tipo_material == 'otros'):
+            if tipo_material == 'otros':
+                tipo_material = f"Otros ({otro_servicio_detalle[:40]})"
+            descripcion = f"[{otro_servicio_detalle}] {descripcion}".strip()
+
         errores = []
         if not empresa_id:   errores.append('Selecciona una empresa.')
+        if not modulos:      errores.append('Debes seleccionar al menos un módulo.')
         if not descripcion:  errores.append('La descripción es obligatoria.')
         if not direccion:    errores.append('La dirección es obligatoria.')
         if not fecha_str:    errores.append('La fecha es obligatoria.')
@@ -345,26 +401,61 @@ class SolicitudCrearView(View):
                 'errores': errores, 'form_data': request.POST, 'empresas': empresas,
             })
 
-        from datetime import datetime
+        from datetime import datetime, timedelta
         try:
             fecha_solicitada = datetime.fromisoformat(fecha_str)
         except ValueError:
             fecha_solicitada = timezone.now()
 
-        solicitud = SolicitudRecoleccion.objects.create(
-            empresa=empresa,
-            modulo=modulo,
-            tipo_material=tipo_material,
-            cantidad_estimada=cant_est,
-            unidad_medida=unidad_med,
-            precio_unitario=precio_u,
-            total_estimado=total_est,
-            descripcion=descripcion,
-            direccion_recoleccion=direccion,
-            fecha_solicitada=fecha_solicitada,
-            observaciones=observaciones,
-            creado_por=request.user,
-        )
+        repetir_servicio = request.POST.get('repetir_servicio') == 'si'
+        frecuencia_recurrencia = request.POST.get('frecuencia_recurrencia', 'semanal')
+        try:
+            total_repeticiones = int(request.POST.get('total_repeticiones', '1')) if repetir_servicio else 1
+            total_repeticiones = max(1, min(total_repeticiones, 24))
+        except (ValueError, TypeError):
+            total_repeticiones = 1
+
+        def calcular_fecha_recurrente(fecha_base, frecuencia, n_iter):
+            if n_iter == 0:
+                return fecha_base
+            if frecuencia == 'semanal':
+                return fecha_base + timedelta(days=7 * n_iter)
+            elif frecuencia == 'quincenal':
+                return fecha_base + timedelta(days=14 * n_iter)
+            elif frecuencia == 'mensual':
+                year = fecha_base.year + (fecha_base.month + n_iter - 1) // 12
+                month = (fecha_base.month + n_iter - 1) % 12 + 1
+                day = min(fecha_base.day, 28)
+                return fecha_base.replace(year=year, month=month, day=day)
+            return fecha_base + timedelta(days=7 * n_iter)
+
+        num_modulos = len(modulos)
+        total_por_modulo = total_est / Decimal(num_modulos) if num_modulos > 0 else total_est
+
+        solicitudes_creadas = []
+        for rep in range(total_repeticiones):
+            fecha_iter = calcular_fecha_recurrente(fecha_solicitada, frecuencia_recurrencia, rep)
+            obs_iter = observaciones
+            if repetir_servicio and total_repeticiones > 1:
+                prefix = f"[Agendamiento Programado {rep + 1}/{total_repeticiones}]"
+                obs_iter = f"{prefix} {observaciones}".strip() if observaciones else prefix
+
+            for mod in modulos:
+                solicitud = SolicitudRecoleccion.objects.create(
+                    empresa=empresa,
+                    modulo=mod,
+                    tipo_material=tipo_material,
+                    cantidad_estimada=cant_est,
+                    unidad_medida=unidad_med,
+                    precio_unitario=precio_u,
+                    total_estimado=total_por_modulo,
+                    descripcion=descripcion,
+                    direccion_recoleccion=direccion,
+                    fecha_solicitada=fecha_iter,
+                    observaciones=obs_iter,
+                    creado_por=request.user,
+                )
+                solicitudes_creadas.append(solicitud)
 
         # Auto-generar/actualizar Estado de Pago único de la empresa
         from .models import actualizar_o_crear_edp_empresa
@@ -758,49 +849,70 @@ class TarifaEmpresaGestionView(View):
         if not (request.user.rol in ('admin', 'gerencia') or request.user.is_staff):
             return redirect('dashboard')
 
-        empresa_id = request.POST.get('empresa_id')
-        modulo     = request.POST.get('modulo', 'reciclables')
-        material   = request.POST.get('tipo_material', '').strip().lower()
-        precio_raw = request.POST.get('precio_unitario', '0')
-        unidad     = request.POST.get('unidad_medida', 'kg').strip()
+        empresa_id   = request.POST.get('empresa_id')
+        modulos      = request.POST.getlist('modulo[]')   # puede ser 1, 2, 3 u otros módulos
+        otro_nombre  = request.POST.get('otro_servicio_nombre', '').strip()
+        material_raw = request.POST.get('tipo_material', 'servicio').strip() or 'servicio'
+        precio_raw   = request.POST.get('precio_unitario', '0')
+        unidad       = request.POST.get('unidad_medida', 'servicio').strip() or 'servicio'
+
+        if not modulos:
+            messages.error(request, 'Debes seleccionar al menos un módulo.')
+            return redirect('tarifas-empresa')
 
         try:
             from decimal import Decimal
             from .models import Empresa, TarifaEmpresa, actualizar_o_crear_edp_empresa
-            precio = Decimal(precio_raw)
+            precio  = Decimal(precio_raw)
             empresa = Empresa.objects.get(pk=empresa_id)
 
-            tarifa, created = TarifaEmpresa.objects.update_or_create(
-                empresa=empresa,
-                modulo=modulo,
-                tipo_material=material,
-                defaults={
-                    'precio_unitario': precio,
-                    'unidad_medida': unidad,
-                }
-            )
+            guardados = []
+            for modulo in modulos:
+                mat_key = material_raw.lower()
+                if modulo == 'otros' and otro_nombre:
+                    mat_key = otro_nombre
 
-            # Auto-actualizar/generar el Estado de Pago de la empresa al cambiar tarifario
+                tarifa, created = TarifaEmpresa.objects.update_or_create(
+                    empresa=empresa,
+                    modulo=modulo,
+                    tipo_material=mat_key,
+                    defaults={
+                        'precio_unitario': precio,
+                        'unidad_medida': unidad,
+                    }
+                )
+                guardados.append(modulo)
+
+            # Auto-actualizar el EDP de la empresa
             edp = actualizar_o_crear_edp_empresa(empresa, usuario=request.user)
+
+            modulos_label = ', '.join({
+                'reciclables': 'Reciclables',
+                'rsd': 'RSD',
+                'escombros': 'RESCON/Escombros',
+                'otros': f'Otros ({otro_nombre or "Servicio Personalizado"})',
+            }.get(m, m.upper()) for m in guardados)
 
             from apps.usuarios.models import AuditLog
             AuditLog.registrar(
                 usuario=request.user,
-                accion='creacion' if created else 'modificacion',
+                accion='configuracion',
                 modelo='TarifaEmpresa',
-                registro_id=f"{empresa.nombre}-{material}",
+                registro_id=f"{empresa.nombre}-{otro_nombre or material_raw}",
                 campo='precio_unitario',
                 valor_anterior='0',
                 valor_nuevo=str(precio),
-                detalles=f"Tarifa de {material.upper()} para {empresa.nombre} configurada a ${precio}/{unidad}. Estado de Pago #{edp.numero_edp} recalculado automáticamente.",
+                detalles=f"Tarifas de {modulos_label} para {empresa.nombre} configuradas a ${precio:,.0f}/{unidad}. Estado de Pago #{edp.numero_edp} recalculado.",
                 ip=request.META.get('REMOTE_ADDR')
             )
 
-            messages.success(request, f"Tarifa de {material.upper()} para {empresa.nombre} configurada a ${precio:,.0f}/{unidad}. Estado de Pago #{edp.numero_edp} actualizado automáticamente.")
+            messages.success(request, f"Tarifa de ${precio:,.0f}/{unidad} guardada para {modulos_label} — {empresa.nombre}. EDP #{edp.numero_edp} actualizado.")
         except Exception as e:
             messages.error(request, f"Error al guardar tarifa: {str(e)}")
 
         return redirect('tarifas-empresa')
+
+
 
 
 @method_decorator(login_required, name='dispatch')
@@ -829,5 +941,127 @@ class APITarifasEmpresaView(View):
             return JsonResponse({'success': False, 'error': 'Empresa no encontrada'}, status=404)
 
 
+# ─── Crear Empresa (Admin directo) ───────────────────────────────────────────
+
+@method_decorator(login_required, name='dispatch')
+class EmpresaCrearAdminView(View):
+    """Vista de creación rápida de empresa para administradores (sin registro público)."""
+    template_name = 'empresas/crear_empresa_admin.html'
+
+    def get(self, request):
+        if not _es_admin(request.user):
+            messages.error(request, 'No tienes permiso.')
+            return redirect('dashboard')
+        return render(request, self.template_name, {'rubros': Empresa.RUBROS, 'estados': Empresa.ESTADOS})
+
+    def post(self, request):
+        if not _es_admin(request.user):
+            messages.error(request, 'No tienes permiso.')
+            return redirect('dashboard')
+
+        nombre          = request.POST.get('nombre', '').strip()
+        rut_empresa     = request.POST.get('rut_empresa', '').strip().upper()
+        email_contacto  = request.POST.get('email_contacto', '').strip()
+        telefono        = request.POST.get('telefono', '').strip()
+        direccion       = request.POST.get('direccion', '').strip()
+        rubro           = request.POST.get('rubro', 'otro')
+        nombre_contacto = request.POST.get('nombre_contacto', '').strip()
+        cargo_contacto  = request.POST.get('cargo_contacto', '').strip()
+        logo            = request.FILES.get('logo')
+        estado_val      = request.POST.get('estado', 'pendiente')
+
+        # Usuario de acceso (opcional en creación admin)
+        crear_usuario   = request.POST.get('crear_usuario') == '1'
+        rut_usuario     = request.POST.get('rut_usuario', '').strip().upper()
+        password        = request.POST.get('password', '')
+
+        # Contactos segmentados (names con índice desde JS: contacto_nombre_N, etc.)
+        indices = request.POST.getlist('contacto_idx')
+
+        errores = []
+        if not nombre:        errores.append('El nombre de la empresa es obligatorio.')
+        if not rut_empresa:   errores.append('El RUT de la empresa es obligatorio.')
+        if not email_contacto: errores.append('El email de contacto es obligatorio.')
+        if Empresa.objects.filter(rut=rut_empresa).exists():
+            errores.append('Ya existe una empresa registrada con ese RUT.')
+        if crear_usuario:
+            if not rut_usuario: errores.append('El RUT del usuario de acceso es obligatorio.')
+            elif Usuario.objects.filter(rut=rut_usuario).exists():
+                errores.append('Ya existe un usuario con ese RUT.')
+            if not password or len(password) < 6:
+                errores.append('La contraseña debe tener al menos 6 caracteres.')
+
+        # Validar contactos: nombre y email obligatorios por índice
+        for i, idx in enumerate(indices):
+            cn = request.POST.get(f'contacto_nombre_{idx}', '').strip()
+            ce = request.POST.get(f'contacto_email_{idx}', '').strip()
+            if cn and not ce:
+                errores.append(f'El contacto #{i+1} ({cn}) necesita un email válido.')
+            elif ce and not cn:
+                errores.append(f'El contacto #{i+1} con email {ce} necesita un nombre.')
+
+        if errores:
+            return render(request, self.template_name, {
+                'errores': errores, 'form_data': request.POST,
+                'rubros': Empresa.RUBROS, 'estados': Empresa.ESTADOS,
+            })
+
+        empresa = Empresa.objects.create(
+            nombre=nombre, rut=rut_empresa,
+            email_contacto=email_contacto, telefono=telefono,
+            direccion=direccion, rubro=rubro,
+            nombre_contacto=nombre_contacto,
+            cargo_contacto=cargo_contacto,
+            logo=logo if logo else None,
+            estado=estado_val,
+        )
+
+        if estado_val == 'aprobada':
+            empresa.fecha_aprobacion = timezone.now()
+            empresa.save()
+
+        if crear_usuario and rut_usuario and password:
+            Usuario.objects.create_user(
+                rut=rut_usuario, password=password,
+                nombre=nombre_contacto or nombre,
+                apellido='',
+                email=email_contacto, telefono=telefono,
+                rol='empresa',
+                estado='aprobado' if estado_val == 'aprobada' else 'pendiente',
+                empresa=empresa,
+            )
+
+        # Guardar contactos segmentados (usando nombres de campo con índice)
+        from .models import ContactoEmpresa
+        tot_contactos = 0
+        for idx in indices:
+            cn = request.POST.get(f'contacto_nombre_{idx}', '').strip()
+            ce = request.POST.get(f'contacto_email_{idx}', '').strip()
+            if not cn or not ce:
+                continue
+            ContactoEmpresa.objects.create(
+                empresa=empresa,
+                nombre=cn,
+                cargo=request.POST.get(f'contacto_cargo_{idx}', '').strip(),
+                email=ce,
+                recibe_certificados=  bool(request.POST.get(f'contacto_cert_{idx}')),
+                recibe_estados_pago=  bool(request.POST.get(f'contacto_edp_{idx}')),
+                recibe_reportes=      bool(request.POST.get(f'contacto_rep_{idx}')),
+                recibe_notificaciones=bool(request.POST.get(f'contacto_notif_{idx}', '1')),
+            )
+            tot_contactos += 1
+
+        from apps.usuarios.models import AuditLog
+        AuditLog.registrar(
+            usuario=request.user,
+            accion='creacion',
+            modelo='Empresa',
+            registro_id=empresa.pk,
+            detalles=f"Empresa '{nombre}' creada directamente por admin (estado: {estado_val}, contactos: {tot_contactos}).",
+            ip=request.META.get('REMOTE_ADDR')
+        )
+
+        messages.success(request, f'Empresa "{nombre}" creada exitosamente.')
+        return redirect('empresa-list')
 
 

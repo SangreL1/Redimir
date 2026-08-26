@@ -72,6 +72,39 @@
     border-radius: 14px;
     box-shadow: 0 4px 12px rgba(0, 107, 184, 0.06);
   }
+  .modulo-check-label {
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+    cursor: pointer;
+    user-select: none;
+  }
+  .modulo-check-label input[type="checkbox"] {
+    display: none;
+  }
+  .modulo-check-pill {
+    display: flex;
+    align-items: center;
+    gap: .45rem;
+    padding: .5rem .9rem;
+    border-radius: 10px;
+    border: 1.5px solid #CBD5E1;
+    background: #F8FAFC;
+    color: #0F172A;
+    font-size: .88rem;
+    font-weight: 600;
+    transition: all .15s ease;
+    width: 100%;
+  }
+  .modulo-check-label input[type="checkbox"]:checked + .modulo-check-pill {
+    border-color: var(--mc);
+    background: color-mix(in srgb, var(--mc) 12%, white);
+    color: var(--mc);
+  }
+  .modulo-check-pill:hover {
+    border-color: var(--mc);
+    background: color-mix(in srgb, var(--mc) 6%, white);
+  }
 </style>
 {% endblock %}
 
@@ -127,17 +160,37 @@
       <!-- 2. Módulo de Residuo y Material -->
       <div class="row g-3 mb-3">
         <div class="col-12 col-md-6">
-          <label class="form-label-custom">
-            <i class="fas fa-cubes text-primary"></i> Módulo de Residuo *
+          <label class="form-label-custom mb-2">
+            <i class="fas fa-cubes text-primary"></i> Módulo(s) de Residuo *
+            <span style="font-size:.75rem;font-weight:400;color:var(--text-muted);margin-left:.3rem;">selecciona uno o más</span>
           </label>
-          <div class="input-group input-group-custom">
-            <span class="input-group-text"><i class="fas fa-layer-group"></i></span>
-            <select name="modulo" id="modulo_select" class="form-control form-control-custom" required>
-              <option value="reciclables">Reciclables / Eco-equivalencia</option>
-              <option value="rsd">RSD / Basura Domiciliaria</option>
-              <option value="escombros">Escombros / RESCON</option>
-            </select>
+          <div class="d-flex flex-column gap-2" id="modulos_container">
+            <label class="modulo-check-label">
+              <input type="checkbox" name="modulo[]" value="reciclables" class="modulo-checkbox" id="mod-reciclables">
+              <span class="modulo-check-pill" style="--mc:#95BF3C;">
+                <i class="fas fa-recycle"></i> Reciclables / Eco-equivalencia
+              </span>
+            </label>
+            <label class="modulo-check-label">
+              <input type="checkbox" name="modulo[]" value="rsd" class="modulo-checkbox" id="mod-rsd">
+              <span class="modulo-check-pill" style="--mc:#006BB8;">
+                <i class="fas fa-trash-alt"></i> RSD / Basura Domiciliaria
+              </span>
+            </label>
+            <label class="modulo-check-label">
+              <input type="checkbox" name="modulo[]" value="escombros" class="modulo-checkbox" id="mod-escombros">
+              <span class="modulo-check-pill" style="--mc:#F59E0B;">
+                <i class="fas fa-hard-hat"></i> Escombros / RESCON
+              </span>
+            </label>
+            <label class="modulo-check-label">
+              <input type="checkbox" name="modulo[]" value="otros" class="modulo-checkbox" id="mod-otros">
+              <span class="modulo-check-pill" style="--mc:#8B5CF6;">
+                <i class="fas fa-plus-circle"></i> Otros / Servicio Personalizado
+              </span>
+            </label>
           </div>
+          <div id="modulo-error" class="text-danger small mt-1" style="display:none;">Selecciona al menos un módulo.</div>
         </div>
 
         <div class="col-12 col-md-6">
@@ -156,7 +209,17 @@
               <option value="rsd">RSD / Basura General</option>
               <option value="escombros">Escombros / RESCON</option>
               <option value="mixto">Mixto / Varios</option>
+              <option value="otros">Otros / Servicio Personalizado...</option>
             </select>
+          </div>
+
+          <!-- Campo dinámico si selecciona Otros -->
+          <div class="mt-2" id="div_otro_servicio" style="display:none;">
+            <div class="input-group input-group-custom">
+              <span class="input-group-text"><i class="fas fa-pen-to-square text-purple"></i></span>
+              <input type="text" name="otro_servicio_detalle" id="input_otro_servicio" class="form-control form-control-custom"
+                     placeholder="Escribe el servicio o material personalizado (Ej: Retiro Llantas, Residuos Peligrosos, etc.)">
+            </div>
           </div>
         </div>
       </div>
@@ -244,12 +307,58 @@
 
       <div class="mb-3">
         <label class="form-label-custom">
-          <i class="fas fa-calendar-day text-warning"></i> Fecha y Hora Solicitada *
+          <i class="fas fa-calendar-day text-warning"></i> Fecha y Hora Inicial Solicitada *
         </label>
         <div class="input-group input-group-custom">
           <span class="input-group-text"><i class="fas fa-clock"></i></span>
           <input type="datetime-local" name="fecha_solicitada" class="form-control form-control-custom" required
                  value="{{ form_data.fecha_solicitada|default:"" }}">
+        </div>
+      </div>
+
+      <!-- AGENDAMIENTO AUTOMÁTICO RECURRENTE (Google Calendar Style) -->
+      <div class="card p-3 mb-4" style="background:#F8FAFC; border: 1.5px dashed #CBD5E1; border-radius: 12px;">
+        <div class="form-check form-switch d-flex align-items-center gap-2 mb-0">
+          <input class="form-check-input" type="checkbox" role="switch" id="switch_recurrente" name="repetir_servicio" value="si" style="width:2.5em; height:1.25em; cursor:pointer;">
+          <label class="form-check-label fw-bold text-dark mb-0" for="switch_recurrente" style="cursor:pointer; font-size:.9rem;">
+            <i class="fas fa-arrows-rotate text-primary me-1"></i> Agendamiento Automático / Programado
+            <span class="badge bg-info text-dark ms-1" style="font-size:0.7rem;">Google Calendar Style</span>
+          </label>
+        </div>
+        <small class="text-muted d-block mt-1" style="font-size:.78rem;">
+          Programa la generación automática de este servicio en fechas futuras (ej. determinadas veces en el mes).
+        </small>
+
+        <div id="recurrencia_options" class="mt-3 pt-2 border-top" style="display:none;">
+          <div class="row g-3">
+            <div class="col-12 col-md-6">
+              <label class="form-label-custom" style="font-size:.82rem;">
+                <i class="fas fa-repeat text-info me-1"></i> Frecuencia de Repetición
+              </label>
+              <select name="frecuencia_recurrencia" id="frecuencia_select" class="form-control form-control-custom">
+                <option value="semanal">Semanal (Cada semana)</option>
+                <option value="quincenal">Quincenal (Cada 2 semanas)</option>
+                <option value="mensual">Mensual (El mismo día de cada mes)</option>
+              </select>
+            </div>
+            <div class="col-12 col-md-6">
+              <label class="form-label-custom" style="font-size:.82rem;">
+                <i class="fas fa-list-ol text-success me-1"></i> Total de Recolecciones a Agendar
+              </label>
+              <select name="total_repeticiones" id="repeticiones_select" class="form-control form-control-custom">
+                <option value="2">2 recolecciones</option>
+                <option value="3">3 recolecciones</option>
+                <option value="4" selected>4 recolecciones (1 mes semanal)</option>
+                <option value="6">6 recolecciones</option>
+                <option value="8">8 recolecciones (2 meses semanal)</option>
+                <option value="12">12 recolecciones (3 meses semanal)</option>
+              </select>
+            </div>
+          </div>
+          <div class="alert alert-primary mb-0 mt-3 py-2 px-3 d-flex align-items-center gap-2" style="font-size:.8rem; border-radius:8px;">
+            <i class="fas fa-info-circle fa-lg"></i>
+            <span id="recurrencia_resumen">Se agendarán <strong>4 recolecciones</strong> con frecuencia <strong>semanal</strong> a partir de la fecha inicial.</span>
+          </div>
         </div>
       </div>
 
@@ -277,10 +386,10 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const empresaSelect = document.getElementById('empresa_select');
-    const moduloSelect  = document.getElementById('modulo_select');
     const materialSelect= document.getElementById('material_select');
     const cantidadInput = document.getElementById('cantidad_input');
     const unidadSelect  = document.getElementById('unidad_select');
+    const form          = document.querySelector('form');
 
     const tarifaBadge    = document.getElementById('tarifa_badge');
     const dispPrecioUnit = document.getElementById('disp_precio_unitario');
@@ -306,26 +415,42 @@ document.addEventListener('DOMContentLoaded', function() {
     function updatePrecios() {
         const empresaId = empresaSelect.value;
         const mat = materialSelect.value || 'carton';
-        const mod = moduloSelect.value || 'reciclables';
+        const checkedMods = Array.from(document.querySelectorAll('.modulo-checkbox:checked')).map(cb => cb.value);
         const cant = parseFloat(cantidadInput.value) || 0;
+        const errDiv = document.getElementById('modulo-error');
+        const currentUnidad = unidadSelect.value || 'kg';
 
-        let precioUnit = 0;
-        let unidad = 'kg';
-        let esCustom = false;
-
-        if (currentTarifas && currentTarifas[mat]) {
-            precioUnit = currentTarifas[mat].precio_unitario;
-            unidad = currentTarifas[mat].unidad_medida || 'kg';
-            esCustom = true;
-        } else if (TARIFAS_BASE[mat]) {
-            precioUnit = TARIFAS_BASE[mat].precio;
-            unidad = TARIFAS_BASE[mat].unidad;
-        } else {
-            precioUnit = 150;
-            unidad = 'kg';
+        if (checkedMods.length > 0) {
+            errDiv.style.display = 'none';
         }
 
-        unidadSelect.value = unidad;
+        if (checkedMods.length === 0) {
+            dispPrecioUnit.textContent = `$0 / ${currentUnidad}`;
+            dispSubtotal.textContent = `$0`;
+            dispTotalBruto.textContent = `$0`;
+            inputPrecioUnit.value = 0;
+            inputTotalEst.value = 0;
+            return;
+        }
+
+        let precioUnitTotal = 0;
+        let esCustom = false;
+
+        checkedMods.forEach(mod => {
+            let pUnit = 0;
+            if (currentTarifas && currentTarifas[mod]) {
+                pUnit = currentTarifas[mod].precio_unitario;
+                esCustom = true;
+            } else if (currentTarifas && currentTarifas[mat]) {
+                pUnit = currentTarifas[mat].precio_unitario;
+                esCustom = true;
+            } else if (TARIFAS_BASE[mat]) {
+                pUnit = TARIFAS_BASE[mat].precio;
+            } else {
+                pUnit = 150;
+            }
+            precioUnitTotal += pUnit;
+        });
 
         if (empresaId) {
             tarifaBadge.className = esCustom ? 'badge bg-success px-2.5 py-1' : 'badge bg-primary px-2.5 py-1';
@@ -335,15 +460,15 @@ document.addEventListener('DOMContentLoaded', function() {
             tarifaBadge.textContent = 'Selecciona Empresa';
         }
 
-        const subtotal = cant * precioUnit;
+        const subtotal = cant * precioUnitTotal;
         const iva = subtotal * 0.19;
         const totalBruto = subtotal + iva;
 
-        dispPrecioUnit.textContent = `$${precioUnit.toLocaleString('es-CL')} / ${unidad}`;
+        dispPrecioUnit.textContent = `$${precioUnitTotal.toLocaleString('es-CL')} / ${currentUnidad}`;
         dispSubtotal.textContent = `$${Math.round(subtotal).toLocaleString('es-CL')}`;
         dispTotalBruto.textContent = `$${Math.round(totalBruto).toLocaleString('es-CL')}`;
 
-        inputPrecioUnit.value = precioUnit;
+        inputPrecioUnit.value = precioUnitTotal;
         inputTotalEst.value = totalBruto;
     }
 
@@ -370,16 +495,35 @@ document.addEventListener('DOMContentLoaded', function() {
             });
     }
 
-    // Auto-ajustar módulo y unidad al seleccionar tipo de material
+    const divOtroServicio = document.getElementById('div_otro_servicio');
+    const modOtros = document.getElementById('mod-otros');
+    const inputOtroServicio = document.getElementById('input_otro_servicio');
+
+    function checkOtroServicio() {
+        const otrosChecked = modOtros && modOtros.checked;
+        const matOtros = materialSelect.value === 'otros';
+        if (otrosChecked || matOtros) {
+            divOtroServicio.style.display = 'block';
+        } else {
+            divOtroServicio.style.display = 'none';
+        }
+    }
+
     materialSelect.addEventListener('change', function() {
         const mat = this.value;
         if (mat === 'rsd') {
-            moduloSelect.value = 'rsd';
+            document.getElementById('mod-rsd').checked = true;
+            unidadSelect.value = 'kg';
         } else if (mat === 'escombros') {
-            moduloSelect.value = 'escombros';
+            document.getElementById('mod-escombros').checked = true;
+            unidadSelect.value = 'm3';
+        } else if (mat === 'otros') {
+            if (modOtros) modOtros.checked = true;
         } else {
-            moduloSelect.value = 'reciclables';
+            document.getElementById('mod-reciclables').checked = true;
+            unidadSelect.value = 'kg';
         }
+        checkOtroServicio();
         updatePrecios();
     });
 
@@ -387,9 +531,46 @@ document.addEventListener('DOMContentLoaded', function() {
         cargarTarifasEmpresa(this.value);
     });
 
-    moduloSelect.addEventListener('change', updatePrecios);
+    document.querySelectorAll('.modulo-checkbox').forEach(cb => cb.addEventListener('change', function() {
+        checkOtroServicio();
+        updatePrecios();
+    }));
     cantidadInput.addEventListener('input', updatePrecios);
     unidadSelect.addEventListener('change', updatePrecios);
+
+    form.addEventListener('submit', function(e) {
+        const checked = document.querySelectorAll('.modulo-checkbox:checked');
+        const errDiv = document.getElementById('modulo-error');
+        if (checked.length === 0) {
+            e.preventDefault();
+            errDiv.style.display = 'block';
+            errDiv.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            errDiv.style.display = 'none';
+        }
+    });
+
+    const switchRecurrente = document.getElementById('switch_recurrente');
+    const recurrenciaOptions = document.getElementById('recurrencia_options');
+    const frecuenciaSelect = document.getElementById('frecuencia_select');
+    const repeticionesSelect = document.getElementById('repeticiones_select');
+    const recurrenciaResumen = document.getElementById('recurrencia_resumen');
+
+    if (switchRecurrente) {
+        switchRecurrente.addEventListener('change', function() {
+            recurrenciaOptions.style.display = this.checked ? 'block' : 'none';
+            updateResumenRecurrencia();
+        });
+
+        function updateResumenRecurrencia() {
+            const frecText = frecuenciaSelect.options[frecuenciaSelect.selectedIndex].text.split('(')[0].trim().toLowerCase();
+            const num = repeticionesSelect.value;
+            recurrenciaResumen.innerHTML = `Se agendarán <strong>${num} recolecciones</strong> con frecuencia <strong>${frecText}</strong> a partir de la fecha inicial.`;
+        }
+
+        frecuenciaSelect.addEventListener('change', updateResumenRecurrencia);
+        repeticionesSelect.addEventListener('change', updateResumenRecurrencia);
+    }
 
     if (empresaSelect.value) {
         cargarTarifasEmpresa(empresaSelect.value);
@@ -399,4 +580,5 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 </script>
 {% endblock %}
+
 

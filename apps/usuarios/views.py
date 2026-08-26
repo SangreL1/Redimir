@@ -408,3 +408,86 @@ class AuditLogsView(View):
         logs = AuditLog.objects.all().select_related('usuario')[:200]
         return render(request, self.template_name, {'logs': logs})
 
+
+# ─── Crear Recolector (Admin directo) ────────────────────────────────────────
+
+@method_decorator(login_required, name='dispatch')
+class RecolectorCrearAdminView(View):
+    """Vista de creación rápida de recolector/operador para administradores."""
+    template_name = 'admin/crear_recolector_admin.html'
+
+    def get(self, request):
+        if not _es_admin(request.user):
+            messages.error(request, 'No tienes permiso.')
+            return redirect('dashboard')
+        empresas = Empresa.objects.filter(activa=True).order_by('nombre')
+        return render(request, self.template_name, {'empresas': empresas, 'roles': Usuario.ROLES})
+
+    def post(self, request):
+        if not _es_admin(request.user):
+            messages.error(request, 'No tienes permiso.')
+            return redirect('dashboard')
+
+        empresas = Empresa.objects.filter(activa=True).order_by('nombre')
+        rut      = request.POST.get('rut', '').strip().upper()
+        nombre   = request.POST.get('nombre', '').strip()
+        apellido = request.POST.get('apellido', '').strip()
+        email    = request.POST.get('email', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        edad     = request.POST.get('edad', None)
+        genero   = request.POST.get('genero', '')
+        empresa_id = request.POST.get('empresa', None)
+        password   = request.POST.get('password', '')
+        password2  = request.POST.get('password2', '')
+        rol        = request.POST.get('rol', 'recolector')
+        estado_val = request.POST.get('estado', 'aprobado')
+
+        errores = []
+        if not rut:      errores.append('El RUT es obligatorio.')
+        if not nombre:   errores.append('El nombre es obligatorio.')
+        if not apellido: errores.append('El apellido es obligatorio.')
+        if not password or len(password) < 6:
+            errores.append('La contraseña debe tener al menos 6 caracteres.')
+        if password != password2:
+            errores.append('Las contraseñas no coinciden.')
+        if Usuario.objects.filter(rut=rut).exists():
+            errores.append('Ya existe un usuario registrado con ese RUT.')
+
+        empresa = None
+        if empresa_id:
+            try:
+                empresa = Empresa.objects.get(id=empresa_id)
+            except Empresa.DoesNotExist:
+                errores.append('La empresa seleccionada no es válida.')
+
+        if errores:
+            return render(request, self.template_name, {
+                'errores': errores, 'form_data': request.POST,
+                'empresas': empresas, 'roles': Usuario.ROLES,
+            })
+
+        usuario = Usuario.objects.create_user(
+            rut=rut, password=password,
+            nombre=nombre, apellido=apellido,
+            email=email, telefono=telefono,
+            edad=int(edad) if edad and edad.isdigit() else None,
+            genero=genero,
+            rol=rol,
+            estado=estado_val,
+            empresa=empresa,
+        )
+
+        from .models import AuditLog
+        AuditLog.registrar(
+            usuario=request.user,
+            accion='creacion',
+            modelo='Usuario',
+            registro_id=usuario.pk,
+            detalles=f"Usuario '{usuario.nombre_completo}' ({rol}) creado directamente por admin.",
+            ip=request.META.get('REMOTE_ADDR')
+        )
+
+        messages.success(request, f'Usuario "{usuario.nombre_completo}" creado exitosamente.')
+        return redirect('buscar-trabajador')
+
+

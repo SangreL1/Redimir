@@ -4,7 +4,7 @@ from .views import (
     RegistroEmpresaView, RegistroTrabajadorView,
     GestionAccesosView,
     BuscarTrabajadorView, FichaTrabajadorView,
-    AuditLogsView,
+    AuditLogsView, RecolectorCrearAdminView,
 )
 
 urlpatterns = [
@@ -17,5 +17,5 @@ urlpatterns = [
     path('gestion/trabajadores/',       BuscarTrabajadorView.as_view(),  name='buscar-trabajador'),
     path('gestion/trabajadores/<int:pk>/', FichaTrabajadorView.as_view(), name='ficha-trabajador'),
     path('gestion/auditoria/',          AuditLogsView.as_view(),         name='audit-logs'),
+    path('gestion/recolectores/crear/', RecolectorCrearAdminView.as_view(), name='recolector-crear'),
 ]
-

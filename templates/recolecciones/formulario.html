@@ -26,8 +26,9 @@
         <input type="hidden" name="solicitud_id" value="{{ form_data.solicitud_id }}">
         {% endif %}
 
+        <!-- 1. Empresa -->
         <div class="mb-3">
-            <label class="form-label-dark">Empresa de Origen *</label>
+            <label class="form-label-dark fw-bold">Empresa de Origen *</label>
             <select name="empresa_origen" id="empresa_origen" required class="form-select w-100">
                 <option value="">-- Seleccionar empresa --</option>
                 {% for empresa in empresas %}
@@ -38,28 +39,57 @@
             </select>
         </div>
 
-        <div class="row g-3 mb-3">
-            <div class="col-12 col-sm-6">
-                <label class="form-label-dark">Tipo de Residuo *</label>
-                <select name="tipo_residuo" required class="form-select w-100">
-                    <option value="">-- Seleccionar --</option>
-                    <option value="plastico" {% if form_data.tipo_residuo == "plastico" %}selected{% endif %}>♻️ Plástico</option>
-                    <option value="metal"    {% if form_data.tipo_residuo == "metal"    %}selected{% endif %}>🔩 Metal</option>
-                    <option value="papel"    {% if form_data.tipo_residuo == "papel"    %}selected{% endif %}>📄 Papel / Cartón</option>
-                    <option value="vidrio"   {% if form_data.tipo_residuo == "vidrio"   %}selected{% endif %}>🫙 Vidrio</option>
-                    <option value="organico" {% if form_data.tipo_residuo == "organico" %}selected{% endif %}>🌱 Orgánico</option>
-                    <option value="mixto"    {% if form_data.tipo_residuo == "mixto"    %}selected{% endif %}>📦 Mixto</option>
-                </select>
+        <!-- 2. Tipo de Residuo Principal -->
+        <div class="mb-3">
+            <label class="form-label-dark fw-bold">Módulo / Categoría Principal de Residuo *</label>
+            <select name="tipo_residuo" required class="form-select w-100" id="tipo_residuo_select">
+                <option value="basura"    {% if form_data.tipo_residuo == "basura"    %}selected{% endif %}>🗑️ RSD / Basura General</option>
+                <option value="escombros" {% if form_data.tipo_residuo == "escombros" %}selected{% endif %}>🏗️ Escombros / RESCON</option>
+                <option value="plastico"  {% if form_data.tipo_residuo == "plastico"  %}selected{% endif %}>♻️ Plástico</option>
+                <option value="papel"     {% if form_data.tipo_residuo == "papel"     %}selected{% endif %}>📄 Papel / Cartón</option>
+                <option value="metal"     {% if form_data.tipo_residuo == "metal"     %}selected{% endif %}>🔩 Metal</option>
+                <option value="vidrio"    {% if form_data.tipo_residuo == "vidrio"    %}selected{% endif %}>🫙 Vidrio</option>
+                <option value="organico"  {% if form_data.tipo_residuo == "organico"  %}selected{% endif %}>🌱 Orgánico</option>
+                <option value="mixto"     {% if form_data.tipo_residuo == "mixto"     %}selected{% endif %}>📦 Mixto / Varios</option>
+            </select>
+        </div>
+
+        <!-- 3. Multi-Residuo / Pesajes detallados -->
+        <div class="card p-3 mb-4" style="background:#F8FAFC; border:1px dashed #CBD5E1; border-radius:12px;">
+            <div class="d-flex align-items-center justify-content-between mb-2">
+                <label class="form-label-dark fw-bold mb-0" style="color:var(--primary);">
+                    <i class="fas fa-boxes-packing me-1"></i> Detalle de Residuos Recolectados y Pesajes
+                </label>
+                <button type="button" class="btn btn-sm btn-outline-success fw-bold" onclick="agregarFilaResiduo()">
+                    <i class="fas fa-plus me-1"></i>Agregar Residuo
+                </button>
             </div>
-            <div class="col-12 col-sm-6">
-                <label class="form-label-dark">Cantidad (kg) *</label>
-                <input type="number" name="cantidad_kg" step="0.1" min="0.1" required
-                       class="form-control-dark w-100"
-                       placeholder="Ej: 25.5"
-                       value="{{ form_data.cantidad_kg|default:"" }}">
+            <p class="text-muted small mb-3" style="font-size:.78rem;">
+                Ingresa varios materiales a la vez con sus cantidades y pesajes (Ej: Plástico 10 kg, Cartón 5 kg, Palets 2 unidades, Tambores, etc.).
+            </p>
+
+            <div id="tabla_residuos_container">
+                <div class="row g-2 align-items-center mb-2 fila-residuo">
+                    <div class="col-5 col-sm-5">
+                        <input type="text" name="residuos_tipo[]" class="form-control form-control-sm" placeholder="Ej: Plástico, Cartón, Palets..." value="Plástico">
+                    </div>
+                    <div class="col-4 col-sm-4">
+                        <input type="number" step="0.1" name="residuos_cantidad[]" class="form-control form-control-sm" placeholder="Cantidad" value="10">
+                    </div>
+                    <div class="col-3 col-sm-3 d-flex gap-1">
+                        <select name="residuos_unidad[]" class="form-select form-select-sm">
+                            <option value="kg" selected>kg</option>
+                            <option value="unidades">unidades</option>
+                            <option value="m3">m3</option>
+                            <option value="sacos">sacos</option>
+                        </select>
+                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFila(this)" title="Eliminar"><i class="fas fa-trash"></i></button>
+                    </div>
+                </div>
             </div>
         </div>
 
+        <!-- 4. Observaciones -->
         <div class="mb-3">
             <label class="form-label-dark">Observaciones</label>
             <textarea name="observaciones_recoleccion" class="form-control-dark w-100" rows="2"
@@ -67,7 +97,8 @@
                       style="resize:vertical;">{{ form_data.observaciones_recoleccion|default:"" }}</textarea>
         </div>
 
-        <div class="mb-3">
+        <!-- 5. GPS -->
+        <div class="mb-4">
             <label class="form-label-dark"><i class="fas fa-map-marker-alt me-1" style="color:var(--primary);"></i>Ubicación GPS (Opcional)</label>
             <input type="text" name="ubicacion_gps" class="form-control-dark w-100"
                    placeholder="Lat, Long (se captura automáticamente si permites)"
@@ -79,24 +110,36 @@
             </button>
         </div>
 
-        <!-- Photo Upload -->
+        <!-- 6. FOTOS SEPARADAS POR CATEGORÍA -->
         <div class="mb-4">
-            <label class="form-label-dark">
-                <i class="fas fa-camera me-1" style="color:var(--primary);"></i>
-                Foto de Evidencia * <span style="color:var(--danger);">(obligatoria)</span>
-            </label>
+            <h6 class="fw-bold mb-3" style="color:var(--primary);"><i class="fas fa-camera me-2"></i>Fotos de Evidencia de Recolección</h6>
 
-            <div class="file-upload-zone" id="dropZone" onclick="document.getElementById('fotoInput').click()">
-                <div id="uploadPlaceholder">
-                    <i class="fas fa-cloud-upload-alt" style="font-size:2rem;color:var(--primary);margin-bottom:.5rem;"></i>
-                    <div style="font-weight:600;margin-bottom:.25rem;">Toca para seleccionar 1 o más fotos</div>
-                    <div style="font-size:.8rem;color:var(--text-muted);">o toma fotos con la cámara</div>
-                    <div style="font-size:.75rem;color:#475569;margin-top:.5rem;">JPG, PNG, WEBP (Múltiples permitidas)</div>
-                </div>
-                <div id="photoPreviewContainer" style="display:flex;gap:.5rem;flex-wrap:wrap;margin-top:.5rem;justify-content:center;"></div>
+            <!-- 6.1 Foto del Ticket de Pesaje -->
+            <div class="mb-3 p-3" style="background:#FFF; border:1px solid #E2E8F0; border-radius:12px;">
+                <label class="form-label-dark fw-bold mb-1">
+                    <i class="fas fa-receipt me-1 text-primary"></i> 1. Foto del Ticket de Pesaje
+                </label>
+                <input type="file" name="foto_ticket" accept="image/*" capture="environment" class="form-control form-control-sm">
+                <small class="text-muted d-block mt-1" style="font-size:.75rem;">Captura la foto del ticket emitido en báscula o pesaje.</small>
             </div>
-            <input type="file" id="fotoInput" name="foto_recoleccion" accept="image/*" capture="environment" multiple
-                   required style="display:none;" onchange="previewPhotos(this)">
+
+            <!-- 6.2 Foto de los Residuos -->
+            <div class="mb-3 p-3" style="background:#FFF; border:1px solid #E2E8F0; border-radius:12px;">
+                <label class="form-label-dark fw-bold mb-1">
+                    <i class="fas fa-boxes-stacked me-1 text-success"></i> 2. Foto de los Residuos / Materiales
+                </label>
+                <input type="file" name="foto_recoleccion" accept="image/*" capture="environment" multiple class="form-control form-control-sm">
+                <small class="text-muted d-block mt-1" style="font-size:.75rem;">Captura los materiales recolectados (puedes seleccionar 1 o más fotos).</small>
+            </div>
+
+            <!-- 6.3 Foto del Camión -->
+            <div class="mb-3 p-3" style="background:#FFF; border:1px solid #E2E8F0; border-radius:12px;">
+                <label class="form-label-dark fw-bold mb-1">
+                    <i class="fas fa-truck-front me-1 text-warning"></i> 3. Foto del Camión / Transporte
+                </label>
+                <input type="file" name="foto_camion" accept="image/*" capture="environment" class="form-control form-control-sm">
+                <small class="text-muted d-block mt-1" style="font-size:.75rem;">Foto del camión o contenedor cargado en terreno.</small>
+            </div>
         </div>
 
         <button type="submit" class="btn-green btn btn-lg w-100" id="submitBtn">
@@ -108,75 +151,40 @@
 </div>
 {% endblock %}
 
-{% block extra_js %}
 <script>
-function previewPhotos(input) {
-    const files = input.files;
-    const container = document.getElementById('photoPreviewContainer');
-    const placeholder = document.getElementById('uploadPlaceholder');
-    
-    if (!files || files.length === 0) {
-        placeholder.style.display = 'block';
-        container.innerHTML = '';
-        return;
+function agregarFilaResiduo() {
+    const container = document.getElementById('tabla_residuos_container');
+    const div = document.createElement('div');
+    div.className = 'row g-2 align-items-center mb-2 fila-residuo';
+    div.innerHTML = `
+        <div class="col-5 col-sm-5">
+            <input type="text" name="residuos_tipo[]" class="form-control form-control-sm" placeholder="Ej: Cartón, Palets, Tambores...">
+        </div>
+        <div class="col-4 col-sm-4">
+            <input type="number" step="0.1" name="residuos_cantidad[]" class="form-control form-control-sm" placeholder="Cantidad">
+        </div>
+        <div class="col-3 col-sm-3 d-flex gap-1">
+            <select name="residuos_unidad[]" class="form-select form-select-sm">
+                <option value="kg" selected>kg</option>
+                <option value="unidades">unidades</option>
+                <option value="m3">m3</option>
+                <option value="sacos">sacos</option>
+            </select>
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="eliminarFila(this)" title="Eliminar"><i class="fas fa-trash"></i></button>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+function eliminarFila(btn) {
+    const row = btn.closest('.fila-residuo');
+    const container = document.getElementById('tabla_residuos_container');
+    if (container.children.length > 1) {
+        row.remove();
+    } else {
+        row.querySelector('input[name="residuos_tipo[]"]').value = '';
+        row.querySelector('input[name="residuos_cantidad[]"]').value = '';
     }
-    
-    placeholder.style.display = 'none';
-    container.innerHTML = ''; // Limpiar anteriores
-    
-    Array.from(files).forEach((file, index) => {
-        const reader = new FileReader();
-        reader.onload = (e) => {
-            const wrapper = document.createElement('div');
-            wrapper.style.position = 'relative';
-            wrapper.style.display = 'inline-block';
-            wrapper.style.animation = 'fadeInUp 0.3s ease';
-
-            const img = document.createElement('img');
-            img.src = e.target.result;
-            img.style.width = '110px';
-            img.style.height = '110px';
-            img.style.objectFit = 'cover';
-            img.style.borderRadius = '12px';
-            img.style.border = '2px solid var(--secondary)';
-            img.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-            
-            // Interactive hover effect
-            img.onmouseover = () => { img.style.transform = 'scale(1.05)'; img.style.transition = '0.2s'; };
-            img.onmouseout = () => { img.style.transform = 'scale(1)'; };
-
-            const removeBtn = document.createElement('div');
-            removeBtn.innerHTML = '<i class="fas fa-times"></i>';
-            removeBtn.style.position = 'absolute';
-            removeBtn.style.top = '-8px';
-            removeBtn.style.right = '-8px';
-            removeBtn.style.background = 'var(--danger)';
-            removeBtn.style.color = '#fff';
-            removeBtn.style.borderRadius = '50%';
-            removeBtn.style.width = '24px';
-            removeBtn.style.height = '24px';
-            removeBtn.style.display = 'flex';
-            removeBtn.style.alignItems = 'center';
-            removeBtn.style.justifyContent = 'center';
-            removeBtn.style.cursor = 'pointer';
-            removeBtn.style.boxShadow = '0 2px 4px rgba(0,0,0,0.3)';
-            removeBtn.style.zIndex = '10';
-            
-            removeBtn.onclick = (event) => {
-                event.stopPropagation();
-                wrapper.remove();
-                if(container.children.length === 0) {
-                    input.value = ''; // Reset file input
-                    placeholder.style.display = 'block';
-                }
-            };
-            
-            wrapper.appendChild(img);
-            wrapper.appendChild(removeBtn);
-            container.appendChild(wrapper);
-        };
-        reader.readAsDataURL(file);
-    });
 }
 
 function capturarGPS() {
@@ -193,21 +201,6 @@ function capturarGPS() {
         { enableHighAccuracy: true, timeout: 8000 }
     );
 }
-
-// Drag & drop
-const dropZone = document.getElementById('dropZone');
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
-dropZone.addEventListener('drop', e => {
-    e.preventDefault();
-    dropZone.classList.remove('drag-over');
-    const files = e.dataTransfer.files;
-    if (files.length > 0) {
-        const input = document.getElementById('fotoInput');
-        input.files = files;
-        previewPhotos(input);
-    }
-});
 
 // Prevent double-submit
 document.getElementById('recoleccionForm').addEventListener('submit', function() {
