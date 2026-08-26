@@ -546,6 +546,7 @@ class EstadoDePagoListView(View):
             messages.error(request, 'Acceso restringido únicamente a Gerencia y Administradores.')
             return redirect('dashboard')
         
+        import json
         import calendar
         from django.utils import timezone
         from django.db.models import Q
@@ -600,6 +601,10 @@ class EstadoDePagoListView(View):
         total_iva_mes   = sum(e.iva for e in edps)
         total_bruto_mes = sum(e.total_bruto for e in edps)
 
+        # Lista de empresas para autocompletado en tiempo real en la plantilla
+        empresas_sug = list(Empresa.objects.filter(activa=True).values('nombre', 'rut'))
+        empresas_sug_json = json.dumps(empresas_sug)
+
         return render(request, self.template_name, {
             'edps': edps,
             'query': query,
@@ -611,6 +616,7 @@ class EstadoDePagoListView(View):
             'total_iva_mes': total_iva_mes,
             'total_bruto_mes': total_bruto_mes,
             'anios_lista': [today.year - 1, today.year, today.year + 1],
+            'empresas_sug_json': empresas_sug_json,
         })
 
 
