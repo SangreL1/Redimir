@@ -244,13 +244,39 @@
                         <textarea name="observaciones_registro" class="form-control" rows="2" placeholder="Cualquier nota adicional del retiro en terreno...">{% if registro %}{{ registro.observaciones }}{% endif %}</textarea>
                     </div>
 
-                    <!-- Adjuntar fotos de evidencia adicionales -->
-                    <div class="col-12 mt-3 p-3 bg-light rounded border border-dashed">
+                    <!-- Fotos de evidencia actuales y gestión -->
+                    {% if registro and registro.fotos.all %}
+                    <div class="col-12 mt-4">
+                        <label class="form-label fw-bold small text-primary mb-2">
+                            <i class="fas fa-images me-1"></i>Fotografías de Evidencia Actuales (Marca si deseas eliminar alguna por error)
+                        </label>
+                        <div class="row g-3">
+                            {% for foto_obj in registro.fotos.all %}
+                            <div class="col-6 col-sm-4 col-md-3 text-center">
+                                <div class="card h-100 p-2 border shadow-sm">
+                                    <a href="{{ foto_obj.foto.url }}" target="_blank">
+                                        <img src="{{ foto_obj.foto.url }}" class="rounded img-fluid mb-2" style="height: 110px; object-fit: cover; width: 100%;" alt="Evidencia">
+                                    </a>
+                                    <div class="form-check justify-content-center d-flex align-items-center gap-1 text-danger small">
+                                        <input class="form-check-input" type="checkbox" name="eliminar_foto_ids" value="{{ foto_obj.id }}" id="foto_del_{{ foto_obj.id }}">
+                                        <label class="form-check-label fw-bold cursor-pointer" for="foto_del_{{ foto_obj.id }}">
+                                            🗑️ Eliminar
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+
+                    <!-- Adjuntar fotos de evidencia nuevas o de reemplazo -->
+                    <div class="col-12 mt-4 p-3 bg-light rounded border border-dashed">
                         <label class="form-label fw-bold small text-primary mb-1">
-                            <i class="fas fa-camera me-1"></i>Añadir Nuevas Fotos de Evidencia (Opcional)
+                            <i class="fas fa-camera me-1"></i>Subir Fotografías Nuevas o de Reemplazo
                         </label>
                         <input type="file" name="fotos" class="form-control" multiple accept="image/*">
-                        <small class="text-muted">Puedes adjuntar una o varias imágenes de respaldo.</small>
+                        <small class="text-muted">Si subiste una foto errónea, marca "Eliminar" arriba y adjunta aquí la foto correcta.</small>
                     </div>
                 </div>
             </div>

@@ -767,7 +767,17 @@ class EditarServicioRegistroView(View):
                     )
                 registro.calcular_eco_equivalencia()
 
-            # 3. Subir fotos adicionales de evidencia si se incluyen
+            # 3. Eliminar fotos seleccionadas por el usuario
+            eliminar_foto_ids = request.POST.getlist('eliminar_foto_ids')
+            if eliminar_foto_ids and registro:
+                if servicio.modulo == 'rsd':
+                    FotoRegistroRSD.objects.filter(pk__in=eliminar_foto_ids, registro=registro).delete()
+                elif servicio.modulo == 'escombros':
+                    FotoRegistroEscombros.objects.filter(pk__in=eliminar_foto_ids, registro=registro).delete()
+                elif servicio.modulo == 'reciclables':
+                    FotoRegistroReciclables.objects.filter(pk__in=eliminar_foto_ids, registro=registro).delete()
+
+            # 4. Subir fotos nuevas/reemplazo de evidencia si se incluyen
             fotos_nuevas = request.FILES.getlist('fotos')
             if fotos_nuevas and registro:
                 if servicio.modulo == 'rsd':

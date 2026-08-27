@@ -63,31 +63,58 @@
 
                 <hr class="my-4">
 
-                <!-- Reemplazar fotos de evidencia -->
-                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-camera me-2"></i>Actualizar Fotografías de Evidencia (Opcional)</h6>
+                <!-- Reemplazar/eliminar fotos de evidencia -->
+                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-camera me-2"></i>Fotografías de Evidencia</h6>
                 <div class="row g-3">
                     <div class="col-12 col-md-4">
-                        <label class="form-label small">Ticket de Pesaje</label>
-                        <input type="file" name="foto_ticket" class="form-control" accept="image/*">
+                        <label class="form-label small fw-bold">Ticket de Pesaje</label>
                         {% if lote.foto_ticket %}
-                            <small class="text-success d-block mt-1"><i class="fas fa-check me-1"></i>Ticket actual subido</small>
+                            <div class="mb-2">
+                                <a href="{{ lote.foto_ticket.url }}" target="_blank">
+                                    <img src="{{ lote.foto_ticket.url }}" class="rounded img-fluid border" style="max-height: 90px; object-fit: cover; width:100%;">
+                                </a>
+                                <div class="form-check text-danger small mt-1">
+                                    <input class="form-check-input" type="checkbox" name="eliminar_foto_ticket" value="1" id="del_ticket">
+                                    <label class="form-check-label fw-bold" for="del_ticket">🗑️ Eliminar ticket</label>
+                                </div>
+                            </div>
                         {% endif %}
+                        <input type="file" name="foto_ticket" class="form-control form-control-sm" accept="image/*">
+                        <small class="text-muted" style="font-size:.75rem;">Subir nuevo/reemplazo</small>
                     </div>
 
                     <div class="col-12 col-md-4">
-                        <label class="form-label small">Foto de Residuos</label>
-                        <input type="file" name="foto_recoleccion" class="form-control" accept="image/*">
+                        <label class="form-label small fw-bold">Foto de Residuos</label>
                         {% if lote.foto_recoleccion %}
-                            <small class="text-success d-block mt-1"><i class="fas fa-check me-1"></i>Foto residuos actual subida</small>
+                            <div class="mb-2">
+                                <a href="{{ lote.foto_recoleccion.url }}" target="_blank">
+                                    <img src="{{ lote.foto_recoleccion.url }}" class="rounded img-fluid border" style="max-height: 90px; object-fit: cover; width:100%;">
+                                </a>
+                                <div class="form-check text-danger small mt-1">
+                                    <input class="form-check-input" type="checkbox" name="eliminar_foto_recoleccion" value="1" id="del_rec">
+                                    <label class="form-check-label fw-bold" for="del_rec">🗑️ Eliminar foto residuos</label>
+                                </div>
+                            </div>
                         {% endif %}
+                        <input type="file" name="foto_recoleccion" class="form-control form-control-sm" accept="image/*">
+                        <small class="text-muted" style="font-size:.75rem;">Subir nuevo/reemplazo</small>
                     </div>
 
                     <div class="col-12 col-md-4">
-                        <label class="form-label small">Foto Camión / Transporte</label>
-                        <input type="file" name="foto_camion" class="form-control" accept="image/*">
+                        <label class="form-label small fw-bold">Foto Camión / Transporte</label>
                         {% if lote.foto_camion %}
-                            <small class="text-success d-block mt-1"><i class="fas fa-check me-1"></i>Foto camión actual subida</small>
+                            <div class="mb-2">
+                                <a href="{{ lote.foto_camion.url }}" target="_blank">
+                                    <img src="{{ lote.foto_camion.url }}" class="rounded img-fluid border" style="max-height: 90px; object-fit: cover; width:100%;">
+                                </a>
+                                <div class="form-check text-danger small mt-1">
+                                    <input class="form-check-input" type="checkbox" name="eliminar_foto_camion" value="1" id="del_camion">
+                                    <label class="form-check-label fw-bold" for="del_camion">🗑️ Eliminar foto camión</label>
+                                </div>
+                            </div>
                         {% endif %}
+                        <input type="file" name="foto_camion" class="form-control form-control-sm" accept="image/*">
+                        <small class="text-muted" style="font-size:.75rem;">Subir nuevo/reemplazo</small>
                     </div>
                 </div>
 

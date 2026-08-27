@@ -285,9 +285,25 @@ class LoteEditarView(View):
 
             lote.observaciones_recoleccion = observaciones
 
-            if foto_ticket: lote.foto_ticket = foto_ticket
-            if foto_recoleccion: lote.foto_recoleccion = foto_recoleccion
-            if foto_camion: lote.foto_camion = foto_camion
+            if request.POST.get('eliminar_foto_ticket') == '1':
+                lote.foto_ticket = None
+            elif foto_ticket:
+                lote.foto_ticket = foto_ticket
+
+            if request.POST.get('eliminar_foto_recoleccion') == '1':
+                lote.foto_recoleccion = None
+            elif foto_recoleccion:
+                lote.foto_recoleccion = foto_recoleccion
+
+            if request.POST.get('eliminar_foto_camion') == '1':
+                lote.foto_camion = None
+            elif foto_camion:
+                lote.foto_camion = foto_camion
+
+            eliminar_extra_ids = request.POST.getlist('eliminar_extra_ids')
+            if eliminar_extra_ids:
+                from .models import EvidenciaLote
+                EvidenciaLote.objects.filter(pk__in=eliminar_extra_ids, lote=lote).delete()
 
             lote.save()
 
