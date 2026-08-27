@@ -252,6 +252,7 @@ class ListaServiciosView(View):
             'q':          q,
             'total':      qs.count(),
             'hoy':        timezone.now().date(),
+            'es_admin':   _es_admin(user),
         })
 
 
