@@ -832,7 +832,7 @@
 
         {% elif user.rol == 'recolector' or user.rol == 'operador' %}
         <span class="sidebar-section">Mis Retiros</span>
-        <a href="/solicitudes/" class="sidebar-item {% block nav_solicitudes %}{% endblock %}">
+        <a href="/solicitudes/" class="sidebar-item {% block nav_solicitudes_operador %}{% endblock %}">
             <i class="fas fa-clipboard-list"></i>Mis Retiros de Hoy
             {% if solicitudes_activas_count and solicitudes_activas_count > 0 %}
             <span class="badge-estado badge-pendiente ms-auto">{{ solicitudes_activas_count }}</span>{% endif %}
