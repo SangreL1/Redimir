@@ -1,0 +1,106 @@
+{% extends 'base.html' %}
+{% block title %}Editar Lote {{ lote.codigo_lote }} — Redimir{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-8">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="{% url 'lote-detalle' lote.codigo_lote %}" class="btn btn-sm btn-outline-secondary">
+                    <i class="fas fa-arrow-left me-1"></i>Volver al Lote
+                </a>
+                <h2 class="fw-bold mb-1 mt-2" style="color: var(--primary);">
+                    <i class="fas fa-edit me-2"></i>Modificar Lote {{ lote.codigo_lote }}
+                </h2>
+                <p class="text-muted mb-0">Empresa: <strong>{{ lote.empresa_origen.nombre }}</strong></p>
+            </div>
+        </div>
+
+        <div class="card-redimir p-4">
+            <form method="POST" enctype="multipart/form-data">
+                {% csrf_token %}
+
+                {% if es_admin %}
+                <div class="mb-3">
+                    <label class="form-label fw-bold small">Empresa Origen</label>
+                    <select name="empresa_origen" class="form-select">
+                        {% for emp in empresas %}
+                            <option value="{{ emp.id }}" {% if lote.empresa_origen_id == emp.id %}selected{% endif %}>
+                                {{ emp.nombre }} ({{ emp.rut }})
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                {% endif %}
+
+                <div class="row g-3">
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold small">Tipo de Residuo Principal</label>
+                        <select name="tipo_residuo" class="form-select">
+                            {% for code, label in tipos_residuo %}
+                                <option value="{{ code }}" {% if lote.tipo_residuo == code %}selected{% endif %}>{{ label }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold small">Cantidad Total (Kg)</label>
+                        <input type="number" step="0.01" name="cantidad_kg" class="form-control" value="{{ lote.cantidad_kg }}" required>
+                    </div>
+
+                    {% if es_admin or lote.peso_final_procesado %}
+                    <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold small">Peso Final Procesado en Bodega (Kg)</label>
+                        <input type="number" step="0.01" name="peso_final_procesado" class="form-control" value="{{ lote.peso_final_procesado|default:'' }}" placeholder="Opcional">
+                    </div>
+                    {% endif %}
+
+                    <div class="col-12">
+                        <label class="form-label fw-bold small">Observaciones de Recolección</label>
+                        <textarea name="observaciones_recoleccion" class="form-control" rows="3">{{ lote.observaciones_recoleccion }}</textarea>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Reemplazar fotos de evidencia -->
+                <h6 class="fw-bold text-primary mb-3"><i class="fas fa-camera me-2"></i>Actualizar Fotografías de Evidencia (Opcional)</h6>
+                <div class="row g-3">
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small">Ticket de Pesaje</label>
+                        <input type="file" name="foto_ticket" class="form-control" accept="image/*">
+                        {% if lote.foto_ticket %}
+                            <small class="text-success d-block mt-1"><i class="fas fa-check me-1"></i>Ticket actual subido</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small">Foto de Residuos</label>
+                        <input type="file" name="foto_recoleccion" class="form-control" accept="image/*">
+                        {% if lote.foto_recoleccion %}
+                            <small class="text-success d-block mt-1"><i class="fas fa-check me-1"></i>Foto residuos actual subida</small>
+                        {% endif %}
+                    </div>
+
+                    <div class="col-12 col-md-4">
+                        <label class="form-label small">Foto Camión / Transporte</label>
+                        <input type="file" name="foto_camion" class="form-control" accept="image/*">
+                        {% if lote.foto_camion %}
+                            <small class="text-success d-block mt-1"><i class="fas fa-check me-1"></i>Foto camión actual subida</small>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <a href="{% url 'lote-detalle' lote.codigo_lote %}" class="btn btn-secondary px-4">
+                        <i class="fas fa-times me-1"></i>Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-success fw-bold px-5">
+                        <i class="fas fa-save me-2"></i>Guardar Modificaciones
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

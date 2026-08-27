@@ -593,3 +593,207 @@ def _notificar_operador_rechazo(servicio, observacion):
             )
     except Exception:
         pass
+
+
+# ─── EDITAR REGISTRO / SERVICIO ──────────────────────────────────────────────
+
+@method_decorator(login_required, name='dispatch')
+class EditarServicioRegistroView(View):
+    """Permite modificar un servicio y su registro de pesaje/retiro existente."""
+    template_name = 'servicios/editar.html'
+
+    def get(self, request, pk):
+        servicio = get_object_or_404(Servicio, pk=pk, is_active=True)
+        user = request.user
+
+        if not (_es_admin(user) or (_es_operador(user) and servicio.operador == user) or servicio.usuario_creador == user):
+            messages.error(request, 'No tienes permisos para modificar este servicio.')
+            return redirect('servicio-detalle', pk=pk)
+
+        registro = servicio.get_registro()
+        empresas = Empresa.objects.filter(activa=True) if _es_admin(user) else []
+        operadores = Usuario.objects.filter(
+            rol__in=['recolector', 'operador'], estado='aprobado', is_active=True
+        ) if _es_admin(user) else []
+
+        return render(request, self.template_name, {
+            'servicio': servicio,
+            'registro': registro,
+            'empresas': empresas,
+            'operadores': operadores,
+            'es_admin': _es_admin(user),
+            'tipos_rsd': RegistroRSD.TIPOS_RESIDUO,
+            'destinos_rsd': RegistroRSD.DESTINOS,
+            'tipos_escombros': RegistroEscombros.TIPOS_RESIDUO,
+            'unidades_escombros': RegistroEscombros.UNIDADES,
+            'destinos_escombros': RegistroEscombros.DESTINOS,
+            'materiales_reciclables': RegistroReciclables.MATERIALES,
+            'destinos_reciclables': RegistroReciclables.DESTINOS,
+        })
+
+    def post(self, request, pk):
+        servicio = get_object_or_404(Servicio, pk=pk, is_active=True)
+        user = request.user
+
+        if not (_es_admin(user) or (_es_operador(user) and servicio.operador == user) or servicio.usuario_creador == user):
+            messages.error(request, 'No tienes permisos para editar este registro.')
+            return redirect('servicio-detalle', pk=pk)
+
+        # 1. Modificar campos de Servicio
+        direccion = request.POST.get('direccion', '').strip()
+        contacto = request.POST.get('contacto_responsable', '').strip()
+        telefono = request.POST.get('telefono_contacto', '').strip()
+        cantidad_est = request.POST.get('cantidad_estimada') or None
+        unidad_est = request.POST.get('unidad_estimada', 'kg')
+        observaciones_srv = request.POST.get('observaciones_servicio', '').strip()
+
+        if direccion:
+            servicio.direccion = direccion
+        servicio.contacto_responsable = contacto
+        servicio.telefono_contacto = telefono
+        if cantidad_est:
+            try:
+                from decimal import Decimal
+                servicio.cantidad_estimada = Decimal(str(cantidad_est))
+            except Exception:
+                pass
+        servicio.unidad_estimada = unidad_est
+        if observations_srv := observaciones_srv:
+            servicio.observaciones = observations_srv
+
+        if _es_admin(user):
+            if emp_id := request.POST.get('empresa'):
+                try:
+                    servicio.empresa = Empresa.objects.get(pk=emp_id)
+                except Empresa.DoesNotExist:
+                    pass
+            if op_id := request.POST.get('operador'):
+                try:
+                    servicio.operador = Usuario.objects.get(pk=op_id)
+                except Usuario.DoesNotExist:
+                    pass
+            if est := request.POST.get('estado'):
+                if est in dict(Servicio.ESTADOS):
+                    servicio.estado = est
+
+        servicio.save()
+
+        # 2. Modificar / Crear Registro del Módulo
+        registro = servicio.get_registro()
+        obs_reg = request.POST.get('observaciones_registro', '').strip()
+        ticket_ext = request.POST.get('ticket_externo', '').strip()
+
+        try:
+            if servicio.modulo == 'rsd':
+                tipo_r = request.POST.get('tipo_residuo', 'rsd')
+                cant_kg = request.POST.get('cantidad_kg', '0')
+                dest_rec = request.POST.get('destino_receptor', 'socsal')
+                dest_otro = request.POST.get('destino_otro', '')
+
+                if registro:
+                    registro.tipo_residuo = tipo_r
+                    registro.cantidad_kg = cant_kg
+                    registro.ticket_externo = ticket_ext
+                    registro.destino_receptor = dest_rec
+                    registro.destino_otro = dest_otro
+                    if obs_reg: registro.observaciones = obs_reg
+                    registro.save()
+                else:
+                    registro = RegistroRSD.objects.create(
+                        servicio=servicio,
+                        tipo_residuo=tipo_r,
+                        cantidad_kg=cant_kg,
+                        ticket_externo=ticket_ext,
+                        destino_receptor=dest_rec,
+                        destino_otro=dest_otro,
+                        observaciones=obs_reg,
+                        usuario_registro=user,
+                    )
+
+            elif servicio.modulo == 'escombros':
+                tipo_r = request.POST.get('tipo_residuo', 'escombros')
+                cant = request.POST.get('cantidad', '0')
+                unid = request.POST.get('unidad', 'm3')
+                dest_rec = request.POST.get('destino_receptor', 'municipalidad')
+                dest_otro = request.POST.get('destino_otro', '')
+
+                if registro:
+                    registro.tipo_residuo = tipo_r
+                    registro.cantidad = cant
+                    registro.unidad = unid
+                    registro.ticket_externo = ticket_ext
+                    registro.destino_receptor = dest_rec
+                    registro.destino_otro = dest_otro
+                    if obs_reg: registro.observaciones = obs_reg
+                    registro.save()
+                else:
+                    registro = RegistroEscombros.objects.create(
+                        servicio=servicio,
+                        tipo_residuo=tipo_r,
+                        cantidad=cant,
+                        unidad=unid,
+                        ticket_externo=ticket_ext,
+                        destino_receptor=dest_rec,
+                        destino_otro=dest_otro,
+                        observaciones=obs_reg,
+                        usuario_registro=user,
+                    )
+
+            elif servicio.modulo == 'reciclables':
+                mat = request.POST.get('material', 'carton')
+                cant_kg = request.POST.get('cantidad_kg', '0')
+                unid_val = request.POST.get('unidades') or None
+                dest = request.POST.get('destino', 'gestor')
+                dest_otro = request.POST.get('destino_otro', '')
+
+                if registro:
+                    registro.material = mat
+                    registro.cantidad_kg = cant_kg
+                    registro.unidades = unid_val
+                    registro.destino = dest
+                    registro.destino_otro = dest_otro
+                    if obs_reg: registro.observaciones = obs_reg
+                    registro.save()
+                else:
+                    registro = RegistroReciclables.objects.create(
+                        servicio=servicio,
+                        material=mat,
+                        cantidad_kg=cant_kg,
+                        unidades=unid_val,
+                        destino=dest,
+                        destino_otro=dest_otro,
+                        observaciones=obs_reg,
+                        usuario_registro=user,
+                    )
+                registro.calcular_eco_equivalencia()
+
+            # 3. Subir fotos adicionales de evidencia si se incluyen
+            fotos_nuevas = request.FILES.getlist('fotos')
+            if fotos_nuevas and registro:
+                if servicio.modulo == 'rsd':
+                    for f in fotos_nuevas:
+                        FotoRegistroRSD.objects.create(registro=registro, foto=f)
+                elif servicio.modulo == 'escombros':
+                    for f in fotos_nuevas:
+                        FotoRegistroEscombros.objects.create(registro=registro, foto=f)
+                elif servicio.modulo == 'reciclables':
+                    for f in fotos_nuevas:
+                        FotoRegistroReciclables.objects.create(registro=registro, foto=f)
+
+            # 4. Actualizar Estado de Pago (EDP) de la empresa
+            try:
+                from apps.empresas.models import actualizar_o_crear_edp_empresa
+                actualizar_o_crear_edp_empresa(servicio.empresa, usuario=user)
+            except Exception:
+                pass
+
+            messages.success(request, f'✅ Servicio y registro #{servicio.pk} modificados correctamente.')
+            next_url = request.POST.get('next_url')
+            if next_url:
+                return redirect(next_url)
+            return redirect('servicio-detalle', pk=servicio.pk)
+
+        except Exception as e:
+            messages.error(request, f'Error al actualizar el registro: {e}')
+            return redirect('servicio-editar', pk=pk)
+

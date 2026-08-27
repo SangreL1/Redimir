@@ -227,3 +227,109 @@ class LoteProcesarPageView(View):
 
         messages.success(request, f'Lote {lote.codigo_lote} procesado correctamente.')
         return redirect('lote-detalle', codigo_lote=lote.codigo_lote)
+
+
+@method_decorator(login_required, name='dispatch')
+class LoteEditarView(View):
+    template_name = 'lotes/editar.html'
+
+    def get(self, request, codigo_lote):
+        lote = get_object_or_404(Lote, codigo_lote=codigo_lote)
+        if not (_es_admin(request.user) or lote.operador == request.user):
+            messages.error(request, 'No tienes permiso para editar este lote.')
+            return redirect('lote-detalle', codigo_lote=lote.codigo_lote)
+
+        empresas = Empresa.objects.filter(estado='aprobada', activa=True) if _es_admin(request.user) else []
+        return render(request, self.template_name, {
+            'lote': lote,
+            'empresas': empresas,
+            'tipos_residuo': Lote.TIPOS_RESIDUO,
+            'es_admin': _es_admin(request.user),
+        })
+
+    def post(self, request, codigo_lote):
+        lote = get_object_or_404(Lote, codigo_lote=codigo_lote)
+        if not (_es_admin(request.user) or lote.operador == request.user):
+            messages.error(request, 'Sin permisos para modificar este lote.')
+            return redirect('lote-detalle', codigo_lote=lote.codigo_lote)
+
+        empresa_id = request.POST.get('empresa_origen')
+        tipo_residuo = request.POST.get('tipo_residuo') or 'mixto'
+        cantidad_kg_raw = request.POST.get('cantidad_kg') or '0'
+        peso_final_raw = request.POST.get('peso_final_procesado')
+        observaciones = request.POST.get('observaciones_recoleccion', '').strip()
+
+        foto_ticket = request.FILES.get('foto_ticket')
+        foto_recoleccion = request.FILES.get('foto_recoleccion')
+        foto_camion = request.FILES.get('foto_camion')
+
+        from decimal import Decimal
+        try:
+            if _es_admin(request.user) and empresa_id:
+                try:
+                    lote.empresa_origen = Empresa.objects.get(id=empresa_id)
+                except Empresa.DoesNotExist:
+                    pass
+
+            lote.tipo_residuo = tipo_residuo
+            try:
+                lote.cantidad_kg = Decimal(str(cantidad_kg_raw))
+            except Exception:
+                pass
+
+            if peso_final_raw is not None and peso_final_raw != '':
+                try:
+                    lote.peso_final_procesado = Decimal(str(peso_final_raw))
+                except Exception:
+                    pass
+
+            lote.observaciones_recoleccion = observaciones
+
+            if foto_ticket: lote.foto_ticket = foto_ticket
+            if foto_recoleccion: lote.foto_recoleccion = foto_recoleccion
+            if foto_camion: lote.foto_camion = foto_camion
+
+            lote.save()
+
+            # Actualizar detalles de residuos si fueron enviados
+            residuos_tipo = request.POST.getlist('residuos_tipo[]')
+            residuos_cantidad = request.POST.getlist('residuos_cantidad[]')
+            residuos_unidad = request.POST.getlist('residuos_unidad[]')
+
+            if residuos_tipo and residuos_cantidad:
+                from .models import DetalleLoteResiduo
+                lote.detalles_residuos.all().delete()
+                sum_kg = Decimal('0')
+                for t, c, u in zip(residuos_tipo, residuos_cantidad, residuos_unidad):
+                    if t and c:
+                        try:
+                            cant_val = Decimal(str(c))
+                        except Exception:
+                            cant_val = Decimal('0')
+                        unid_val = u if u else 'kg'
+                        DetalleLoteResiduo.objects.create(
+                            lote=lote,
+                            tipo_residuo=t,
+                            cantidad=cant_val,
+                            unidad=unid_val
+                        )
+                        if unid_val == 'kg':
+                            sum_kg += cant_val
+                if sum_kg > Decimal('0') and lote.cantidad_kg == Decimal('0'):
+                    lote.cantidad_kg = sum_kg
+                    lote.save()
+
+            # Recalcular EDP de la empresa
+            try:
+                from apps.empresas.models import actualizar_o_crear_edp_empresa
+                actualizar_o_crear_edp_empresa(lote.empresa_origen, usuario=request.user)
+            except Exception:
+                pass
+
+            messages.success(request, f'✅ Lote {lote.codigo_lote} modificado exitosamente.')
+            return redirect('lote-detalle', codigo_lote=lote.codigo_lote)
+
+        except Exception as e:
+            messages.error(request, f'Error al modificar el lote: {e}')
+            return redirect('lote-editar', codigo_lote=codigo_lote)
+

@@ -150,6 +150,10 @@
               <div class="d-flex gap-1">
                 <a href="/servicios/{{ s.pk }}/" class="btn btn-sm" style="background:var(--primary-light);color:var(--primary);border:1px solid #b3d6f0;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
                    title="Ver detalle"><i class="fas fa-eye"></i></a>
+                {% if user.rol == 'admin' or user.is_staff or user.pk == s.operador.pk %}
+                <a href="/servicios/{{ s.pk }}/editar/" class="btn btn-sm" style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
+                   title="Modificar registro"><i class="fas fa-pencil-alt"></i></a>
+                {% endif %}
                 {% if s.estado in 'asignado,programado,en_ruta' and user.pk == s.operador.pk or user.rol == 'admin' or user.is_staff %}
                 {% if s.estado not in 'validado,cerrado,cancelado,documento_emitido' %}
                 <a href="/servicios/{{ s.pk }}/registrar/" class="btn btn-sm"

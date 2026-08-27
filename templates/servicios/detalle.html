@@ -15,7 +15,8 @@
             Módulo: <strong>{{ servicio.get_modulo_display }}</strong> | Folio: <strong>{{ servicio.numero_folio }}</strong>
         </p>
     </div>
-    <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0">
+    <div class="col-12 col-md-4 text-md-end mt-3 mt-md-0 d-flex flex-column align-items-md-end gap-2">
+        <div>
         {% if servicio.estado == 'solicitado' %}
             <span class="badge bg-secondary fs-6 px-3 py-2">Solicitado</span>
         {% elif servicio.estado == 'programado' %}
@@ -32,6 +33,14 @@
             <span class="badge bg-danger fs-6 px-3 py-2">Observado</span>
         {% else %}
             <span class="badge bg-dark fs-6 px-3 py-2">{{ servicio.get_estado_display }}</span>
+        {% endif %}
+        </div>
+        {% if es_admin or user == servicio.operador or user == servicio.usuario_creador %}
+        <div>
+            <a href="{% url 'servicio-editar' servicio.id %}" class="btn btn-sm btn-outline-warning fw-bold">
+                <i class="fas fa-edit me-1"></i>Modificar Registro / Servicio
+            </a>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -98,7 +107,14 @@
         <div class="card-redimir border-success">
             <div class="card-header bg-transparent border-0 pt-3 px-3 d-flex justify-content-between align-items-center">
                 <h5 class="fw-bold text-success mb-0"><i class="fas fa-clipboard-check me-2"></i>Datos del Retiro Efectuado</h5>
-                <span class="badge bg-success">Registrado</span>
+                <div>
+                    {% if es_admin or user == servicio.operador or user == servicio.usuario_creador %}
+                    <a href="{% url 'servicio-editar' servicio.id %}" class="btn btn-sm btn-outline-success me-2">
+                        <i class="fas fa-pencil-alt me-1"></i>Editar Datos
+                    </a>
+                    {% endif %}
+                    <span class="badge bg-success">Registrado</span>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">

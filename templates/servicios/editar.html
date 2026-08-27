@@ -1,0 +1,270 @@
+{% extends 'base.html' %}
+{% block title %}Editar Servicio #{{ servicio.id }} — Redimir{% endblock %}
+{% block nav_servicios %}active{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-12 col-lg-10">
+        <!-- Encabezado -->
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <div>
+                <a href="{% url 'servicio-detalle' servicio.id %}" class="text-decoration-none text-muted">
+                    <i class="fas fa-arrow-left me-1"></i>Volver al Detalle del Servicio
+                </a>
+                <h2 class="fw-bold mb-1 mt-2" style="color: var(--primary);">
+                    <i class="fas fa-edit me-2"></i>Modificar Registro / Servicio #{{ servicio.id }}
+                </h2>
+                <p class="text-muted mb-0">
+                    Empresa: <strong>{{ servicio.empresa.nombre }}</strong> | Módulo: <strong>{{ servicio.get_modulo_display }}</strong>
+                </p>
+            </div>
+            <div>
+                <span class="badge bg-primary fs-6 px-3 py-2">Folio: {{ servicio.numero_folio }}</span>
+            </div>
+        </div>
+
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+
+            <!-- Sección 1: Datos del Servicio -->
+            <div class="card-redimir mb-4">
+                <div class="card-header bg-transparent border-0 pt-3 px-3">
+                    <h5 class="fw-bold text-primary mb-0">
+                        <i class="fas fa-file-invoice me-2"></i>1. Datos Generales de la Solicitud
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-3">
+                        {% if es_admin %}
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small">Empresa Cliente</label>
+                            <select name="empresa" class="form-select">
+                                {% for emp in empresas %}
+                                    <option value="{{ emp.id }}" {% if servicio.empresa_id == emp.id %}selected{% endif %}>
+                                        {{ emp.nombre }} ({{ emp.rut }})
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small">Operador Asignado</label>
+                            <select name="operador" class="form-select">
+                                <option value="">-- Sin Operador --</option>
+                                {% for op in operadores %}
+                                    <option value="{{ op.id }}" {% if servicio.operador_id == op.id %}selected{% endif %}>
+                                        {{ op.nombre_completo }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Dirección de Retiro</label>
+                            <input type="text" name="direccion" class="form-control" value="{{ servicio.direccion }}" required>
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small">Contacto Responsable en Terreno</label>
+                            <input type="text" name="contacto_responsable" class="form-control" value="{{ servicio.contacto_responsable|default:'' }}">
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small">Teléfono de Contacto</label>
+                            <input type="text" name="telefono_contacto" class="form-control" value="{{ servicio.telefono_contacto|default:'' }}">
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small">Cantidad Estimada</label>
+                            <input type="number" step="0.01" name="cantidad_estimada" class="form-control" value="{{ servicio.cantidad_estimada|default:'' }}">
+                        </div>
+
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small">Unidad Estimada</label>
+                            <input type="text" name="unidad_estimada" class="form-control" value="{{ servicio.unidad_estimada|default:'kg' }}">
+                        </div>
+
+                        {% if es_admin %}
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small">Estado del Servicio</label>
+                            <select name="estado" class="form-select">
+                                {% for code, label in servicio.ESTADOS %}
+                                    <option value="{{ code }}" {% if servicio.estado == code %}selected{% endif %}>
+                                        {{ label }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        {% endif %}
+
+                        <div class="col-12">
+                            <label class="form-label fw-bold small">Observaciones del Servicio</label>
+                            <textarea name="observaciones_servicio" class="form-control" rows="2">{{ servicio.observaciones }}</textarea>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sección 2: Datos Específicos del Registro de Retiro Efectuado -->
+            <div class="card-redimir border-success mb-4">
+                <div class="card-header bg-transparent border-0 pt-3 px-3 d-flex justify-content-between align-items-center">
+                    <h5 class="fw-bold text-success mb-0">
+                        <i class="fas fa-balance-scale me-2"></i>2. Registro Específico de Retiro / Pesaje ({{ servicio.get_modulo_display }})
+                    </h5>
+                    {% if registro %}
+                        <span class="badge bg-success">Registro Existente ID #{{ registro.id }}</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">Creando Nuevo Registro</span>
+                    {% endif %}
+                </div>
+                <div class="card-body">
+                    {% if servicio.modulo == 'rsd' %}
+                        <!-- Formulario RSD -->
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">Tipo de Residuo</label>
+                                <select name="tipo_residuo" class="form-select">
+                                    {% for val, name in tipos_rsd %}
+                                        <option value="{{ val }}" {% if registro and registro.tipo_residuo == val %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">Cantidad en Kilogramos (Kg)</label>
+                                <input type="number" step="0.01" name="cantidad_kg" class="form-control" value="{% if registro %}{{ registro.cantidad_kg }}{% else %}{{ servicio.cantidad_estimada|default:'0' }}{% endif %}" required>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">N° Ticket Externo / Guía</label>
+                                <input type="text" name="ticket_externo" class="form-control" value="{% if registro %}{{ registro.ticket_externo }}{% endif %}" placeholder="Ej: T-78945">
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">Planta / Destino Receptor</label>
+                                <select name="destino_receptor" class="form-select">
+                                    {% for val, name in destinos_rsd %}
+                                        <option value="{{ val }}" {% if registro and registro.destino_receptor == val %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">Especificar Otro Destino (Opcional)</label>
+                                <input type="text" name="destino_otro" class="form-control" value="{% if registro %}{{ registro.destino_otro }}{% endif %}">
+                            </div>
+                        </div>
+
+                    {% elif servicio.modulo == 'escombros' %}
+                        <!-- Formulario Escombros -->
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">Tipo de Residuo</label>
+                                <select name="tipo_residuo" class="form-select">
+                                    {% for val, name in tipos_escombros %}
+                                        <option value="{{ val }}" {% if registro and registro.tipo_residuo == val %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small">Cantidad</label>
+                                <input type="number" step="0.01" name="cantidad" class="form-control" value="{% if registro %}{{ registro.cantidad }}{% else %}{{ servicio.cantidad_estimada|default:'0' }}{% endif %}" required>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small">Unidad de Medida</label>
+                                <select name="unidad" class="form-select">
+                                    {% for val, name in unidades_escombros %}
+                                        <option value="{{ val }}" {% if registro and registro.unidad == val %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">N° Ticket Externo / Guía</label>
+                                <input type="text" name="ticket_externo" class="form-control" value="{% if registro %}{{ registro.ticket_externo }}{% endif %}" placeholder="Ej: TK-9901">
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">Destino Receptor Autorizado</label>
+                                <select name="destino_receptor" class="form-select">
+                                    {% for val, name in destinos_escombros %}
+                                        <option value="{{ val }}" {% if registro and registro.destino_receptor == val %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12">
+                                <label class="form-label fw-bold small">Especificar Otro Destino (Opcional)</label>
+                                <input type="text" name="destino_otro" class="form-control" value="{% if registro %}{{ registro.destino_otro }}{% endif %}">
+                            </div>
+                        </div>
+
+                    {% else %}
+                        <!-- Formulario Reciclables -->
+                        <div class="row g-3">
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">Material Reciclable</label>
+                                <select name="material" class="form-select">
+                                    {% for val, name in materiales_reciclables %}
+                                        <option value="{{ val }}" {% if registro and registro.material == val %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small">Cantidad en Kilogramos (Kg)</label>
+                                <input type="number" step="0.01" name="cantidad_kg" class="form-control" value="{% if registro %}{{ registro.cantidad_kg }}{% else %}{{ servicio.cantidad_estimada|default:'0' }}{% endif %}" required>
+                            </div>
+
+                            <div class="col-12 col-md-3">
+                                <label class="form-label fw-bold small">Unidades (Opcional)</label>
+                                <input type="number" name="unidades" class="form-control" value="{% if registro %}{{ registro.unidades|default:'' }}{% endif %}" placeholder="Sacos, pallets, etc.">
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">Destino</label>
+                                <select name="destino" class="form-select">
+                                    {% for val, name in destinos_reciclables %}
+                                        <option value="{{ val }}" {% if registro and registro.destino == val %}selected{% endif %}>{{ name }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+
+                            <div class="col-12 col-md-6">
+                                <label class="form-label fw-bold small">Especificar Otro Destino (Opcional)</label>
+                                <input type="text" name="destino_otro" class="form-control" value="{% if registro %}{{ registro.destino_otro }}{% endif %}">
+                            </div>
+                        </div>
+                    {% endif %}
+
+                    <div class="col-12 mt-3">
+                        <label class="form-label fw-bold small">Observaciones del Registro / Pesaje</label>
+                        <textarea name="observaciones_registro" class="form-control" rows="2" placeholder="Cualquier nota adicional del retiro en terreno...">{% if registro %}{{ registro.observaciones }}{% endif %}</textarea>
+                    </div>
+
+                    <!-- Adjuntar fotos de evidencia adicionales -->
+                    <div class="col-12 mt-3 p-3 bg-light rounded border border-dashed">
+                        <label class="form-label fw-bold small text-primary mb-1">
+                            <i class="fas fa-camera me-1"></i>Añadir Nuevas Fotos de Evidencia (Opcional)
+                        </label>
+                        <input type="file" name="fotos" class="form-control" multiple accept="image/*">
+                        <small class="text-muted">Puedes adjuntar una o varias imágenes de respaldo.</small>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Botones de Acción -->
+            <div class="d-flex justify-content-between align-items-center mb-5">
+                <a href="{% url 'servicio-detalle' servicio.id %}" class="btn btn-secondary px-4">
+                    <i class="fas fa-times me-1"></i>Cancelar
+                </a>
+                <button type="submit" class="btn btn-success fw-bold px-5 py-2">
+                    <i class="fas fa-save me-2"></i>Guardar Modificaciones
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}
