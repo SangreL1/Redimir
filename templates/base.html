@@ -776,8 +776,9 @@
 
         {% else %}
         <span class="sidebar-section">Servicios</span>
-        <a href="/solicitudes/crear/" class="sidebar-item"><i class="fas fa-truck"></i>Crear Servicio</a>
-        <a href="/solicitudes/" class="sidebar-item"><i class="fas fa-clipboard-list"></i>Todos los Servicios</a>
+        <a href="/servicios/crear/" class="sidebar-item"><i class="fas fa-truck"></i>Crear Servicio</a>
+        <a href="/servicios/" class="sidebar-item"><i class="fas fa-clipboard-list"></i>Todos los Servicios</a>
+        <a href="/solicitudes/" class="sidebar-item"><i class="fas fa-inbox"></i>Solicitudes Web</a>
         <a href="/validaciones/" class="sidebar-item" style="color:var(--accent-dark);">
             <i class="fas fa-exclamation-circle"></i>Validaciones Pend.
         </a>
@@ -845,11 +846,14 @@
 
         {% else %}
         <span class="sidebar-section">Servicios</span>
-        <a href="/solicitudes/crear/" class="sidebar-item {% block nav_crear_sol %}{% endblock %}">
+        <a href="/servicios/crear/" class="sidebar-item {% block nav_crear_sol %}{% endblock %}">
             <i class="fas fa-truck"></i>Crear Servicio
         </a>
-        <a href="/solicitudes/" class="sidebar-item {% block nav_servicios %}{% endblock %}">
+        <a href="/servicios/" class="sidebar-item {% block nav_servicios %}{% endblock %}">
             <i class="fas fa-clipboard-list"></i>Todos los Servicios
+        </a>
+        <a href="/solicitudes/" class="sidebar-item {% block nav_solicitudes %}{% endblock %}">
+            <i class="fas fa-inbox"></i>Solicitudes Web
         </a>
         <a href="/validaciones/" class="sidebar-item {% block nav_validaciones %}{% endblock %}" style="color:var(--accent-dark);">
             <i class="fas fa-exclamation-circle" style="color:var(--accent-dark);"></i>
