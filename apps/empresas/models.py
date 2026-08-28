@@ -280,6 +280,7 @@ class DetalleEstadoDePago(models.Model):
 
     class Meta:
         db_table = 'detalles_estado_de_pago'
+        ordering = ['fecha_servicio', 'id']
         verbose_name = 'Detalle de Estado de Pago'
         verbose_name_plural = 'Detalles de Estado de Pago'
 
@@ -402,18 +403,19 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
                 'tarifa': tarifa,
                 'unidad': unid,
                 'cantidad': Decimal('0'),
-                'fechas': [],
+                'fecha_objs': [],
                 'servicio_obj': s,
                 'fecha_obj': fecha_obj,
             }
         grupos[key]['cantidad'] += cant
-        if fecha_str not in grupos[key]['fechas']:
-            grupos[key]['fechas'].append(fecha_str)
+        if fecha_obj not in grupos[key]['fecha_objs']:
+            grupos[key]['fecha_objs'].append(fecha_obj)
 
-    # 2. Procesar Solicitudes de Recolección dentro del rango del mes [p_inicio, p_fin]
+    # 2. Procesar Solicitudes de Recolección no completadas aún dentro del rango del mes [p_inicio, p_fin]
     solicitudes_qs = SolicitudRecoleccion.objects.filter(
-        empresa=empresa
-    ).exclude(estado='cancelada').filter(
+        empresa=empresa,
+        estado__in=['pendiente', 'asignada']
+    ).filter(
         fecha_solicitada__date__range=[p_inicio, p_fin]
     ).distinct()
 
@@ -433,7 +435,6 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
             unid = tarifa_custom.unidad_medida
 
         fecha_obj = sol.fecha_solicitada.date() if sol.fecha_solicitada else today
-        fecha_str = fecha_obj.strftime("%d/%m/%Y")
 
         key = (desc_base, tarifa, unid)
         if key not in grupos:
@@ -443,19 +444,66 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
                 'tarifa': tarifa,
                 'unidad': unid,
                 'cantidad': Decimal('0'),
-                'fechas': [],
+                'fecha_objs': [],
                 'servicio_obj': None,
                 'fecha_obj': fecha_obj,
             }
         grupos[key]['cantidad'] += cant
-        if fecha_str not in grupos[key]['fechas']:
-            grupos[key]['fechas'].append(fecha_str)
+        if fecha_obj not in grupos[key]['fecha_objs']:
+            grupos[key]['fecha_objs'].append(fecha_obj)
+
+    # 3. Procesar Recolecciones Directas (Lotes) dentro del rango del mes [p_inicio, p_fin]
+    from apps.lotes.models import Lote
+    lotes_qs = Lote.objects.filter(
+        empresa_origen=empresa,
+        fecha_recoleccion__date__range=[p_inicio, p_fin]
+    ).distinct()
+
+    for lote in lotes_qs:
+        cant = Decimal('1')
+        unid = 'servicio'
+        tipo_disp = lote.get_tipo_residuo_display()
+        desc_base = f"Recolección Directa — {tipo_disp}"
+
+        tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa, tipo_material__iexact=lote.tipo_residuo).first()
+        if not tarifa_custom:
+            tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa).first()
+
+        tarifa = tarifa_custom.precio_unitario if tarifa_custom else TARIFA_RETIRO_PREDETERMINADA
+        if tarifa_custom and tarifa_custom.unidad_medida:
+            unid = tarifa_custom.unidad_medida
+
+        fecha_obj = lote.fecha_recoleccion.date() if lote.fecha_recoleccion else today
+
+        key = (desc_base, tarifa, unid)
+        if key not in grupos:
+            grupos[key] = {
+                'modulo': tipo_disp,
+                'descripcion': desc_base,
+                'tarifa': tarifa,
+                'unidad': unid,
+                'cantidad': Decimal('0'),
+                'fecha_objs': [],
+                'servicio_obj': None,
+                'fecha_obj': fecha_obj,
+            }
+        grupos[key]['cantidad'] += cant
+        if fecha_obj not in grupos[key]['fecha_objs']:
+            grupos[key]['fecha_objs'].append(fecha_obj)
 
     total_calculado = Decimal('0')
     count_servicios = 0
 
-    for item in grupos.values():
-        fechas_texto = ", ".join(item['fechas'])
+    items_ordenados = list(grupos.values())
+    for item in items_ordenados:
+        item['fecha_objs'].sort()  # Orden cronológico de menor a mayor
+        item['fecha_obj'] = item['fecha_objs'][0] if item['fecha_objs'] else item.get('fecha_obj', today)
+        item['fechas_texto'] = ", ".join([d.strftime("%d/%m/%Y") for d in item['fecha_objs']])
+
+    # Ordenar los ítems del EDP de forma cronológica ascendente por fecha de ejecución
+    items_ordenados.sort(key=lambda x: (x['fecha_obj'], x['descripcion']))
+
+    for item in items_ordenados:
         sub_item = item['cantidad'] * item['tarifa']
         total_calculado += sub_item
         count_servicios += int(item['cantidad'])
@@ -464,7 +512,7 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
             estado_de_pago=edp,
             servicio=item['servicio_obj'],
             fecha_servicio=item['fecha_obj'],
-            fechas_texto=fechas_texto,
+            fechas_texto=item['fechas_texto'],
             modulo=item['modulo'],
             descripcion=item['descripcion'],
             cantidad=item['cantidad'],

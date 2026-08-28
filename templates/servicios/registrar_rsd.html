@@ -123,7 +123,14 @@ body { background: var(--gray-bg); }
 
     <!-- ═══════════════════════ PASO 2: CANTIDAD ═══════════ -->
     <div class="paso-card" id="paso-2">
-      <h5 class="fw-bold mb-3" style="color:var(--primary);"><i class="fas fa-weight me-2"></i>Cantidad registrada</h5>
+      <h5 class="fw-bold mb-3" style="color:var(--primary);"><i class="fas fa-weight me-2"></i>Cantidad y Fecha de Retiro</h5>
+
+      <div class="mb-3">
+        <label class="form-label"><i class="fas fa-calendar-alt me-1 text-success"></i>Fecha y hora en que se realizó el retiro</label>
+        <input type="datetime-local" name="fecha_retiro_real" id="fecha_retiro_real" class="form-control campo-grande"
+               value="{% if servicio.fecha_retiro_real %}{{ servicio.fecha_retiro_real|date:'Y-m-d\TH:i' }}{% endif %}">
+        <div class="form-text">Modifica la fecha si el retiro se realizó en un día u hora anterior (determina la fecha en el EDP).</div>
+      </div>
 
       <div class="mb-3">
         <label class="form-label">Cantidad real en kg <span class="required-mark">*</span></label>

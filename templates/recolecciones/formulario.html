@@ -39,6 +39,13 @@
             </select>
         </div>
 
+        <!-- Fecha Real del Retiro / Recolección -->
+        <div class="mb-3">
+            <label class="form-label-dark fw-bold"><i class="fas fa-calendar-alt me-1 text-success"></i>Fecha y Hora en que se Realizó el Retiro</label>
+            <input type="datetime-local" name="fecha_recoleccion" id="fecha_recoleccion" class="form-control w-100" value="{{ form_data.fecha_recoleccion|default:'' }}">
+            <small class="text-muted" style="font-size:.78rem;">Fecha real en que fue hecho el retiro (determina la fecha en el EDP). Si lo dejas vacío, usará la hora actual.</small>
+        </div>
+
         <!-- 2. Tipo de Residuo Principal -->
         <div class="mb-3">
             <label class="form-label-dark fw-bold">Módulo / Categoría Principal de Residuo *</label>

@@ -66,7 +66,15 @@ body { background: var(--gray-bg); }
 
     <!-- PASO 1 -->
     <div class="paso-card active" id="paso-1">
-      <h5 class="fw-bold mb-3" style="color:var(--secondary);"><i class="fas fa-recycle me-2"></i>Material a registrar</h5>
+      <h5 class="fw-bold mb-3" style="color:var(--secondary);"><i class="fas fa-recycle me-2"></i>Material y Fecha del Retiro</h5>
+
+      <div class="mb-3">
+        <label class="form-label"><i class="fas fa-calendar-alt me-1 text-success"></i>Fecha y hora en que se realizó el retiro</label>
+        <input type="datetime-local" name="fecha_retiro_real" id="fecha_retiro_real" class="form-control campo-grande"
+               value="{% if servicio.fecha_retiro_real %}{{ servicio.fecha_retiro_real|date:'Y-m-d\TH:i' }}{% endif %}">
+        <div class="form-text">Fecha real en que fue hecho el retiro (impacta la fecha en el EDP).</div>
+      </div>
+
       <div class="mb-3">
         <label class="form-label">Tipo de material <span class="required-mark">*</span></label>
         <select name="material" class="form-select campo-grande" id="sel-material" required>

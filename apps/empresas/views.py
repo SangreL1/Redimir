@@ -742,8 +742,6 @@ class EstadoDePagoCrearView(View):
                         unid = tarifa_custom.unidad_medida
 
                 fecha_obj = s.fecha_retiro_real.date() if s.fecha_retiro_real else (s.fecha_solicitud.date() if s.fecha_solicitud else timezone.now().date())
-                fecha_str = fecha_obj.strftime("%d/%m/%Y")
-
                 key = (desc_base, tarifa, unid)
                 if key not in grupos:
                     grupos[key] = {
@@ -752,18 +750,25 @@ class EstadoDePagoCrearView(View):
                         'tarifa': tarifa,
                         'unidad': unid,
                         'cantidad': Decimal('0'),
-                        'fechas': [],
+                        'fecha_objs': [],
                         'servicio_obj': s,
                         'fecha_obj': fecha_obj,
                     }
                 grupos[key]['cantidad'] += cant
-                if fecha_str not in grupos[key]['fechas']:
-                    grupos[key]['fechas'].append(fecha_str)
+                if fecha_obj not in grupos[key]['fecha_objs']:
+                    grupos[key]['fecha_objs'].append(fecha_obj)
 
             total_calculado = Decimal('0')
 
-            for item in grupos.values():
-                fechas_texto = ", ".join(item['fechas'])
+            items_ordenados = list(grupos.values())
+            for item in items_ordenados:
+                item['fecha_objs'].sort()
+                item['fecha_obj'] = item['fecha_objs'][0] if item['fecha_objs'] else item.get('fecha_obj', timezone.now().date())
+                item['fechas_texto'] = ", ".join([d.strftime("%d/%m/%Y") for d in item['fecha_objs']])
+
+            items_ordenados.sort(key=lambda x: (x['fecha_obj'], x['descripcion']))
+
+            for item in items_ordenados:
                 sub_item = item['cantidad'] * item['tarifa']
                 total_calculado += sub_item
 
@@ -771,7 +776,7 @@ class EstadoDePagoCrearView(View):
                     estado_de_pago=edp,
                     servicio=item['servicio_obj'],
                     fecha_servicio=item['fecha_obj'],
-                    fechas_texto=fechas_texto,
+                    fechas_texto=item['fechas_texto'],
                     modulo=item['modulo'],
                     descripcion=item['descripcion'],
                     cantidad=item['cantidad'],
@@ -822,10 +827,9 @@ class EstadoDePagoDetalleView(View):
         from .models import EstadoDePago, actualizar_o_crear_edp_empresa
         edp = get_object_or_404(EstadoDePago, pk=pk)
 
-        # Si el EDP tiene detalles antiguos sin agrupar, recalcular automáticamente para agruparlos
-        if edp.detalles.filter(fechas_texto__isnull=True).exists():
-            actualizar_o_crear_edp_empresa(edp.empresa, periodo_inicio=edp.periodo_inicio, periodo_fin=edp.periodo_fin, usuario=request.user)
-            edp.refresh_from_db()
+        # Siempre recalcular el EDP al visualizarlo para reflejar cualquier cambio en fechas o registros
+        actualizar_o_crear_edp_empresa(edp.empresa, periodo_inicio=edp.periodo_inicio, periodo_fin=edp.periodo_fin, usuario=request.user)
+        edp.refresh_from_db()
 
         return render(request, 'empresas/detalle_edp.html', {'edp': edp})
 

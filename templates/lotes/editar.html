@@ -35,6 +35,12 @@
 
                 <div class="row g-3">
                     <div class="col-12 col-md-6">
+                        <label class="form-label fw-bold small text-success"><i class="fas fa-calendar-alt me-1"></i>Fecha de Recolección / Retiro Real</label>
+                        <input type="datetime-local" name="fecha_recoleccion" class="form-control" value="{{ lote.fecha_recoleccion|date:'Y-m-d\TH:i' }}">
+                        <small class="text-muted" style="font-size:.75rem;">Fecha real en que fue hecho el retiro (impacta la fecha en el EDP).</small>
+                    </div>
+
+                    <div class="col-12 col-md-6">
                         <label class="form-label fw-bold small">Tipo de Residuo Principal</label>
                         <select name="tipo_residuo" class="form-select">
                             {% for code, label in tipos_residuo %}

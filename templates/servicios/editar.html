@@ -84,6 +84,12 @@
                             <input type="text" name="unidad_estimada" class="form-control" value="{{ servicio.unidad_estimada|default:'kg' }}">
                         </div>
 
+                        <div class="col-12 col-md-6">
+                            <label class="form-label fw-bold small text-success"><i class="fas fa-calendar-alt me-1"></i>Fecha de Retiro Real</label>
+                            <input type="datetime-local" name="fecha_retiro_real" class="form-control" value="{{ servicio.fecha_retiro_real|date:'Y-m-d\TH:i' }}">
+                            <small class="text-muted" style="font-size:.75rem;">Modifica la fecha exacta en que fue ejecutado el retiro (se reflejará en el EDP).</small>
+                        </div>
+
                         {% if es_admin %}
                         <div class="col-12 col-md-6">
                             <label class="form-label fw-bold small">Estado del Servicio</label>

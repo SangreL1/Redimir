@@ -86,6 +86,9 @@ class RecoleccionPageView(View):
 
         try:
             from decimal import Decimal
+            from datetime import datetime
+            from django.utils import timezone
+
             empresa = Empresa.objects.get(id=empresa_id)
             foto_principal = fotos_residuos[0] if fotos_residuos else (foto_ticket or foto_camion)
             
@@ -95,11 +98,24 @@ class RecoleccionPageView(View):
             except Exception:
                 total_kg = Decimal('0')
 
+            fecha_rec_raw = request.POST.get('fecha_recoleccion')
+            fecha_recoleccion_val = timezone.now()
+            if fecha_rec_raw:
+                try:
+                    if 'T' in fecha_rec_raw:
+                        dt = datetime.strptime(fecha_rec_raw, '%Y-%m-%dT%H:%M')
+                    else:
+                        dt = datetime.strptime(fecha_rec_raw, '%Y-%m-%d')
+                    fecha_recoleccion_val = timezone.make_aware(dt)
+                except Exception:
+                    pass
+
             lote = Lote.objects.create(
                 empresa_origen=empresa,
                 operador=request.user,
                 tipo_residuo=tipo_residuo,
                 cantidad_kg=total_kg,
+                fecha_recoleccion=fecha_recoleccion_val,
                 foto_recoleccion=foto_principal,
                 foto_ticket=foto_ticket,
                 foto_camion=foto_camion,
@@ -265,6 +281,9 @@ class LoteEditarView(View):
 
         from decimal import Decimal
         try:
+            # Guardar el mes original ANTES de modificar, para saber si cambió de período
+            mes_original = lote.fecha_recoleccion.date().replace(day=1) if lote.fecha_recoleccion else None
+
             if _es_admin(request.user) and empresa_id:
                 try:
                     lote.empresa_origen = Empresa.objects.get(id=empresa_id)
@@ -284,6 +303,19 @@ class LoteEditarView(View):
                     pass
 
             lote.observaciones_recoleccion = observaciones
+
+            fecha_rec_raw = request.POST.get('fecha_recoleccion')
+            if fecha_rec_raw:
+                try:
+                    from datetime import datetime
+                    from django.utils import timezone
+                    if 'T' in fecha_rec_raw:
+                        dt = datetime.strptime(fecha_rec_raw, '%Y-%m-%dT%H:%M')
+                    else:
+                        dt = datetime.strptime(fecha_rec_raw, '%Y-%m-%d')
+                    lote.fecha_recoleccion = timezone.make_aware(dt)
+                except Exception:
+                    pass
 
             if request.POST.get('eliminar_foto_ticket') == '1':
                 lote.foto_ticket = None
@@ -335,10 +367,22 @@ class LoteEditarView(View):
                     lote.cantidad_kg = sum_kg
                     lote.save()
 
-            # Recalcular EDP de la empresa
+            # Recalcular EDP de la empresa para el mes actual del lote
             try:
                 from apps.empresas.models import actualizar_o_crear_edp_empresa
+                mes_nuevo = lote.fecha_recoleccion.date().replace(day=1) if lote.fecha_recoleccion else None
                 actualizar_o_crear_edp_empresa(lote.empresa_origen, usuario=request.user)
+
+                # Si el mes cambió, también recalcular el EDP del mes anterior para eliminarlo de ahí
+                if mes_original and mes_nuevo and mes_original != mes_nuevo:
+                    import calendar
+                    _, last_day = calendar.monthrange(mes_original.year, mes_original.month)
+                    actualizar_o_crear_edp_empresa(
+                        lote.empresa_origen,
+                        periodo_inicio=mes_original,
+                        periodo_fin=mes_original.replace(day=last_day),
+                        usuario=request.user
+                    )
             except Exception:
                 pass
 

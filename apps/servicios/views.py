@@ -98,6 +98,19 @@ class CrearServicioView(View):
                 pass
 
         auto_validar = request.POST.get('auto_validar') == '1' and _es_admin(request.user)
+        fecha_retiro_real_str = request.POST.get('fecha_retiro_real')
+
+        fecha_retiro_real_val = timezone.now() if auto_validar else None
+        if fecha_retiro_real_str:
+            try:
+                from datetime import datetime
+                if 'T' in fecha_retiro_real_str:
+                    dt = datetime.strptime(fecha_retiro_real_str, '%Y-%m-%dT%H:%M')
+                else:
+                    dt = datetime.strptime(fecha_retiro_real_str, '%Y-%m-%d')
+                fecha_retiro_real_val = timezone.make_aware(dt)
+            except Exception:
+                pass
 
         estado_inicial = 'programado' if fecha_prog else 'solicitado'
         if operador:
@@ -115,7 +128,7 @@ class CrearServicioView(View):
             cantidad_estimada=cantidad_est,
             unidad_estimada=unidad_est,
             fecha_programada=fecha_prog,
-            fecha_retiro_real=timezone.now() if auto_validar else None,
+            fecha_retiro_real=fecha_retiro_real_val,
             ventana_inicio=ventana_ini,
             ventana_fin=ventana_fin,
             operador=operador,
@@ -386,7 +399,19 @@ class RegistrarRetiroView(View):
 
             # Actualizar estado servicio
             servicio.estado = 'pendiente_validacion'
-            servicio.fecha_retiro_real = timezone.now()
+            fecha_retiro_raw = request.POST.get('fecha_retiro_real')
+            if fecha_retiro_raw:
+                try:
+                    from datetime import datetime
+                    if 'T' in fecha_retiro_raw:
+                        dt = datetime.strptime(fecha_retiro_raw, '%Y-%m-%dT%H:%M')
+                    else:
+                        dt = datetime.strptime(fecha_retiro_raw, '%Y-%m-%d')
+                    servicio.fecha_retiro_real = timezone.make_aware(dt)
+                except Exception:
+                    servicio.fecha_retiro_real = timezone.now()
+            else:
+                servicio.fecha_retiro_real = timezone.now()
             servicio.save()
 
             # Notificar a admin
@@ -641,6 +666,10 @@ class EditarServicioRegistroView(View):
             return redirect('servicio-detalle', pk=pk)
 
         # 1. Modificar campos de Servicio
+        # Guardar el mes original ANTES de modificar, para saber si cambió de período
+        fecha_retiro_anterior = servicio.fecha_retiro_real or servicio.fecha_solicitud
+        mes_original = fecha_retiro_anterior.date().replace(day=1) if fecha_retiro_anterior else None
+
         direccion = request.POST.get('direccion', '').strip()
         contacto = request.POST.get('contacto_responsable', '').strip()
         telefono = request.POST.get('telefono_contacto', '').strip()
@@ -661,6 +690,18 @@ class EditarServicioRegistroView(View):
         servicio.unidad_estimada = unidad_est
         if observations_srv := observaciones_srv:
             servicio.observaciones = observations_srv
+
+        fecha_retiro_raw = request.POST.get('fecha_retiro_real')
+        if fecha_retiro_raw:
+            try:
+                from datetime import datetime
+                if 'T' in fecha_retiro_raw:
+                    dt = datetime.strptime(fecha_retiro_raw, '%Y-%m-%dT%H:%M')
+                else:
+                    dt = datetime.strptime(fecha_retiro_raw, '%Y-%m-%d')
+                servicio.fecha_retiro_real = timezone.make_aware(dt)
+            except Exception:
+                pass
 
         if _es_admin(user):
             if emp_id := request.POST.get('empresa'):
@@ -794,7 +835,21 @@ class EditarServicioRegistroView(View):
             # 4. Actualizar Estado de Pago (EDP) de la empresa
             try:
                 from apps.empresas.models import actualizar_o_crear_edp_empresa
+                # Recalcular el EDP del mes actual del servicio (con la nueva fecha)
                 actualizar_o_crear_edp_empresa(servicio.empresa, usuario=user)
+
+                # Si la fecha cambió de mes, también recalcular el EDP del mes anterior
+                fecha_retiro_nueva = servicio.fecha_retiro_real or servicio.fecha_solicitud
+                mes_nuevo = fecha_retiro_nueva.date().replace(day=1) if fecha_retiro_nueva else None
+                if mes_original and mes_nuevo and mes_original != mes_nuevo:
+                    import calendar
+                    _, last_day = calendar.monthrange(mes_original.year, mes_original.month)
+                    actualizar_o_crear_edp_empresa(
+                        servicio.empresa,
+                        periodo_inicio=mes_original,
+                        periodo_fin=mes_original.replace(day=last_day),
+                        usuario=user
+                    )
             except Exception:
                 pass
 

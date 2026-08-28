@@ -1,4 +1,5 @@
 from django.db import models
+from django.utils import timezone
 import qrcode
 from io import BytesIO
 from django.core.files import File
@@ -31,7 +32,7 @@ class Lote(models.Model):
     tipo_residuo = models.CharField(max_length=50, choices=TIPOS_RESIDUO, default='mixto')
     cantidad_kg = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     
-    fecha_recoleccion = models.DateTimeField(auto_now_add=True)
+    fecha_recoleccion = models.DateTimeField(default=timezone.now, verbose_name='Fecha de Recolección/Retiro')
     foto_recoleccion = models.ImageField(upload_to='fotos/recolecciones/%Y/%m/%d/', null=True, blank=True)
     foto_ticket = models.ImageField(upload_to='fotos/tickets/%Y/%m/%d/', null=True, blank=True)
     foto_camion = models.ImageField(upload_to='fotos/camion/%Y/%m/%d/', null=True, blank=True)

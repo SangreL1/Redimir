@@ -204,6 +204,12 @@
       <small class="text-muted ms-4 mt-1 d-block">
         Marca esta casilla si el retiro ya fue realizado y deseas que el servicio quede en estado <strong>Validado</strong> automáticamente para generar certificados de inmediato.
       </small>
+
+      <div class="mt-3 ms-4">
+        <label class="form-label fw-bold small text-success"><i class="fas fa-calendar-check me-1"></i>Fecha y hora en que se realizó el retiro</label>
+        <input type="datetime-local" name="fecha_retiro_real" class="form-control form-control-sm" value="{{ form_data.fecha_retiro_real|default:'' }}" style="max-width: 300px;">
+        <small class="text-muted d-block mt-1" style="font-size:.75rem;">Fecha real en que fue hecho el retiro (impacta la fecha en el EDP). Si lo dejas en blanco, usará la fecha/hora actual.</small>
+      </div>
     </div>
     {% endif %}
 
