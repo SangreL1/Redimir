@@ -458,10 +458,16 @@ class GeneradorPageView(View):
         else:
             try:
                 empresa = Empresa.objects.get(id=empresa_id)
+
+                # Unión: servicios validados con fecha_retiro_real en el rango
+                # O servicios validados sin fecha_retiro_real pero con fecha_validacion en el rango
+                from django.db.models import Q
                 servicios = Servicio.objects.filter(
                     empresa=empresa,
-                    estado='validado',
-                    fecha_retiro_real__date__range=[inicio, fin]
+                    estado__in=['validado', 'documento_emitido', 'cerrado'],
+                ).filter(
+                    Q(fecha_retiro_real__date__range=[inicio, fin]) |
+                    Q(fecha_retiro_real__isnull=True, fecha_validacion__date__range=[inicio, fin])
                 )
 
                 if not servicios.exists():
