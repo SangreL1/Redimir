@@ -459,9 +459,10 @@ class GeneradorPageView(View):
             try:
                 empresa = Empresa.objects.get(id=empresa_id)
 
-                # Unión: servicios validados con fecha_retiro_real en el rango
-                # O servicios validados sin fecha_retiro_real pero con fecha_validacion en el rango
                 from django.db.models import Q
+                from apps.lotes.models import Lote
+
+                # ── 1. Servicios validados (modelo nuevo) ──────────────────
                 servicios = Servicio.objects.filter(
                     empresa=empresa,
                     estado__in=['validado', 'documento_emitido', 'cerrado'],
@@ -470,14 +471,22 @@ class GeneradorPageView(View):
                     Q(fecha_retiro_real__isnull=True, fecha_validacion__date__range=[inicio, fin])
                 )
 
-                if not servicios.exists():
-                    error = 'No hay servicios validados para esta empresa en el período indicado.'
+                # ── 2. Lotes (modelo legado — donde viven los datos reales) ─
+                lotes = Lote.objects.filter(
+                    empresa_origen=empresa,
+                    fecha_recoleccion__date__range=[inicio, fin]
+                )
+
+                # Si no hay NADA de ninguno de los dos, error
+                if not servicios.exists() and not lotes.exists():
+                    error = 'No hay retiros registrados para esta empresa en el período indicado.'
                 else:
                     rsd_kg = 0
                     escombros_total = 0
                     reciclables_kg = 0
                     desglose = {}
 
+                    # Procesar Servicios
                     for s in servicios:
                         reg = s.get_registro()
                         if s.modulo == 'rsd' and reg:
@@ -495,6 +504,30 @@ class GeneradorPageView(View):
                             key = f"Reciclables - {reg.get_material_display() if hasattr(reg, 'get_material_display') else 'General'}"
                             desglose[key] = round(desglose.get(key, 0.0) + cant, 2)
 
+                    # Procesar Lotes (modelo legado)
+                    MAPA_TIPO_LOTE = {
+                        'basura':    ('rsd',         'RSD / Basura General'),
+                        'escombros': ('escombros',   'Escombros / RESCON'),
+                        'plastico':  ('reciclables', 'Reciclables - Plástico'),
+                        'metal':     ('reciclables', 'Reciclables - Metal'),
+                        'papel':     ('reciclables', 'Reciclables - Papel/Cartón'),
+                        'vidrio':    ('reciclables', 'Reciclables - Vidrio'),
+                        'organico':  ('reciclables', 'Reciclables - Orgánico'),
+                        'mixto':     ('reciclables', 'Reciclables - Mixto'),
+                    }
+                    for lote in lotes:
+                        kg = float(lote.cantidad_kg) if lote.cantidad_kg else 0.0
+                        modulo_lote, label = MAPA_TIPO_LOTE.get(lote.tipo_residuo, ('reciclables', f'Reciclables - {lote.get_tipo_residuo_display()}'))
+                        if modulo_lote == 'rsd':
+                            rsd_kg += lote.cantidad_kg or 0
+                        elif modulo_lote == 'escombros':
+                            escombros_total += 1
+                        else:
+                            reciclables_kg += lote.cantidad_kg or 0
+                        desglose[label] = round(desglose.get(label, 0.0) + kg, 2)
+
+                    total_registros = servicios.count() + lotes.count()
+
                     certificado = Certificado.objects.create(
                         empresa=empresa,
                         periodo_inicio=inicio,
@@ -502,7 +535,7 @@ class GeneradorPageView(View):
                         total_rsd_kg=rsd_kg,
                         total_escombros=escombros_total,
                         total_reciclables_kg=reciclables_kg,
-                        numero_servicios=servicios.count(),
+                        numero_servicios=total_registros,
                         desglose_por_tipo=desglose,
                         generado_por=request.user
                     )
