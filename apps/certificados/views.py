@@ -217,11 +217,17 @@ def generar_pdf_certificado(certificado, request=None):
     # Formatear desglose de residuos
     desglose = certificado.desglose_por_tipo or {}
     residuos_lines = []
+    # Tipos de residuos que se cuentan como retiros, no en Kg
+    TIPOS_RETIRO = ('escombros', 'rescon', 'otros residuos')
     if desglose:
         for tipo, cant in desglose.items():
             if isinstance(cant, (int, float)):
                 cant_fmt = f"{cant:g}".replace('.', ',')
-                residuos_lines.append(f"{tipo}: {cant_fmt} Kg." if "m3" not in tipo.lower() else f"{tipo}: {cant_fmt}")
+                tipo_lower = tipo.lower()
+                if any(t in tipo_lower for t in TIPOS_RETIRO) or 'm3' in tipo_lower:
+                    residuos_lines.append(f"{tipo}: {cant_fmt} Retiros")
+                else:
+                    residuos_lines.append(f"{tipo}: {cant_fmt} Kg.")
             else:
                 residuos_lines.append(f"{tipo}: {cant}")
     else:
@@ -235,7 +241,12 @@ def generar_pdf_certificado(certificado, request=None):
     residuos_html = "<br/>".join(residuos_lines) if residuos_lines else "Residuos no peligrosos varios"
 
     total_kg_val = float(certificado.total_reciclables_kg or 0) + float(certificado.total_rsd_kg or 0)
-    total_kg_str = f"{total_kg_val:g}".replace('.', ',') + " Kg." if total_kg_val > 0 else f"{certificado.total_escombros} Retiros"
+    if total_kg_val > 0 and certificado.total_escombros > 0:
+        total_kg_str = f"{total_kg_val:g} Kg. + {certificado.total_escombros} Retiro(s) Escombros".replace('.', ',')
+    elif total_kg_val > 0:
+        total_kg_str = f"{total_kg_val:g}".replace('.', ',') + " Kg."
+    else:
+        total_kg_str = f"{certificado.total_escombros} Retiro(s)"
 
     # Buscar destinos desde servicios
     destinos_set = set()
@@ -461,6 +472,7 @@ class GeneradorPageView(View):
 
                 from django.db.models import Q
                 from apps.lotes.models import Lote
+                from apps.empresas.models import SolicitudRecoleccion
 
                 # ── 1. Servicios validados (modelo nuevo) ──────────────────
                 servicios = Servicio.objects.filter(
@@ -477,8 +489,15 @@ class GeneradorPageView(View):
                     fecha_recoleccion__date__range=[inicio, fin]
                 )
 
-                # Si no hay NADA de ninguno de los dos, error
-                if not servicios.exists() and not lotes.exists():
+                # ── 3. Solicitudes de Recolección (modelo legado) ──────────
+                solicitudes = SolicitudRecoleccion.objects.filter(
+                    empresa=empresa,
+                    estado__in=['pendiente', 'asignada', 'completada'],
+                    fecha_solicitada__date__range=[inicio, fin]
+                )
+
+                # Si no hay NADA de ninguno de los tres, error
+                if not servicios.exists() and not lotes.exists() and not solicitudes.exists():
                     error = 'No hay retiros registrados para esta empresa en el período indicado.'
                 else:
                     rsd_kg = 0
@@ -526,7 +545,48 @@ class GeneradorPageView(View):
                             reciclables_kg += lote.cantidad_kg or 0
                         desglose[label] = round(desglose.get(label, 0.0) + kg, 2)
 
-                    total_registros = servicios.count() + lotes.count()
+                    # Procesar Solicitudes de Recolección (modelo legado)
+                    MAPA_MODULO_SOL = {
+                        'rsd':         ('rsd',         'RSD / Basura General'),
+                        'escombros':   ('escombros',   'Escombros / RESCON'),
+                        'reciclables': ('reciclables', 'Reciclables - General'),
+                        'otros':       ('reciclables', 'Otros Residuos'),
+                    }
+                    MAPA_MATERIAL_SOL = {
+                        'carton':    'Reciclables - Cartón/Papel',
+                        'pet':       'Reciclables - Botellas PET',
+                        'vidrio':    'Reciclables - Vidrio',
+                        'latas':     'Reciclables - Latas',
+                        'film':      'Reciclables - Film LDPE',
+                        'plastico':  'Reciclables - Plástico',
+                        'escombros': 'Escombros / RESCON',
+                        'rsd':       'RSD / Basura General',
+                        'mixto':     'Reciclables - Mixto',
+                        'otros':     'Otros Residuos',
+                    }
+                    for sol in solicitudes:
+                        # Usar tipo_material si está disponible, sino el módulo
+                        label_sol = MAPA_MATERIAL_SOL.get(
+                            sol.tipo_material,
+                            MAPA_MODULO_SOL.get(sol.modulo, ('reciclables', 'Reciclables - General'))[1]
+                        )
+                        modulo_sol = MAPA_MODULO_SOL.get(sol.modulo, ('reciclables', ''))[0]
+                        cant_sol = float(sol.cantidad_estimada) if sol.cantidad_estimada else 0.0
+                        if modulo_sol == 'rsd':
+                            rsd_kg += sol.cantidad_estimada or 0
+                        elif modulo_sol == 'escombros':
+                            escombros_total += 1
+                        else:
+                            reciclables_kg += sol.cantidad_estimada or 0
+                        # Solo sumar kg si la unidad es peso; para escombros/otros contar como retiro
+                        if sol.unidad_medida in ('kg', 'Kg', 'KG'):
+                            desglose[label_sol] = round(desglose.get(label_sol, 0.0) + cant_sol, 2)
+                        else:
+                            # Contar como 1 retiro si no es en kg
+                            prev = desglose.get(label_sol, 0.0)
+                            desglose[label_sol] = round(prev + (cant_sol if cant_sol > 0 else 1.0), 2)
+
+                    total_registros = servicios.count() + lotes.count() + solicitudes.count()
 
                     certificado = Certificado.objects.create(
                         empresa=empresa,
