@@ -248,21 +248,8 @@ def generar_pdf_certificado(certificado, request=None):
     else:
         total_kg_str = f"{certificado.total_escombros} Retiro(s)"
 
-    # Buscar destinos desde servicios
-    destinos_set = set()
-    for s in certificado.servicios.all():
-        reg = s.get_registro()
-        if reg:
-            d = getattr(reg, 'destino_receptor', None) or getattr(reg, 'destino', None) or getattr(reg, 'destino_otro', None)
-            if d:
-                destinos_set.add(str(d).title())
-
-    if destinos_set:
-        destino_str = ", ".join(destinos_set)
-        if not destino_str.endswith('.'):
-            destino_str += "."
-    else:
-        destino_str = getattr(certificado, 'destino_final', None) or "Reciclados Industriales."
+    # Destino oficial fijo del certificado Redimir
+    destino_str = "Recinort, Recipet y Redimir."
 
     grid_data = [
         [Paragraph('Institución:', label_style), Paragraph(cliente_nombre, val_style)],
