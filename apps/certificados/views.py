@@ -458,7 +458,6 @@ class GeneradorPageView(View):
                 empresa = Empresa.objects.get(id=empresa_id)
 
                 from django.db.models import Q
-                from apps.lotes.models import Lote
                 from apps.empresas.models import SolicitudRecoleccion
 
                 # ── 1. Servicios validados (modelo nuevo) ──────────────────
@@ -470,21 +469,15 @@ class GeneradorPageView(View):
                     Q(fecha_retiro_real__isnull=True, fecha_validacion__date__range=[inicio, fin])
                 )
 
-                # ── 2. Lotes (modelo legado — donde viven los datos reales) ─
-                lotes = Lote.objects.filter(
-                    empresa_origen=empresa,
-                    fecha_recoleccion__date__range=[inicio, fin]
-                )
-
-                # ── 3. Solicitudes de Recolección (modelo legado) ──────────
+                # ── 2. Solicitudes de Recolección (modelo legado) ──────────
                 solicitudes = SolicitudRecoleccion.objects.filter(
                     empresa=empresa,
                     estado__in=['pendiente', 'asignada', 'completada'],
                     fecha_solicitada__date__range=[inicio, fin]
                 )
 
-                # Si no hay NADA de ninguno de los tres, error
-                if not servicios.exists() and not lotes.exists() and not solicitudes.exists():
+                # Si no hay NADA de ninguno de los dos, error
+                if not servicios.exists() and not solicitudes.exists():
                     error = 'No hay retiros registrados para esta empresa en el período indicado.'
                 else:
                     rsd_kg = 0
@@ -509,28 +502,6 @@ class GeneradorPageView(View):
                             reciclables_kg += reg.cantidad_kg or 0
                             key = f"Reciclables - {reg.get_material_display() if hasattr(reg, 'get_material_display') else 'General'}"
                             desglose[key] = round(desglose.get(key, 0.0) + cant, 2)
-
-                    # Procesar Lotes (modelo legado)
-                    MAPA_TIPO_LOTE = {
-                        'basura':    ('rsd',         'RSD / Basura General'),
-                        'escombros': ('escombros',   'Escombros / RESCON'),
-                        'plastico':  ('reciclables', 'Reciclables - Plástico'),
-                        'metal':     ('reciclables', 'Reciclables - Metal'),
-                        'papel':     ('reciclables', 'Reciclables - Papel/Cartón'),
-                        'vidrio':    ('reciclables', 'Reciclables - Vidrio'),
-                        'organico':  ('reciclables', 'Reciclables - Orgánico'),
-                        'mixto':     ('reciclables', 'Reciclables - Mixto'),
-                    }
-                    for lote in lotes:
-                        kg = float(lote.cantidad_kg) if lote.cantidad_kg else 0.0
-                        modulo_lote, label = MAPA_TIPO_LOTE.get(lote.tipo_residuo, ('reciclables', f'Reciclables - {lote.get_tipo_residuo_display()}'))
-                        if modulo_lote == 'rsd':
-                            rsd_kg += lote.cantidad_kg or 0
-                        elif modulo_lote == 'escombros':
-                            escombros_total += 1
-                        else:
-                            reciclables_kg += lote.cantidad_kg or 0
-                        desglose[label] = round(desglose.get(label, 0.0) + kg, 2)
 
                     # Procesar Solicitudes de Recolección (modelo legado)
                     MAPA_MODULO_SOL = {
@@ -573,7 +544,7 @@ class GeneradorPageView(View):
                             prev = desglose.get(label_sol, 0.0)
                             desglose[label_sol] = round(prev + (cant_sol if cant_sol > 0 else 1.0), 2)
 
-                    total_registros = servicios.count() + lotes.count() + solicitudes.count()
+                    total_registros = servicios.count() + solicitudes.count()
 
                     certificado = Certificado.objects.create(
                         empresa=empresa,
