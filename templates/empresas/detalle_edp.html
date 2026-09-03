@@ -11,6 +11,12 @@
       <p class="page-subtitle mb-0">Estado de Pago Comercial · {{ edp.empresa.nombre }}</p>
     </div>
     <div class="d-flex gap-2">
+      <form method="post" action="{% url 'estados-de-pago-enviar-email' edp.pk %}" class="d-inline" onsubmit="return confirm('¿Enviar resumen oficial del Estado de Pago {{ edp.numero_edp }} al correo {{ edp.empresa.email_contacto }}?');">
+        {% csrf_token %}
+        <button type="submit" class="btn btn-success-redimir btn-sm" style="background-color: #006BB8; border-color: #006BB8;">
+          <i class="fas fa-envelope me-1"></i>Enviar por Correo al Cliente
+        </button>
+      </form>
       <button onclick="window.print();" class="btn btn-outline-secondary btn-sm">
         <i class="fas fa-print me-1"></i>Imprimir / PDF
       </button>

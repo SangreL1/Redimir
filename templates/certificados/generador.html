@@ -33,11 +33,19 @@
 <div class="card-redimir mb-4 text-center" style="border: 2px solid var(--secondary); background: var(--secondary-light);">
     <i class="fas fa-check-circle fa-3x mb-2" style="color:var(--secondary);"></i>
     <h5 class="fw-bold mb-1">¡Certificado Creado con Éxito!</h5>
-    <p class="mb-3" style="font-size:.9rem; font-weight:600;">Folio: {{ certificado.codigo_certificado }}</p>
+    <p class="mb-3" style="font-size:.9rem; font-weight:600;">Folio: {{ certificado.codigo_certificado }} &bull; Cliente: {{ certificado.empresa.nombre }}</p>
     
-    <a href="{% url 'descargar_certificado' certificado.id %}" target="_blank" class="btn-success-redimir">
-        <i class="fas fa-download me-2"></i>Descargar PDF
-    </a>
+    <div class="d-flex justify-content-center gap-2 flex-wrap">
+        <a href="{% url 'descargar_certificado' certificado.id %}" target="_blank" class="btn-success-redimir">
+            <i class="fas fa-download me-2"></i>Descargar PDF
+        </a>
+        <form method="post" action="{% url 'enviar_certificado_email' certificado.id %}" style="display:inline;" onsubmit="return confirm('¿Enviar certificado con PDF adjunto al correo {{ certificado.empresa.email_contacto }}?');">
+            {% csrf_token %}
+            <button type="submit" class="btn-primary-redimir" style="background-color: #006BB8;">
+                <i class="fas fa-envelope me-2"></i>Enviar PDF por Correo a {{ certificado.empresa.email_contacto }}
+            </button>
+        </form>
+    </div>
 </div>
 {% endif %}
 
@@ -65,6 +73,14 @@
             <label for="fin" class="form-label">Fecha Hasta (Servicios) <span class="required-mark">*</span></label>
             <input type="date" class="form-control" name="fin" id="fin" required>
         </div>
+    </div>
+
+    <div class="form-check mb-4 p-3" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
+        <input class="form-check-input ms-0 me-2" type="checkbox" name="enviar_email" id="enviar_email" value="1" checked>
+        <label class="form-check-label fw-bold text-dark" for="enviar_email" style="cursor: pointer;">
+            <i class="fas fa-envelope me-1 text-primary"></i> Enviar automáticamente copia con PDF adjunto al correo de la empresa
+        </label>
+        <div class="form-text ms-4">Se enviará al correo oficial de contacto configurado en la ficha de la empresa cliente.</div>
     </div>
     
     <div class="alert-redimir-info mb-4" style="font-size:.85rem;">

@@ -399,6 +399,39 @@ def descargar_certificado(request, certificado_id):
         return HttpResponseNotFound("El certificado solicitado no existe.")
 
 
+@login_required
+def enviar_certificado_por_email(request, certificado_id):
+    """Envía el certificado en PDF al correo de contacto de la empresa"""
+    try:
+        certificado = Certificado.objects.get(id=certificado_id)
+    except Certificado.DoesNotExist:
+        messages.error(request, 'El certificado no existe.')
+        return redirect('certificado-lista')
+
+    user = request.user
+    es_admin_o_staff = (
+        getattr(user, 'es_admin', lambda: False)() or
+        user.is_superuser or
+        user.is_staff or
+        getattr(user, 'rol', '') in ('admin', 'gerencia', 'superadmin')
+    )
+    if not es_admin_o_staff:
+        messages.error(request, 'No tienes permisos para enviar certificados por correo.')
+        return redirect('certificado-lista')
+
+    destinatario = request.POST.get('email') or None
+    from apps.notificaciones.emails import enviar_email_certificado
+    ok, dest_or_err = enviar_email_certificado(certificado, destinatario=destinatario, request=request)
+
+    if ok:
+        messages.success(request, f'✅ Certificado {certificado.codigo_certificado} enviado exitosamente con su PDF adjunto a {dest_or_err}.')
+    else:
+        messages.error(request, f'❌ No se pudo enviar el certificado: {dest_or_err}')
+
+    next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or '/certificados/'
+    return redirect(next_url)
+
+
 @method_decorator(login_required, name='dispatch')
 class ListaCertificadosView(View):
     template_name = 'certificados/lista.html'
@@ -562,6 +595,15 @@ class GeneradorPageView(View):
                     )
 
                     messages.success(request, f"Certificado {certificado.codigo_certificado} generado exitosamente con el formato oficial Redimir.")
+
+                    # Envío automático por correo si está seleccionado
+                    if request.POST.get('enviar_email') == '1':
+                        from apps.notificaciones.emails import enviar_email_certificado
+                        ok, dest_or_err = enviar_email_certificado(certificado, request=request)
+                        if ok:
+                            messages.success(request, f"📧 Certificado enviado automáticamente con PDF adjunto a {dest_or_err}.")
+                        else:
+                            messages.warning(request, f"⚠️ Certificado generado, pero hubo un detalle al enviar el correo: {dest_or_err}")
 
             except Empresa.DoesNotExist:
                 error = 'Empresa no encontrada.'

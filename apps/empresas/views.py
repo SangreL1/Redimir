@@ -934,6 +934,30 @@ class EstadoDePagoEliminarView(View):
 
 
 @method_decorator(login_required, name='dispatch')
+class EstadoDePagoEnviarEmailView(View):
+    """Envía el desglose comercial del Estado de Pago al cliente por correo."""
+    def post(self, request, pk):
+        if not (request.user.rol in ('admin', 'gerencia') or request.user.is_staff):
+            messages.error(request, 'Acceso denegado.')
+            return redirect('estados-de-pago-lista')
+
+        from .models import EstadoDePago
+        edp = get_object_or_404(EstadoDePago, pk=pk)
+        destinatario = request.POST.get('email') or None
+
+        from apps.notificaciones.emails import enviar_email_edp
+        ok, msg = enviar_email_edp(edp, destinatario=destinatario)
+
+        if ok:
+            messages.success(request, f'✅ Estado de Pago {edp.numero_edp} enviado exitosamente al cliente ({msg}).')
+        else:
+            messages.error(request, f'❌ Error al enviar el Estado de Pago: {msg}')
+
+        next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or f'/estados-de-pago/{edp.pk}/'
+        return redirect(next_url)
+
+
+@method_decorator(login_required, name='dispatch')
 class TarifaEmpresaGestionView(View):
     """Gestión de tarifarios comerciales personalizados por cliente y material."""
     template_name = 'empresas/tarifas.html'

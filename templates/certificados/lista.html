@@ -41,9 +41,17 @@
                     <td><strong style="color: #95BF3C;">{{ cert.total_reciclables_kg|add:cert.total_rsd_kg|floatformat:1 }} kg</strong></td>
                     <td>{{ cert.fecha_generacion|date:"d/m/Y H:i" }}</td>
                     <td class="text-center">
-                        <a href="{% url 'descargar_certificado' cert.id %}" class="btn btn-sm btn-success-redimir" style="padding: 4px 12px; font-size: 0.85rem;">
-                            <i class="fas fa-download me-1"></i> PDF
-                        </a>
+                        <div class="d-flex justify-content-center gap-1">
+                            <a href="{% url 'descargar_certificado' cert.id %}" class="btn btn-sm btn-success-redimir" style="padding: 4px 10px; font-size: 0.82rem;" title="Descargar PDF">
+                                <i class="fas fa-download me-1"></i> PDF
+                            </a>
+                            <form method="post" action="{% url 'enviar_certificado_email' cert.id %}" class="d-inline" onsubmit="return confirm('¿Enviar certificado {{ cert.codigo_certificado }} con PDF adjunto al correo {{ cert.empresa.email_contacto }}?');">
+                                {% csrf_token %}
+                                <button type="submit" class="btn btn-sm btn-primary-redimir" style="padding: 4px 10px; font-size: 0.82rem; background-color: #006BB8;" title="Enviar por correo a {{ cert.empresa.email_contacto }}">
+                                    <i class="fas fa-envelope me-1"></i> Enviar
+                                </button>
+                            </form>
+                        </div>
                     </td>
                 </tr>
                 {% empty %}

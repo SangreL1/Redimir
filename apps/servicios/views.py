@@ -575,8 +575,11 @@ class ValidacionesPendientesView(View):
 
 
 def _notificar_cliente(servicio, evento):
-    """Notifica al usuario empresa cuando el retiro es validado."""
+    """Notifica al usuario empresa cuando el retiro es validado (en app y por correo)."""
     from apps.notificaciones.models import Notificacion
+    from apps.notificaciones.emails import enviar_email_retiro_validado
+
+    # 1. Notificación interna en plataforma
     try:
         usuario_empresa = servicio.empresa.trabajadores.filter(rol='empresa', is_active=True).first()
         if usuario_empresa:
@@ -589,6 +592,35 @@ def _notificar_cliente(servicio, evento):
             )
     except Exception:
         pass
+
+    # 2. Envío formal de comprobante de retiro por correo
+    try:
+        enviar_email_retiro_validado(servicio)
+    except Exception:
+        pass
+
+
+@method_decorator(login_required, name='dispatch')
+class ServicioEnviarEmailView(View):
+    """Reenvía el comprobante de retiro por correo al cliente."""
+    def post(self, request, pk):
+        if not (_es_admin(request.user) or request.user.rol in ('gerencia', 'admin') or request.user.is_staff):
+            messages.error(request, 'Sin permisos para realizar esta acción.')
+            return redirect('servicios-lista')
+
+        servicio = get_object_or_404(Servicio, pk=pk)
+        destinatario = request.POST.get('email') or None
+
+        from apps.notificaciones.emails import enviar_email_retiro_validado
+        ok, msg = enviar_email_retiro_validado(servicio, destinatario=destinatario)
+
+        if ok:
+            messages.success(request, f'✅ Comprobante del retiro #{servicio.pk} enviado con éxito al cliente ({msg}).')
+        else:
+            messages.error(request, f'❌ Error al enviar el comprobante de retiro: {msg}')
+
+        next_url = request.POST.get('next') or request.META.get('HTTP_REFERER') or f'/servicios/{servicio.pk}/'
+        return redirect(next_url)
 
 
 def _notificar_operador_observacion(servicio, observacion):

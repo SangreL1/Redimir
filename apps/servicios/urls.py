@@ -2,7 +2,7 @@ from django.urls import path
 from .views import (
     CrearServicioView, ListaServiciosView, DetalleServicioView,
     RegistrarRetiroView, RegistroExitosoView, ValidacionesPendientesView,
-    EditarServicioRegistroView,
+    EditarServicioRegistroView, ServicioEnviarEmailView,
 )
 
 urlpatterns = [
@@ -11,6 +11,7 @@ urlpatterns = [
     path('servicios/',                    ListaServiciosView.as_view(),       name='servicios-lista'),
     path('servicios/<int:pk>/',           DetalleServicioView.as_view(),      name='servicio-detalle'),
     path('servicios/<int:pk>/editar/',    EditarServicioRegistroView.as_view(), name='servicio-editar'),
+    path('servicios/<int:pk>/enviar-email/', ServicioEnviarEmailView.as_view(), name='servicio-enviar-email'),
 
     # Flujo operador
     path('servicios/<int:pk>/registrar/', RegistrarRetiroView.as_view(),      name='registrar-retiro'),
