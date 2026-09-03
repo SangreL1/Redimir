@@ -41,8 +41,8 @@
         </a>
         <form method="post" action="{% url 'enviar_certificado_email' certificado.id %}" style="display:inline;" onsubmit="return confirm('¿Enviar certificado con PDF adjunto al correo {{ certificado.empresa.email_contacto }}?');">
             {% csrf_token %}
-            <button type="submit" class="btn-primary-redimir" style="background-color: #006BB8;">
-                <i class="fas fa-envelope me-2"></i>Enviar PDF por Correo a {{ certificado.empresa.email_contacto }}
+            <button type="submit" class="btn btn-sm text-white shadow-sm" style="background-color: #006BB8; border: none; border-radius: 6px; font-weight: 600; padding: 8px 16px; color: #FFFFFF !important;" title="Enviar a {{ certificado.empresa.email_contacto }}">
+                <i class="fas fa-envelope me-2"></i>Enviar PDF por Correo
             </button>
         </form>
     </div>
