@@ -347,22 +347,8 @@ def generar_pdf_certificado(certificado, request=None):
 
     elements.append(KeepTogether(t_footer))
 
-    # Decoración de esquina canvas
-    def draw_canvas(canvas, document):
-        canvas.saveState()
-        wave_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'cert_corner_wave.png')
-        if os.path.exists(wave_path):
-            try:
-                from PIL import Image as PILImage
-                im_w = PILImage.open(wave_path)
-                w = 70 * mm
-                h = w * (im_w.height / im_w.width)
-                canvas.drawImage(wave_path, page_width - w, 0, width=w, height=h, mask='auto')
-            except Exception:
-                pass
-        canvas.restoreState()
-
-    doc.build(elements, onFirstPage=draw_canvas, onLaterPages=draw_canvas)
+    # Generar documento sin fondo de esquina ("grieta")
+    doc.build(elements)
 
     pdf_bytes = buffer.getvalue()
     buffer.close()
@@ -984,22 +970,8 @@ def generar_pdf_eco_equivalencia(datos, request=None):
     ]))
     els.append(KeepTogether(t_foot))
 
-    # ── 10. DECORACIÓN CANVAS (ola azul esquina inferior) ────
-    def draw_canvas(canvas, document):
-        canvas.saveState()
-        wave_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'cert_corner_wave.png')
-        if os.path.exists(wave_path):
-            try:
-                from PIL import Image as PILImage
-                im_w = PILImage.open(wave_path)
-                w = 70 * mm
-                h = w * (im_w.height / im_w.width)
-                canvas.drawImage(wave_path, page_width - w, 0, width=w, height=h, mask='auto')
-            except Exception:
-                pass
-        canvas.restoreState()
-
-    doc.build(els, onFirstPage=draw_canvas, onLaterPages=draw_canvas)
+    # ── 10. GENERAR DOCUMENTO (sin fondo de esquina / grieta) ────
+    doc.build(els)
     pdf_bytes = buf.getvalue()
     buf.close()
     return pdf_bytes
