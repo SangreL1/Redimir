@@ -737,7 +737,7 @@ def generar_pdf_eco_equivalencia(datos, request=None):
 
     # Estilos de texto
     st_date  = ps('EcoDate',  fontName=FL, fontSize=10, leading=13, textColor=NEGRO, alignment=2)
-    st_title = ps('EcoTitle', fontName=FX, fontSize=22, leading=26, textColor=NEGRO, alignment=1, spaceAfter=6)
+    st_title = ps('EcoTitle', fontName=FX, fontSize=20, leading=24, textColor=NEGRO, alignment=1, spaceAfter=4)
     st_intro = ps('EcoIntro', fontName=FR, fontSize=10, leading=14, textColor=GRIS,  alignment=0)
     st_head  = ps('EcoHead',  fontName=FB, fontSize=9.5,leading=12, textColor=NEGRO, alignment=0)
     st_label = ps('EcoLabel', fontName=FS, fontSize=10, leading=14, textColor=NEGRO, alignment=0)
@@ -771,7 +771,7 @@ def generar_pdf_eco_equivalencia(datos, request=None):
         ('RIGHTPADDING',  (0,0), (-1,-1), 0),
     ]))
     els.append(t_header)
-    els.append(Spacer(1, 5))
+    els.append(Spacer(1, 3))
 
     # ── 2. LÍNEA DIVISORA (Verde | Negro) ────────────────────
     t_line = Table([['', '']], colWidths=[237, 238], rowHeights=[2])
@@ -784,7 +784,7 @@ def generar_pdf_eco_equivalencia(datos, request=None):
         ('RIGHTPADDING',  (0,0), (-1,-1), 0),
     ]))
     els.append(t_line)
-    els.append(Spacer(1, 12))
+    els.append(Spacer(1, 7))
 
     # ── 3. FECHA (derecha) ────────────────────────────────────
     DIAS_ES  = {0:'LUNES',1:'MARTES',2:'MIÉRCOLES',3:'JUEVES',4:'VIERNES',5:'SÁBADO',6:'DOMINGO'}
@@ -793,11 +793,11 @@ def generar_pdf_eco_equivalencia(datos, request=None):
     now = timezone.now()
     fecha_txt = f"{DIAS_ES[now.weekday()]}, {now.day:02d} DE {MESES_UP[now.month]} {now.year}"
     els.append(Paragraph(fecha_txt, st_date))
-    els.append(Spacer(1, 14))
+    els.append(Spacer(1, 8))
 
     # ── 4. TÍTULO ─────────────────────────────────────────────
     els.append(Paragraph('Certificado de Eco-Equivalencia', st_title))
-    els.append(Spacer(1, 14))
+    els.append(Spacer(1, 8))
 
     # ── 5. PÁRRAFO INTRODUCTORIO ──────────────────────────────
     empresa    = datos['empresa']
@@ -811,7 +811,7 @@ def generar_pdf_eco_equivalencia(datos, request=None):
         f"<b>{mes_titulo}</b> para la empresa <b>{nombre_emp}</b>."
     )
     els.append(Paragraph(intro_txt, st_intro))
-    els.append(Spacer(1, 16))
+    els.append(Spacer(1, 8))
 
     # ── 6. TABLA DE RESIDUOS (sin bordes, minimalista) ───────
     materiales_kg = datos.get('materiales_kg', {})
@@ -840,21 +840,21 @@ def generar_pdf_eco_equivalencia(datos, request=None):
     t_residuos.setStyle(TableStyle([
         ('LINEBELOW',     (0,0), (-1,0), 0.5, GRIS_B),
         ('LINEABOVE',     (0,n_filas-1), (-1,n_filas-1), 0.5, GRIS_B),
-        ('TOPPADDING',    (0,0), (-1,-1), 5),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('TOPPADDING',    (0,0), (-1,-1), 3),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 3),
         ('LEFTPADDING',   (0,0), (-1,-1), 0),
         ('RIGHTPADDING',  (0,0), (-1,-1), 8),
         ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
     ]))
     els.append(t_residuos)
-    els.append(Spacer(1, 18))
+    els.append(Spacer(1, 8))
 
     # ── 7. ENLACE A BENEFICIOS ────────────────────────────────
     els.append(Paragraph(
         'De esta forma, generamos los siguientes beneficios ambientales:',
         st_intro
     ))
-    els.append(Spacer(1, 14))
+    els.append(Spacer(1, 6))
 
     # ── 8. TARJETAS DE BENEFICIOS AMBIENTALES ────────────────
     beneficios = calcular_eco_beneficios(materiales_kg)
@@ -870,7 +870,7 @@ def generar_pdf_eco_equivalencia(datos, request=None):
     agua_val  = f"{fmt_num(beneficios['agua'])} L"
     arb_val   = str(max(1, int(beneficios['arboles']))) if total_kg > 0 else '0'
 
-    ICON_SIZE = 18 * mm
+    ICON_SIZE = 13 * mm
     CARD_W    = 148
 
     def make_icon_img(filename):
@@ -916,8 +916,8 @@ def generar_pdf_eco_equivalencia(datos, request=None):
     card_style = [
         ('VALIGN',        (0,0), (-1,-1), 'TOP'),
         ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
-        ('TOPPADDING',    (0,0), (-1,-1), 8),
-        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('TOPPADDING',    (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
         ('LEFTPADDING',   (0,0), (-1,-1), 6),
         ('RIGHTPADDING',  (0,0), (-1,-1), 6),
     ]
@@ -929,7 +929,7 @@ def generar_pdf_eco_equivalencia(datos, request=None):
         ('BOX', (2,0), (2,0), 0.6, GRIS_B),
     ]))
     els.append(t_b1)
-    els.append(Spacer(1, 6))
+    els.append(Spacer(1, 4))
 
     t_b2 = Table([[c4, c5, '']], colWidths=[CARD_W, CARD_W, CARD_W])
     t_b2.setStyle(TableStyle(card_style + [
@@ -937,7 +937,7 @@ def generar_pdf_eco_equivalencia(datos, request=None):
         ('BOX', (1,0), (1,0), 0.6, GRIS_B),
     ]))
     els.append(t_b2)
-    els.append(Spacer(1, 28))
+    els.append(Spacer(1, 12))
 
     # ── 9. FIRMA ─────────────────────────────────────────────
     resp_nombre = datos.get('responsable_nombre', 'Leslie Plaza Vargas')
@@ -956,10 +956,10 @@ def generar_pdf_eco_equivalencia(datos, request=None):
     else:
         firma_img = Spacer(1, 20)
 
+    # La imagen firma_directora.png ya es el nombre en negrita — NO repetirlo
     sig_html = (
-        f"<font fontName=\'{FB}\' size=12>{resp_nombre}</font><br/>"
-        f"<font fontName=\'{FR}\' size=9.5 color=\'#737373\'>{resp_cargo}</font><br/>"
-        f"<font fontName=\'{FR}\' size=9.5 color=\'#737373\'>REDIMIR SpA \u2022 Gestión de Residuos</font>"
+        f"<font fontName=\'{FR}\' size=9 color=\'#737373\'>{resp_cargo}</font><br/>"
+        f"<font fontName=\'{FR}\' size=9 color=\'#737373\'>REDIMIR SpA \u2022 Gestión de Residuos</font>"
     )
     sig_p  = Paragraph(sig_html, ps('SigEco', leading=14))
     left_b = [firma_img, Spacer(1, 4), sig_p]
