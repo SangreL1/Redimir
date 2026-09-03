@@ -6,7 +6,7 @@ from .views import (
     SolicitudAceptarView, SolicitudCompletarView, SolicitudCancelarView,
     EstadoDePagoListView, EstadoDePagoCrearView,
     EstadoDePagoDetalleView, EstadoDePagoEditarView, EstadoDePagoAnularView, EstadoDePagoEliminarView,
-    EstadoDePagoEnviarEmailView,
+    EstadoDePagoEnviarEmailView, descargar_edp_pdf,
     TarifaEmpresaGestionView, APITarifasEmpresaView,
 )
 
@@ -37,6 +37,7 @@ urlpatterns = [
     path('estados-de-pago/<int:pk>/anular/', EstadoDePagoAnularView.as_view(), name='estados-de-pago-anular'),
     path('estados-de-pago/<int:pk>/eliminar/', EstadoDePagoEliminarView.as_view(), name='estados-de-pago-eliminar'),
     path('estados-de-pago/<int:pk>/enviar-email/', EstadoDePagoEnviarEmailView.as_view(), name='estados-de-pago-enviar-email'),
+    path('estados-de-pago/<int:pk>/descargar-pdf/', descargar_edp_pdf, name='edp-descargar-pdf'),
     path('empresas/tarifas/', TarifaEmpresaGestionView.as_view(), name='tarifas-empresa'),
 
     # API Tarifario en tiempo real

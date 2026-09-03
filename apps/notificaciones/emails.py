@@ -283,6 +283,19 @@ def enviar_email_edp(edp, destinatario=None):
             to=[email_to],
         )
         email.content_subtype = "html"
+
+        # Generar y adjuntar documento oficial PDF del EDP
+        try:
+            from apps.empresas.pdf import generar_pdf_edp
+            pdf_bytes = generar_pdf_edp(edp)
+            email.attach(
+                f"Estado_de_Pago_{edp.numero_edp}.pdf",
+                pdf_bytes,
+                'application/pdf'
+            )
+        except Exception as e:
+            logger.error(f"Error adjuntando PDF a EDP {edp.numero_edp}: {e}")
+
         email.send(fail_silently=False)
         logger.info(f"EDP {edp.numero_edp} enviado por correo a {email_to}")
         return True, email_to

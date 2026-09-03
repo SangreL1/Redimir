@@ -957,6 +957,25 @@ class EstadoDePagoEnviarEmailView(View):
         return redirect(next_url)
 
 
+@login_required
+def descargar_edp_pdf(request, pk):
+    """Descargar documento oficial del Estado de Pago en formato PDF."""
+    if not (request.user.rol in ('admin', 'gerencia') or request.user.is_staff or getattr(request.user, 'empresa', None)):
+        messages.error(request, 'Acceso denegado.')
+        return redirect('dashboard')
+
+    from .models import EstadoDePago
+    edp = get_object_or_404(EstadoDePago, pk=pk)
+
+    from .pdf import generar_pdf_edp
+    pdf_bytes = generar_pdf_edp(edp)
+
+    from django.http import HttpResponse
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = f'attachment; filename="Estado_de_Pago_{edp.numero_edp}.pdf"'
+    return response
+
+
 @method_decorator(login_required, name='dispatch')
 class TarifaEmpresaGestionView(View):
     """Gestión de tarifarios comerciales personalizados por cliente y material."""
