@@ -6,7 +6,7 @@ from datetime import datetime
 
 from django.shortcuts import render, get_object_or_404
 from django.views import View
-from django.http import FileResponse, HttpResponseForbidden, HttpResponseNotFound, HttpResponse
+from django.http import FileResponse, HttpResponseForbidden, HttpResponseNotFound, HttpResponse, JsonResponse
 from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.utils import timezone
@@ -607,3 +607,591 @@ class VerificarCertificadoView(View):
                 'certificado': None,
                 'error': f'El código o folio "{codigo}" no corresponde a ningún certificado válido en el sistema Redimir.'
             })
+
+
+# ============================================================
+# CERTIFICADO DE ECO-EQUIVALENCIA
+# ============================================================
+
+# Factores de eco-equivalencia por material (unidad: por kg reciclado)
+ECO_FACTORES = {
+    'pellon':    {'energia': 3.5,  'co2': 1.1,  'agua': 50,  'arboles': 1/45, 'combustible': 0.15},
+    'carton':    {'energia': 3.5,  'co2': 1.1,  'agua': 50,  'arboles': 1/45, 'combustible': 0.15},
+    'papel':     {'energia': 3.5,  'co2': 1.1,  'agua': 50,  'arboles': 1/45, 'combustible': 0.15},
+    'plastico':  {'energia': 5.8,  'co2': 2.0,  'agua': 30,  'arboles': 0,    'combustible': 0.30},
+    'aluminio':  {'energia': 14.0, 'co2': 9.0,  'agua': 40,  'arboles': 0,    'combustible': 0.50},
+    'vidrio':    {'energia': 0.8,  'co2': 0.3,  'agua': 10,  'arboles': 0,    'combustible': 0.05},
+    'film':      {'energia': 5.8,  'co2': 2.0,  'agua': 30,  'arboles': 0,    'combustible': 0.30},
+    'carretes':  {'energia': 3.5,  'co2': 1.1,  'agua': 50,  'arboles': 0,    'combustible': 0.15},
+    'sunchos':   {'energia': 5.8,  'co2': 2.0,  'agua': 30,  'arboles': 0,    'combustible': 0.30},
+}
+
+# Mapeo de nombres de tipo_material de BD a clave de ECO_FACTORES
+MATERIAL_KEYS = {
+    'pellon':   'pellon',
+    'carton':   'carton',
+    'papel':    'papel',
+    'pet':      'plastico',
+    'plastico': 'plastico',
+    'latas':    'aluminio',
+    'aluminio': 'aluminio',
+    'vidrio':   'vidrio',
+    'film':     'film',
+    'carretes': 'carretes',
+    'sunchos':  'sunchos',
+}
+
+# Materiales que se muestran en el certificado (en orden)
+MATERIALES_CERT = [
+    ('pellon',   'Pellón'),
+    ('carton',   'Cartón'),
+    ('papel',    'Papel'),
+    ('plastico', 'Botellas Plásticas'),
+    ('aluminio', 'Latas de Aluminio'),
+    ('vidrio',   'Botellas de Vidrio'),
+    ('film',     'Film LDPE'),
+    ('carretes', 'Carretes'),
+    ('sunchos',  'Sunchos'),
+]
+
+
+def calcular_eco_beneficios(materiales_kg):
+    """Calcula los beneficios ambientales totales dados kg por tipo de material.
+    materiales_kg = {'carton': 101, 'plastico': 20, ...}
+    """
+    energia = co2 = agua = arboles = combustible = 0.0
+    for mat_key, kg in materiales_kg.items():
+        factores = ECO_FACTORES.get(mat_key, {})
+        if factores and kg:
+            kg = float(kg)
+            energia    += kg * factores['energia']
+            co2        += kg * factores['co2']
+            agua       += kg * factores['agua']
+            arboles    += kg * factores['arboles']
+            combustible += kg * factores['combustible']
+    return {
+        'energia':     round(energia),
+        'co2':         round(co2),
+        'agua':        round(agua),
+        'arboles':     round(arboles),
+        'combustible': round(combustible),
+    }
+
+
+def generar_pdf_eco_equivalencia(datos, request=None):
+    """
+    Genera el PDF del Certificado de Eco-Equivalencia con ReportLab.
+    datos = {
+        'empresa': Empresa instance,
+        'mes_nombre': 'enero',
+        'anio': 2022,
+        'materiales_kg': {'carton': 101, 'plastico': 20, ...},
+        'codigo': 'ECO-001',
+        'responsable_nombre': 'Leslie Plaza Vargas',
+        'responsable_cargo': 'DIRECTORA GENERAL',
+    }
+    Retorna bytes del PDF.
+    """
+    # ── Fuentes ──────────────────────────────────────────────
+    fonts_dir = os.path.join(settings.BASE_DIR, 'static', 'fonts')
+    reg_path  = os.path.join(fonts_dir, 'Montserrat-Regular.ttf')
+    bold_path = os.path.join(fonts_dir, 'Montserrat-Bold.ttf')
+    xbold_path = os.path.join(fonts_dir, 'Montserrat-ExtraBold.ttf')
+    light_path = os.path.join(fonts_dir, 'Montserrat-Light.ttf')
+    semi_path  = os.path.join(fonts_dir, 'Montserrat-SemiBold.ttf')
+
+    FR = 'Montserrat'        if os.path.exists(reg_path)  else 'Helvetica'
+    FB = 'Montserrat-Bold'   if os.path.exists(bold_path) else 'Helvetica-Bold'
+    FX = 'Montserrat-ExtraBold' if os.path.exists(xbold_path) else 'Helvetica-Bold'
+    FL = 'Montserrat-Light'  if os.path.exists(light_path) else 'Helvetica'
+    FS = 'Montserrat-SemiBold' if os.path.exists(semi_path) else 'Helvetica-Bold'
+
+    if FR == 'Montserrat':
+        try:
+            pdfmetrics.registerFont(TTFont('Montserrat', reg_path))
+            pdfmetrics.registerFont(TTFont('Montserrat-Bold', bold_path))
+            pdfmetrics.registerFont(TTFont('Montserrat-ExtraBold', xbold_path))
+            pdfmetrics.registerFont(TTFont('Montserrat-Light', light_path))
+            pdfmetrics.registerFont(TTFont('Montserrat-SemiBold', semi_path))
+        except Exception:
+            pass
+
+    # ── Colores ───────────────────────────────────────────────
+    AZUL  = HexColor('#006BB8')
+    VERDE = HexColor('#95BF3C')
+    NEGRO = HexColor('#000000')
+    GRIS  = HexColor('#737373')
+    GRIS_L = HexColor('#F5F5F5')
+
+    page_width, page_height = A4
+    buf = BytesIO()
+    doc = SimpleDocTemplate(
+        buf, pagesize=A4,
+        leftMargin=22*mm, rightMargin=22*mm,
+        topMargin=18*mm, bottomMargin=18*mm
+    )
+    els = []
+
+    # ── Estilos ───────────────────────────────────────────────
+    def ps(name, **kw):
+        return ParagraphStyle(name, **kw)
+
+    st_date  = ps('EcoDate',  fontName=FL, fontSize=10, leading=13, textColor=NEGRO, alignment=2)
+    st_title = ps('EcoTitle', fontName=FX, fontSize=22, leading=26, textColor=NEGRO, alignment=1, spaceAfter=6)
+    st_intro = ps('EcoIntro', fontName=FR, fontSize=10, leading=14, textColor=GRIS,  alignment=4)
+    st_label = ps('EcoLabel', fontName=FS, fontSize=10, leading=13, textColor=NEGRO)
+    st_val   = ps('EcoVal',   fontName=FR, fontSize=10, leading=13, textColor=NEGRO)
+    st_head  = ps('EcoHead',  fontName=FB, fontSize=9,  leading=12, textColor=NEGRO, alignment=1)
+    st_tot   = ps('EcoTot',   fontName=FB, fontSize=10, leading=13, textColor=NEGRO)
+    st_icon_top = ps('EcoIconT', fontName=FB, fontSize=8.5, leading=11, textColor=AZUL,  alignment=1)
+    st_icon_sub = ps('EcoIconS', fontName=FR, fontSize=7.5, leading=10, textColor=GRIS,  alignment=1)
+    st_ben   = ps('EcoBen',   fontName=FR, fontSize=9,  leading=12, textColor=NEGRO)
+
+    # ── 1. ENCABEZADO ─────────────────────────────────────────
+    logo_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'redimir_logo_cert.png')
+    if os.path.exists(logo_path):
+        logo_img = Image(logo_path, width=42*mm, height=42*mm*(91/558))
+    else:
+        logo_img = Paragraph('<b><font size=14 color="#006BB8">REDIMIR</font></b>', st_label)
+
+    contact_html = (
+        f"<font fontName='{FR}' size=8>"
+        "<b>(56) 9 4252 5059</b><br/>"
+        "<b>www.redimir.cl | contacto@redimir.cl</b><br/>"
+        "<b>Pasaje Trans DyF 1643, Calama</b>"
+        "</font>"
+    )
+    contact_p = Paragraph(contact_html, ps('EcoContact', fontName=FR, fontSize=8, leading=11, alignment=2))
+
+    t_header = Table([[logo_img, contact_p]], colWidths=[180, 295])
+    t_header.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+        ('ALIGN',  (0,0), (0,0),  'LEFT'),
+        ('ALIGN',  (1,0), (1,0),  'RIGHT'),
+        ('TOPPADDING',    (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING',   (0,0), (-1,-1), 0),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 0),
+    ]))
+    els.append(t_header)
+    els.append(Spacer(1, 5))
+
+    # ── 2. LÍNEA SEPARADORA ───────────────────────────────────
+    t_line = Table([['', '']], colWidths=[237, 238], rowHeights=[2])
+    t_line.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (0,0), VERDE),
+        ('BACKGROUND', (1,0), (1,0), NEGRO),
+        ('TOPPADDING',    (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('LEFTPADDING',   (0,0), (-1,-1), 0),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 0),
+    ]))
+    els.append(t_line)
+    els.append(Spacer(1, 12))
+
+    # ── 3. FECHA ──────────────────────────────────────────────
+    DIAS_ES  = {0:'LUNES',1:'MARTES',2:'MIÉRCOLES',3:'JUEVES',4:'VIERNES',5:'SÁBADO',6:'DOMINGO'}
+    MESES_UP = {1:'ENERO',2:'FEBRERO',3:'MARZO',4:'ABRIL',5:'MAYO',6:'JUNIO',
+                7:'JULIO',8:'AGOSTO',9:'SEPTIEMBRE',10:'OCTUBRE',11:'NOVIEMBRE',12:'DICIEMBRE'}
+    now = timezone.now()
+    fecha_txt = f"{DIAS_ES[now.weekday()]}, {now.day:02d} DE {MESES_UP[now.month]} {now.year}"
+    els.append(Paragraph(fecha_txt, st_date))
+    els.append(Spacer(1, 14))
+
+    # ── 4. TÍTULO ─────────────────────────────────────────────
+    els.append(Paragraph('Certificado de Eco-Equivalencia', st_title))
+    els.append(Spacer(1, 14))
+
+    # ── 5. PÁRRAFO INTRODUCTORIO ──────────────────────────────
+    empresa   = datos['empresa']
+    mes_titulo = datos.get('mes_nombre', 'el mes').capitalize()
+    anio      = datos.get('anio', now.year)
+    ciudad    = getattr(empresa, 'ciudad', '') or getattr(empresa, 'comuna', '') or 'Calama'
+    intro_txt = (
+        f"Informe de Gestión de Residuos y Eco-Equivalencia del mes de "
+        f"<b>{mes_titulo}</b> para la empresa <b>{empresa.nombre}</b> {ciudad}."
+    )
+    els.append(Paragraph(intro_txt, st_intro))
+    els.append(Spacer(1, 16))
+
+    # ── 6. TABLA DE RESIDUOS ──────────────────────────────────
+    materiales_kg = datos.get('materiales_kg', {})
+    total_kg = sum(float(v) for v in materiales_kg.values() if v)
+
+    col_w = [230, 120]
+    tabla_data = [
+        [Paragraph('RESIDUOS', st_head), Paragraph('CANTIDAD', st_head)]
+    ]
+    for mat_key, mat_label in MATERIALES_CERT:
+        kg_val = float(materiales_kg.get(mat_key, 0))
+        kg_str = f"{kg_val:g} kg." if kg_val else "0 kg."
+        tabla_data.append([
+            Paragraph(f"{mat_label}:", st_label),
+            Paragraph(kg_str, st_val),
+        ])
+
+    total_str = f"{total_kg:g} kg." if total_kg else "0 kg."
+    tabla_data.append([
+        Paragraph('TOTAL:', st_tot),
+        Paragraph(f"<b>{total_str}</b>", st_tot),
+    ])
+
+    t_residuos = Table(tabla_data, colWidths=col_w)
+    n_filas = len(tabla_data)
+    t_residuos.setStyle(TableStyle([
+        # Encabezado
+        ('BACKGROUND',   (0,0), (-1,0), GRIS_L),
+        ('TEXTCOLOR',    (0,0), (-1,0), NEGRO),
+        ('LINEBELOW',    (0,0), (-1,0), 0.8, GRIS),
+        # Fila total
+        ('LINEABOVE',    (0,n_filas-1), (-1,n_filas-1), 0.8, GRIS),
+        # General
+        ('TOPPADDING',    (0,0), (-1,-1), 5),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 5),
+        ('LEFTPADDING',   (0,0), (-1,-1), 8),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 8),
+        ('VALIGN',        (0,0), (-1,-1), 'MIDDLE'),
+        ('BOX',           (0,0), (-1,-1), 0.5, HexColor('#DDDDDD')),
+        ('ROWBACKGROUNDS',(0,1), (-1,n_filas-2), [HexColor('#FFFFFF'), HexColor('#F9F9F9')]),
+    ]))
+    els.append(t_residuos)
+    els.append(Spacer(1, 18))
+
+    # ── 7. BENEFICIOS AMBIENTALES ─────────────────────────────
+    beneficios = calcular_eco_beneficios(materiales_kg)
+
+    els.append(Paragraph(
+        'De esta forma, generamos los siguientes beneficios ambientales:',
+        st_intro
+    ))
+    els.append(Spacer(1, 14))
+
+    # Iconos SVG incrustados como PNG; usamos símbolos UTF-8 como fallback visual
+    # Creamos una tabla 3x2 de tarjetas de beneficios
+    def beneficio_cell(icono_txt, valor_txt, linea1, linea2=''):
+        content = [
+            Paragraph(f"<b><font size=20 color='#006BB8'>{icono_txt}</font></b>", st_icon_top),
+            Spacer(1, 2),
+            Paragraph(f"<b><font size=13 color='#006BB8'>{valor_txt}</font></b>", st_icon_top),
+            Spacer(1, 1),
+            Paragraph(f"<font size=8 color='#555'>{linea1}</font>", st_icon_sub),
+        ]
+        if linea2:
+            content.append(Paragraph(f"<font size=8 color='#555'>{linea2}</font>", st_icon_sub))
+        return content
+
+    comb_val  = f"{beneficios['combustible']:,} L"
+    energ_val = f"{beneficios['energia']:,} kW"
+    co2_val   = f"{beneficios['co2']:,} Kg"
+    agua_val  = f"{beneficios['agua']:,} L"
+    arb_val   = str(max(1, beneficios['arboles'])) if total_kg > 0 else '0'
+
+    c1 = beneficio_cell('⛽', comb_val,  'de ahorro en', 'combustibles fósiles')
+    c2 = beneficio_cell('⚡', energ_val, 'de ahorro en', 'energía eléctrica')
+    c3 = beneficio_cell('🌿', co2_val,   'de reducción en', 'emisiones de CO₂')
+    c4 = beneficio_cell('💧', agua_val,  'de ahorro en agua', '')
+    c5 = beneficio_cell('🌳', arb_val,   'árboles adultos', 'no talados')
+
+    # Fila 1: combustible, energía, CO2
+    t_b1 = Table([[c1, c2, c3]], colWidths=[155, 155, 155])
+    t_b1.setStyle(TableStyle([
+        ('VALIGN',        (0,0), (-1,-1), 'TOP'),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+        ('TOPPADDING',    (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LEFTPADDING',   (0,0), (-1,-1), 4),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 4),
+        ('BOX',           (0,0), (0,0), 0.5, HexColor('#DDDDDD')),
+        ('BOX',           (1,0), (1,0), 0.5, HexColor('#DDDDDD')),
+        ('BOX',           (2,0), (2,0), 0.5, HexColor('#DDDDDD')),
+        ('ROUNDEDCORNERS',(0,0), (-1,-1), 6),
+    ]))
+    els.append(t_b1)
+    els.append(Spacer(1, 6))
+
+    # Fila 2: agua, árboles (centrado con padding)
+    t_b2 = Table([[c4, c5, '']], colWidths=[155, 155, 155])
+    t_b2.setStyle(TableStyle([
+        ('VALIGN',        (0,0), (-1,-1), 'TOP'),
+        ('ALIGN',         (0,0), (-1,-1), 'CENTER'),
+        ('TOPPADDING',    (0,0), (-1,-1), 8),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('LEFTPADDING',   (0,0), (-1,-1), 4),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 4),
+        ('BOX',           (0,0), (0,0), 0.5, HexColor('#DDDDDD')),
+        ('BOX',           (1,0), (1,0), 0.5, HexColor('#DDDDDD')),
+    ]))
+    els.append(t_b2)
+    els.append(Spacer(1, 22))
+
+    # ── 8. FIRMA Y LOGO DECORATIVO ────────────────────────────
+    resp_nombre = datos.get('responsable_nombre', 'Leslie Plaza Vargas')
+    resp_cargo  = datos.get('responsable_cargo', 'DIRECTORA GENERAL')
+
+    firma_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'firma_directora.png')
+    if os.path.exists(firma_path):
+        try:
+            from PIL import Image as PILImage
+            im_s = PILImage.open(firma_path)
+            sig_w = 42 * mm
+            sig_h = sig_w * (im_s.height / im_s.width)
+            firma_img = Image(firma_path, width=sig_w, height=sig_h)
+        except Exception:
+            firma_img = Spacer(1, 15)
+    else:
+        firma_img = Spacer(1, 15)
+
+    sig_html = (
+        f"<font fontName='{FB}' size=12>{resp_nombre}</font><br/>"
+        f"<font fontName='{FR}' size=9.5 color='#737373'>{resp_cargo}</font><br/>"
+        f"<font fontName='{FR}' size=9.5 color='#737373'>REDIMIR SpA • Gestión de Residuos</font>"
+    )
+    sig_p  = Paragraph(sig_html, ps('SigEco', leading=14))
+    left_b = [firma_img, Spacer(1, 4), sig_p]
+
+    # Logo decorativo esquina derecha
+    logo_dec_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'cert_icon_bottom.png')
+    if os.path.exists(logo_dec_path):
+        logo_dec = Image(logo_dec_path, width=28*mm, height=28*mm*(334/359))
+    else:
+        logo_dec = Paragraph(
+            f"<font fontName='{FB}' size=22 color='#006BB8'>R</font>",
+            ps('RDec', alignment=1)
+        )
+
+    t_foot = Table([[left_b, logo_dec]], colWidths=[380, 95])
+    t_foot.setStyle(TableStyle([
+        ('VALIGN',        (0,0), (-1,-1), 'BOTTOM'),
+        ('ALIGN',         (1,0), (1,0),  'RIGHT'),
+        ('LEFTPADDING',   (0,0), (-1,-1), 0),
+        ('RIGHTPADDING',  (0,0), (-1,-1), 0),
+        ('TOPPADDING',    (0,0), (-1,-1), 0),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+    ]))
+    els.append(KeepTogether(t_foot))
+
+    # ── 9. DECORACIÓN CANVAS (ola azul esquina inferior derecha) ──
+    def draw_canvas(canvas, document):
+        canvas.saveState()
+        wave_path = os.path.join(settings.BASE_DIR, 'static', 'img', 'cert_corner_wave.png')
+        if os.path.exists(wave_path):
+            try:
+                from PIL import Image as PILImage
+                im_w = PILImage.open(wave_path)
+                w = 70 * mm
+                h = w * (im_w.height / im_w.width)
+                canvas.drawImage(wave_path, page_width - w, 0, width=w, height=h, mask='auto')
+            except Exception:
+                pass
+        canvas.restoreState()
+
+    doc.build(els, onFirstPage=draw_canvas, onLaterPages=draw_canvas)
+    pdf_bytes = buf.getvalue()
+    buf.close()
+    return pdf_bytes
+
+
+@login_required
+def api_datos_empresa_mes(request):
+    """
+    Endpoint AJAX: retorna los kg de reciclables de una empresa en un mes.
+    GET /certificados/eco/datos/?empresa_id=X&mes=YYYY-MM
+    """
+    empresa_id = request.GET.get('empresa_id')
+    mes_str    = request.GET.get('mes')  # 'YYYY-MM'
+
+    if not empresa_id or not mes_str:
+        return JsonResponse({'error': 'Parámetros incompletos'}, status=400)
+
+    try:
+        empresa = Empresa.objects.get(id=empresa_id)
+        year, month = int(mes_str.split('-')[0]), int(mes_str.split('-')[1])
+    except (Empresa.DoesNotExist, ValueError, IndexError):
+        return JsonResponse({'error': 'Empresa o mes inválido'}, status=400)
+
+    import calendar
+    from django.db.models import Q
+    from apps.empresas.models import SolicitudRecoleccion
+
+    p_ini = f"{year}-{month:02d}-01"
+    last_day = calendar.monthrange(year, month)[1]
+    p_fin = f"{year}-{month:02d}-{last_day:02d}"
+
+    # Acumulador por clave de material
+    materiales_kg = {k: 0.0 for k, _ in MATERIALES_CERT}
+
+    # 1. Servicios validados
+    servicios = Servicio.objects.filter(
+        empresa=empresa,
+        modulo='reciclables',
+        estado__in=['validado', 'documento_emitido', 'cerrado'],
+    ).filter(
+        Q(fecha_retiro_real__date__range=[p_ini, p_fin]) |
+        Q(fecha_retiro_real__isnull=True, fecha_validacion__date__range=[p_ini, p_fin])
+    )
+    for s in servicios:
+        reg = s.get_registro()
+        if reg:
+            mat_bd = getattr(reg, 'material', None) or ''
+            eco_key = MATERIAL_KEYS.get(mat_bd.lower(), None)
+            kg = float(getattr(reg, 'cantidad_kg', 0) or 0)
+            if eco_key and kg and eco_key in materiales_kg:
+                materiales_kg[eco_key] += kg
+
+    # 2. Solicitudes de recolección
+    solicitudes = SolicitudRecoleccion.objects.filter(
+        empresa=empresa,
+        modulo='reciclables',
+        estado__in=['pendiente', 'asignada', 'completada'],
+        fecha_solicitada__date__range=[p_ini, p_fin]
+    )
+    for sol in solicitudes:
+        mat_bd = getattr(sol, 'tipo_material', '') or ''
+        eco_key = MATERIAL_KEYS.get(mat_bd.lower(), None)
+        kg = float(getattr(sol, 'cantidad_estimada', 0) or 0)
+        if eco_key and kg and eco_key in materiales_kg:
+            materiales_kg[eco_key] += kg
+
+    # Calcular beneficios
+    beneficios = calcular_eco_beneficios(materiales_kg)
+    total_kg   = sum(materiales_kg.values())
+
+    MESES_ES = {1:'enero',2:'febrero',3:'marzo',4:'abril',5:'mayo',6:'junio',
+                7:'julio',8:'agosto',9:'septiembre',10:'octubre',11:'noviembre',12:'diciembre'}
+
+    return JsonResponse({
+        'empresa_nombre': empresa.nombre,
+        'mes_nombre': MESES_ES.get(month, 'mes'),
+        'anio': year,
+        'materiales_kg': {k: round(v, 2) for k, v in materiales_kg.items()},
+        'total_kg': round(total_kg, 2),
+        'beneficios': beneficios,
+    })
+
+
+@method_decorator(login_required, name='dispatch')
+class EcoEquivalenciaGeneradorView(View):
+    template_name = 'certificados/eco_generador.html'
+
+    def get(self, request):
+        empresas = Empresa.objects.filter(estado='aprobada', activa=True)
+        return render(request, self.template_name, {'empresas': empresas})
+
+    def post(self, request):
+        import calendar
+        from django.core.files.base import ContentFile
+
+        empresa_id = request.POST.get('empresa_id')
+        mes_str    = request.POST.get('mes')  # 'YYYY-MM'
+        empresas   = Empresa.objects.filter(estado='aprobada', activa=True)
+        error      = None
+        cert_url   = None
+        cert_code  = None
+
+        MESES_ES = {1:'enero',2:'febrero',3:'marzo',4:'abril',5:'mayo',6:'junio',
+                    7:'julio',8:'agosto',9:'septiembre',10:'octubre',11:'noviembre',12:'diciembre'}
+
+        if not empresa_id or not mes_str:
+            error = 'Selecciona una empresa y un mes.'
+        else:
+            try:
+                empresa = Empresa.objects.get(id=empresa_id)
+                year, month = int(mes_str.split('-')[0]), int(mes_str.split('-')[1])
+
+                # Leer kg desde POST (permite edición manual)
+                materiales_kg = {}
+                for mat_key, _ in MATERIALES_CERT:
+                    val = request.POST.get(f'kg_{mat_key}', '0') or '0'
+                    try:
+                        materiales_kg[mat_key] = float(val)
+                    except ValueError:
+                        materiales_kg[mat_key] = 0.0
+
+                total_kg = sum(materiales_kg.values())
+
+                p_ini = f"{year}-{month:02d}-01"
+                last_day = calendar.monthrange(year, month)[1]
+                p_fin = f"{year}-{month:02d}-{last_day:02d}"
+
+                # Crear registro de certificado en BD
+                # Mapear a campos del modelo existente
+                carton_kg  = materiales_kg.get('carton', 0) + materiales_kg.get('papel', 0)
+                plastico_kg = materiales_kg.get('plastico', 0) + materiales_kg.get('film', 0)
+                aluminio_kg = materiales_kg.get('aluminio', 0)
+                vidrio_kg   = materiales_kg.get('vidrio', 0)
+                otros_kg    = materiales_kg.get('pellon', 0) + materiales_kg.get('carretes', 0) + materiales_kg.get('sunchos', 0)
+                total_rec   = carton_kg + plastico_kg + aluminio_kg + vidrio_kg + otros_kg
+
+                # Desglose completo en JSON
+                desglose = {
+                    label: materiales_kg.get(key, 0)
+                    for key, label in MATERIALES_CERT
+                    if materiales_kg.get(key, 0) > 0
+                }
+
+                certificado = Certificado.objects.create(
+                    empresa=empresa,
+                    periodo_inicio=p_ini,
+                    periodo_fin=p_fin,
+                    total_reciclables_kg=total_rec,
+                    total_rsd_kg=0,
+                    total_escombros=0,
+                    numero_servicios=0,
+                    desglose_por_tipo=desglose,
+                    generado_por=request.user
+                )
+
+                # Generar PDF
+                datos_pdf = {
+                    'empresa': empresa,
+                    'mes_nombre': MESES_ES.get(month, 'mes'),
+                    'anio': year,
+                    'materiales_kg': materiales_kg,
+                    'codigo': certificado.codigo_certificado,
+                    'responsable_nombre': 'Leslie Plaza Vargas',
+                    'responsable_cargo': 'DIRECTORA GENERAL',
+                }
+                pdf_bytes = generar_pdf_eco_equivalencia(datos_pdf, request=request)
+
+                # Calcular hash
+                pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
+                certificado.hash_sha256 = pdf_hash
+                certificado.estado = 'vigente'
+
+                filename = f"EcoEquiv_{certificado.codigo_certificado}.pdf"
+                certificado.archivo_pdf.save(filename, ContentFile(pdf_bytes), save=False)
+                certificado.save()
+
+                cert_url  = request.build_absolute_uri(f"/certificados/descargar/{certificado.id}/")
+                cert_code = certificado.codigo_certificado
+                cert_id   = certificado.id
+
+                AuditLog.registrar(
+                    usuario=request.user,
+                    accion='emision_doc',
+                    modelo='Certificado',
+                    registro_id=cert_code,
+                    campo='archivo_pdf',
+                    valor_anterior='',
+                    valor_nuevo=f"SHA256:{pdf_hash[:16]}...",
+                    detalles=f"Eco-Equivalencia {cert_code} emitido para {empresa.nombre} — {MESES_ES.get(month)} {year}.",
+                    ip=request.META.get('REMOTE_ADDR')
+                )
+
+                messages.success(request, f"Certificado de Eco-Equivalencia {cert_code} generado exitosamente.")
+
+                return render(request, self.template_name, {
+                    'empresas': empresas,
+                    'cert_id': cert_id,
+                    'cert_code': cert_code,
+                })
+
+            except Empresa.DoesNotExist:
+                error = 'Empresa no encontrada.'
+            except Exception as e:
+                error = f'Error al generar certificado: {e}'
+
+        return render(request, self.template_name, {
+            'empresas': empresas,
+            'error': error,
+        })

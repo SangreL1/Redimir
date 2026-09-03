@@ -787,6 +787,7 @@
         <a href="/gestion/trabajadores/" class="sidebar-item"><i class="fas fa-users"></i>Directorio</a>
         <a href="/gestion/accesos/" class="sidebar-item"><i class="fas fa-users-cog"></i>Gestión Accesos</a>
         <a href="/certificados/crear/" class="sidebar-item"><i class="fas fa-certificate"></i>Certificados</a>
+        <a href="/certificados/eco/" class="sidebar-item"><i class="fas fa-leaf" style="color:#95BF3C;"></i>Eco-Equivalencia</a>
         <a href="/cierre-mensual/" class="sidebar-item"><i class="fas fa-file-archive"></i>Cierre Mensual</a>
         <a href="/calculadora/eco/" class="sidebar-item"><i class="fas fa-leaf"></i>Calculadora Eco</a>
         {% endif %}
@@ -888,6 +889,9 @@
         <span class="sidebar-section">Documentos</span>
         <a href="/certificados/crear/" class="sidebar-item {% block nav_certificados %}{% endblock %}">
             <i class="fas fa-certificate"></i>Certificados
+        </a>
+        <a href="/certificados/eco/" class="sidebar-item {% block nav_eco_equivalencia %}{% endblock %}">
+            <i class="fas fa-leaf" style="color:#95BF3C;"></i>Eco-Equivalencia
         </a>
         <a href="/cierre-mensual/" class="sidebar-item {% block nav_cierre %}{% endblock %}">
             <i class="fas fa-file-archive"></i>Cierre Mensual
