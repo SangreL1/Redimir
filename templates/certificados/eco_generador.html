@@ -169,6 +169,7 @@
         <div class="mat-row"><span class="mat-icon">🎞️</span><span class="mat-label">Film LDPE</span><input type="number" class="mat-input mat-kg-input" name="kg_film" id="kg_film" min="0" step="0.01" value="0" data-mat="film"><span class="mat-unit">kg</span></div>
         <div class="mat-row"><span class="mat-icon">🧵</span><span class="mat-label">Carretes</span><input type="number" class="mat-input mat-kg-input" name="kg_carretes" id="kg_carretes" min="0" step="0.01" value="0" data-mat="carretes"><span class="mat-unit">kg</span></div>
         <div class="mat-row"><span class="mat-icon">🔗</span><span class="mat-label">Sunchos</span><input type="number" class="mat-input mat-kg-input" name="kg_sunchos" id="kg_sunchos" min="0" step="0.01" value="0" data-mat="sunchos"><span class="mat-unit">kg</span></div>
+        <div class="mat-row"><span class="mat-icon">🪵</span><span class="mat-label">Pallets</span><input type="number" class="mat-input mat-kg-input" name="kg_pallets" id="kg_pallets" min="0" step="0.01" value="0" data-mat="pallets"><span class="mat-unit">kg</span></div>
     </div>
     <p class="mb-0 mt-3" style="font-size:.75rem; color:var(--text-muted);">
         <i class="fas fa-info-circle me-1" style="color:var(--secondary);"></i>
@@ -212,6 +213,7 @@ const ECO_FACTORES = {
     film:{energia:5.8,co2:2.0,agua:30,arboles:0,combustible:0.30},
     carretes:{energia:3.5,co2:1.1,agua:50,arboles:0,combustible:0.15},
     sunchos:{energia:5.8,co2:2.0,agua:30,arboles:0,combustible:0.30},
+    pallets:{energia:1.0,co2:0.0,agua:50,arboles:0.004,combustible:0.0},
 };
 function fmt(n){return Math.round(n).toLocaleString('es-CL');}
 function calcularBeneficios(){

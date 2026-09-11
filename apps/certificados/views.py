@@ -539,6 +539,7 @@ class GeneradorPageView(View):
                         'escombros': 'Escombros / RESCON',
                         'rsd':       'RSD / Basura General',
                         'mixto':     'Reciclables - Mixto',
+                        'pallets':   'Reciclables - Pallets',
                         'otros':     'Otros Residuos',
                     }
                     for sol in solicitudes:
@@ -652,6 +653,7 @@ ECO_FACTORES = {
     'film':      {'energia': 5.8,  'co2': 2.0,  'agua': 30,  'arboles': 0,    'combustible': 0.30},
     'carretes':  {'energia': 3.5,  'co2': 1.1,  'agua': 50,  'arboles': 0,    'combustible': 0.15},
     'sunchos':   {'energia': 5.8,  'co2': 2.0,  'agua': 30,  'arboles': 0,    'combustible': 0.30},
+    'pallets':   {'energia': 1.0,  'co2': 0.0,  'agua': 50,  'arboles': 0.004, 'combustible': 0.0},
 }
 
 # Mapeo de nombres de tipo_material de BD a clave de ECO_FACTORES
@@ -667,6 +669,8 @@ MATERIAL_KEYS = {
     'film':     'film',
     'carretes': 'carretes',
     'sunchos':  'sunchos',
+    'pallets':  'pallets',
+    'pallet':   'pallets',
 }
 
 # Materiales que se muestran en el certificado (en orden)
@@ -680,6 +684,7 @@ MATERIALES_CERT = [
     ('film',     'Film LDPE'),
     ('carretes', 'Carretes'),
     ('sunchos',  'Sunchos'),
+    ('pallets',  'Pallets'),
 ]
 
 
@@ -1146,7 +1151,7 @@ class EcoEquivalenciaGeneradorView(View):
                 plastico_kg = materiales_kg.get('plastico', 0) + materiales_kg.get('film', 0)
                 aluminio_kg = materiales_kg.get('aluminio', 0)
                 vidrio_kg   = materiales_kg.get('vidrio', 0)
-                otros_kg    = materiales_kg.get('pellon', 0) + materiales_kg.get('carretes', 0) + materiales_kg.get('sunchos', 0)
+                otros_kg    = materiales_kg.get('pellon', 0) + materiales_kg.get('carretes', 0) + materiales_kg.get('sunchos', 0) + materiales_kg.get('pallets', 0)
                 total_rec   = carton_kg + plastico_kg + aluminio_kg + vidrio_kg + otros_kg
 
                 # Desglose completo en JSON
