@@ -193,7 +193,6 @@ class EstadoDePago(models.Model):
     Valores comerciales restringidos únicamente a Gerencia / Admin.
     """
     ESTADOS = [
-        ('borrador',   'Borrador Interno'),
         ('emitido',    'Emitido'),
         ('pagado',     'Pagado'),
         ('anulado',    'Anulado'),
@@ -212,7 +211,7 @@ class EstadoDePago(models.Model):
     iva             = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='IVA 19% ($)')
     total_bruto     = models.DecimalField(max_digits=14, decimal_places=2, default=0, verbose_name='Total Bruto ($)')
     
-    estado          = models.CharField(max_length=20, choices=ESTADOS, default='borrador')
+    estado          = models.CharField(max_length=20, choices=ESTADOS, default='emitido')
     observaciones   = models.TextField(blank=True)
     
     creado_por      = models.ForeignKey('usuarios.Usuario', on_delete=models.SET_NULL, null=True, related_name='edps_creados')
@@ -347,6 +346,11 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
         periodo_inicio__month=p_inicio.month
     ).first()
 
+    MESES_ESP = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril', 5: 'Mayo', 6: 'Junio',
+        7: 'Julio', 8: 'Agosto', 9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+    nombre_mes = MESES_ESP.get(p_inicio.month, str(p_inicio.month))
     if not edp:
         year = p_inicio.strftime("%Y")
         edp = EstadoDePago.objects.create(
@@ -355,8 +359,8 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
             periodo_inicio=p_inicio,
             periodo_fin=p_fin,
             creado_por=usuario,
-            estado='borrador',
-            observaciones=f'Estado de Pago Automático de {p_inicio.strftime("%B %Y")}'
+            estado='emitido',
+            observaciones=f'Estado de Pago Automático de {nombre_mes} {p_inicio.year}'
         )
     else:
         edp.periodo_inicio = p_inicio

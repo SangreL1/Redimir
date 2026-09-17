@@ -109,6 +109,8 @@ def generar_pdf_edp(edp):
 
     fecha_txt = edp.fecha_emision.strftime('%d/%m/%Y')
     estado_display = edp.get_estado_display().upper()
+    if 'BORRADOR' in estado_display:
+        estado_display = 'EMITIDO'
     right_header = [
         Paragraph(f'Fecha: {fecha_txt}', st_date),
         Paragraph(f'Estado: <b>{estado_display}</b>', st_badge),

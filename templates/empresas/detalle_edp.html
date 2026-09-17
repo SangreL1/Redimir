@@ -56,9 +56,8 @@
         </div>
         <div class="mt-1">
           {% if edp.estado == 'pagado' %}<span class="badge bg-success">Pagado</span>
-          {% elif edp.estado == 'emitido' %}<span class="badge bg-primary">Emitido</span>
           {% elif edp.estado == 'anulado' %}<span class="badge bg-danger">Anulado</span>
-          {% else %}<span class="badge bg-warning text-dark">Borrador</span>{% endif %}
+          {% else %}<span class="badge bg-primary">Emitido</span>{% endif %}
         </div>
       </div>
     </div>

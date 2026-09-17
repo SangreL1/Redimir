@@ -2,12 +2,13 @@ from django.urls import path
 from .views import (
     GeneradorPageView, VerificarCertificadoView,
     descargar_certificado, enviar_certificado_por_email, ListaCertificadosView,
-    EcoEquivalenciaGeneradorView, api_datos_empresa_mes,
+    EcoEquivalenciaGeneradorView, api_datos_empresa_mes, api_verificar_retiros_empresa,
 )
 
 urlpatterns = [
     path('certificados/', ListaCertificadosView.as_view(), name='certificado-lista'),
     path('certificados/crear/', GeneradorPageView.as_view(), name='certificado-crear'),
+    path('certificados/api/verificar-retiros/', api_verificar_retiros_empresa, name='api-verificar-retiros'),
     path('certificados/descargar/<int:certificado_id>/', descargar_certificado, name='descargar_certificado'),
     path('certificados/enviar-email/<int:certificado_id>/', enviar_certificado_por_email, name='enviar_certificado_email'),
     path('verificar/<str:codigo>/', VerificarCertificadoView.as_view(), name='certificado-verificar'),

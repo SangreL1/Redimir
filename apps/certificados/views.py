@@ -454,50 +454,228 @@ class ListaCertificadosView(View):
         return render(request, self.template_name, {'certificados': certificados})
 
 
+MESES_NOMBRE = [
+    (1, 'Enero'), (2, 'Febrero'), (3, 'Marzo'), (4, 'Abril'),
+    (5, 'Mayo'), (6, 'Junio'), (7, 'Julio'), (8, 'Agosto'),
+    (9, 'Septiembre'), (10, 'Octubre'), (11, 'Noviembre'), (12, 'Diciembre')
+]
+
+
+@login_required
+def api_verificar_retiros_empresa(request):
+    """Retorna información en tiempo real de los retiros disponibles por empresa y mes."""
+    empresa_id = request.GET.get('empresa_id')
+    mes = request.GET.get('mes')
+    anio = request.GET.get('anio')
+
+    if not empresa_id:
+        return JsonResponse({'ok': False, 'error': 'empresa_id requerido'}, status=400)
+
+    try:
+        empresa = Empresa.objects.get(pk=empresa_id)
+    except Empresa.DoesNotExist:
+        return JsonResponse({'ok': False, 'error': 'Empresa no encontrada'}, status=404)
+
+    import calendar
+    from django.db.models import Q
+    from apps.servicios.models import Servicio
+    from apps.empresas.models import SolicitudRecoleccion, EstadoDePago
+
+    MESES_NOMBRE_DICT = {
+        1: 'Enero', 2: 'Febrero', 3: 'Marzo', 4: 'Abril',
+        5: 'Mayo', 6: 'Junio', 7: 'Julio', 8: 'Agosto',
+        9: 'Septiembre', 10: 'Octubre', 11: 'Noviembre', 12: 'Diciembre'
+    }
+
+    fechas_map = {}
+
+    servicios_all = Servicio.objects.filter(empresa=empresa).exclude(estado='cancelado')
+    for s in servicios_all:
+        f = s.fecha_retiro_real or s.fecha_programada or s.fecha_solicitud or s.fecha_validacion
+        if f:
+            k = (f.year, f.month)
+            fechas_map[k] = fechas_map.get(k, 0) + 1
+
+    solicitudes_all = SolicitudRecoleccion.objects.filter(empresa=empresa).exclude(estado='cancelada')
+    for sol in solicitudes_all:
+        f = sol.fecha_solicitada or sol.fecha_creacion
+        if f:
+            k = (f.year, f.month)
+            fechas_map[k] = fechas_map.get(k, 0) + 1
+
+    edps_all = EstadoDePago.objects.filter(empresa=empresa).exclude(estado='anulado')
+    for edp in edps_all:
+        if edp.periodo_inicio:
+            k = (edp.periodo_inicio.year, edp.periodo_inicio.month)
+            cnt = edp.total_servicios or edp.detalles.count() or 1
+            fechas_map[k] = max(fechas_map.get(k, 0), cnt)
+
+    meses_disponibles = []
+    for (y, m), cant in sorted(fechas_map.items(), key=lambda x: (x[0][0], x[0][1]), reverse=True):
+        if cant > 0:
+            meses_disponibles.append({
+                'mes': m,
+                'anio': y,
+                'nombre': f"{MESES_NOMBRE_DICT.get(m, str(m))} {y}",
+                'total': cant
+            })
+
+    datos_mes = None
+    if mes and anio:
+        try:
+            m_int = int(mes)
+            y_int = int(anio)
+            last_d = calendar.monthrange(y_int, m_int)[1]
+            p_ini = f"{y_int}-{m_int:02d}-01"
+            p_fin = f"{y_int}-{m_int:02d}-{last_d:02d}"
+
+            servs_mes = Servicio.objects.filter(
+                empresa=empresa,
+                estado__in=['validado', 'documento_emitido', 'cerrado', 'retirado', 'pendiente_validacion']
+            ).filter(
+                Q(fecha_retiro_real__date__range=[p_ini, p_fin]) |
+                Q(fecha_programada__date__range=[p_ini, p_fin]) |
+                Q(fecha_solicitud__date__range=[p_ini, p_fin]) |
+                Q(fecha_validacion__date__range=[p_ini, p_fin])
+            ).count()
+
+            sols_mes = SolicitudRecoleccion.objects.filter(
+                empresa=empresa,
+                estado__in=['pendiente', 'asignada', 'completada']
+            ).filter(
+                Q(fecha_solicitada__date__range=[p_ini, p_fin]) |
+                Q(fecha_creacion__date__range=[p_ini, p_fin])
+            ).count()
+
+            edp_mes = EstadoDePago.objects.filter(
+                empresa=empresa,
+                periodo_inicio__lte=p_fin,
+                periodo_fin__gte=p_ini
+            ).first()
+            edp_items = (edp_mes.total_servicios or edp_mes.detalles.count()) if edp_mes else 0
+
+            total_mes = max(servs_mes + sols_mes, edp_items)
+
+            cert_existente = Certificado.objects.filter(
+                empresa=empresa,
+                periodo_inicio__lte=p_fin,
+                periodo_fin__gte=p_ini
+            ).order_by('-fecha_generacion').first()
+
+            datos_mes = {
+                'total_retiros': total_mes,
+                'periodo_texto': f"01/{m_int:02d}/{y_int} al {last_d:02d}/{m_int:02d}/{y_int}",
+                'cert_existente': {
+                    'id': cert_existente.id,
+                    'codigo': cert_existente.codigo_certificado,
+                    'descarga_url': f"/certificados/descargar/{cert_existente.id}/"
+                } if cert_existente else None
+            }
+        except Exception:
+            pass
+
+    return JsonResponse({
+        'ok': True,
+        'empresa_id': empresa.id,
+        'empresa_nombre': empresa.nombre,
+        'meses_disponibles': meses_disponibles,
+        'datos_mes': datos_mes
+    })
+
+
 @method_decorator(login_required, name='dispatch')
 class GeneradorPageView(View):
     template_name = 'certificados/generador.html'
 
     def get(self, request):
+        today = timezone.now().date()
+        mes_sel = int(request.GET.get('mes', today.month))
+        anio_sel = int(request.GET.get('anio', today.year))
+        empresa_id_sel = request.GET.get('empresa_id', '')
+
         empresas = Empresa.objects.filter(estado='aprobada', activa=True)
-        return render(request, self.template_name, {'empresas': empresas})
+        anios_lista = [today.year - 1, today.year, today.year + 1]
+
+        return render(request, self.template_name, {
+            'empresas': empresas,
+            'meses_lista': MESES_NOMBRE,
+            'anios_lista': anios_lista,
+            'mes_sel': mes_sel,
+            'anio_sel': anio_sel,
+            'empresa_id_sel': str(empresa_id_sel),
+            'modo_fecha': 'mes',
+        })
 
     def post(self, request):
+        import calendar
+        today = timezone.now().date()
         empresa_id = request.POST.get('empresa_id')
-        inicio = request.POST.get('inicio')
-        fin = request.POST.get('fin')
+        modo_fecha = request.POST.get('modo_fecha', 'mes')
+
+        try:
+            mes_sel = int(request.POST.get('mes', today.month))
+        except (ValueError, TypeError):
+            mes_sel = today.month
+
+        try:
+            anio_sel = int(request.POST.get('anio', today.year))
+        except (ValueError, TypeError):
+            anio_sel = today.year
+
+        inicio = request.POST.get('inicio', '').strip()
+        fin = request.POST.get('fin', '').strip()
+
+        if modo_fecha == 'mes' or not inicio or not fin:
+            last_day = calendar.monthrange(anio_sel, mes_sel)[1]
+            inicio = f"{anio_sel}-{mes_sel:02d}-01"
+            fin = f"{anio_sel}-{mes_sel:02d}-{last_day:02d}"
+
         empresas = Empresa.objects.filter(estado='aprobada', activa=True)
+        anios_lista = [today.year - 1, today.year, today.year + 1]
         error = None
         certificado = None
 
-        if not empresa_id or not inicio or not fin:
-            error = 'Todos los campos son requeridos.'
+        if not empresa_id:
+            error = 'Debes seleccionar una empresa.'
         else:
             try:
                 empresa = Empresa.objects.get(id=empresa_id)
 
                 from django.db.models import Q
-                from apps.empresas.models import SolicitudRecoleccion
+                from apps.empresas.models import SolicitudRecoleccion, EstadoDePago
 
-                # ── 1. Servicios validados (modelo nuevo) ──────────────────
+                # 1. Servicios (ampliado a estados retirados o validados)
                 servicios = Servicio.objects.filter(
                     empresa=empresa,
-                    estado__in=['validado', 'documento_emitido', 'cerrado'],
+                    estado__in=['validado', 'documento_emitido', 'cerrado', 'retirado', 'pendiente_validacion']
                 ).filter(
                     Q(fecha_retiro_real__date__range=[inicio, fin]) |
-                    Q(fecha_retiro_real__isnull=True, fecha_validacion__date__range=[inicio, fin])
-                )
+                    Q(fecha_programada__date__range=[inicio, fin]) |
+                    Q(fecha_solicitud__date__range=[inicio, fin]) |
+                    Q(fecha_validacion__date__range=[inicio, fin])
+                ).distinct()
 
-                # ── 2. Solicitudes de Recolección (modelo legado) ──────────
+                # 2. Solicitudes de Recolección (modelo legado / complementario)
                 solicitudes = SolicitudRecoleccion.objects.filter(
                     empresa=empresa,
-                    estado__in=['pendiente', 'asignada', 'completada'],
-                    fecha_solicitada__date__range=[inicio, fin]
-                )
+                    estado__in=['pendiente', 'asignada', 'completada']
+                ).filter(
+                    Q(fecha_solicitada__date__range=[inicio, fin]) |
+                    Q(fecha_creacion__date__range=[inicio, fin])
+                ).distinct()
 
-                # Si no hay NADA de ninguno de los dos, error
+                # 3. Estado de Pago del período si no hay servicios ni solicitudes directas
+                edp = None
                 if not servicios.exists() and not solicitudes.exists():
-                    error = 'No hay retiros registrados para esta empresa en el período indicado.'
+                    edp = EstadoDePago.objects.filter(
+                        empresa=empresa,
+                        periodo_inicio__lte=fin,
+                        periodo_fin__gte=inicio
+                    ).first()
+
+                if not servicios.exists() and not solicitudes.exists() and not (edp and edp.detalles.exists()):
+                    mes_nombre_txt = next((nom for num, nom in MESES_NOMBRE if num == mes_sel), f"Mes {mes_sel}")
+                    error = f"No hay retiros registrados para {empresa.nombre} en {mes_nombre_txt} {anio_sel} ({inicio} al {fin})."
                 else:
                     rsd_kg = 0
                     escombros_total = 0
@@ -521,8 +699,19 @@ class GeneradorPageView(View):
                             reciclables_kg += reg.cantidad_kg or 0
                             key = f"Reciclables - {reg.get_material_display() if hasattr(reg, 'get_material_display') else 'General'}"
                             desglose[key] = round(desglose.get(key, 0.0) + cant, 2)
+                        else:
+                            cant = float(s.cantidad_estimada or 1.0)
+                            if s.modulo == 'rsd':
+                                rsd_kg += s.cantidad_estimada or 0
+                                desglose['RSD / Basura General'] = round(desglose.get('RSD / Basura General', 0.0) + cant, 2)
+                            elif s.modulo == 'escombros':
+                                escombros_total += 1
+                                desglose['Escombros / RESCON'] = round(desglose.get('Escombros / RESCON', 0.0) + cant, 2)
+                            else:
+                                reciclables_kg += s.cantidad_estimada or 0
+                                desglose[f"Reciclables — {s.get_modulo_display()}"] = round(desglose.get(f"Reciclables — {s.get_modulo_display()}", 0.0) + cant, 2)
 
-                    # Procesar Solicitudes de Recolección (modelo legado)
+                    # Procesar Solicitudes de Recolección
                     MAPA_MODULO_SOL = {
                         'rsd':         ('rsd',         'RSD / Basura General'),
                         'escombros':   ('escombros',   'Escombros / RESCON'),
@@ -543,7 +732,6 @@ class GeneradorPageView(View):
                         'otros':     'Otros Residuos',
                     }
                     for sol in solicitudes:
-                        # Usar tipo_material si está disponible, sino el módulo
                         label_sol = MAPA_MATERIAL_SOL.get(
                             sol.tipo_material,
                             MAPA_MODULO_SOL.get(sol.modulo, ('reciclables', 'Reciclables - General'))[1]
@@ -556,15 +744,34 @@ class GeneradorPageView(View):
                             escombros_total += 1
                         else:
                             reciclables_kg += sol.cantidad_estimada or 0
-                        # Solo sumar kg si la unidad es peso; para escombros/otros contar como retiro
                         if sol.unidad_medida in ('kg', 'Kg', 'KG'):
                             desglose[label_sol] = round(desglose.get(label_sol, 0.0) + cant_sol, 2)
                         else:
-                            # Contar como 1 retiro si no es en kg
                             prev = desglose.get(label_sol, 0.0)
                             desglose[label_sol] = round(prev + (cant_sol if cant_sol > 0 else 1.0), 2)
 
-                    total_registros = servicios.count() + solicitudes.count()
+                    # Procesar EDP si no hubo servicios ni solicitudes
+                    servicios_para_enlazar = list(servicios)
+                    if not servicios.exists() and not solicitudes.exists() and edp:
+                        for d in edp.detalles.all():
+                            cant = float(d.cantidad or 0)
+                            desc_l = (d.descripcion or '').lower()
+                            mod_l = (d.modulo or '').lower()
+                            if 'rsd' in mod_l or 'basura' in desc_l:
+                                rsd_kg += cant
+                                desglose['RSD / Basura General'] = round(desglose.get('RSD / Basura General', 0.0) + cant, 2)
+                            elif 'escombro' in mod_l or 'escombro' in desc_l or 'rescon' in desc_l:
+                                escombros_total += int(cant if cant >= 1 else 1)
+                                key = f"Escombros ({d.unidad_medida or 'm3'})"
+                                desglose[key] = round(desglose.get(key, 0.0) + cant, 2)
+                            else:
+                                reciclables_kg += cant
+                                desglose[d.descripcion] = round(desglose.get(d.descripcion, 0.0) + cant, 2)
+                            if d.servicio:
+                                servicios_para_enlazar.append(d.servicio)
+                        total_registros = edp.total_servicios or edp.detalles.count()
+                    else:
+                        total_registros = servicios.count() + solicitudes.count()
 
                     certificado = Certificado.objects.create(
                         empresa=empresa,
@@ -577,7 +784,8 @@ class GeneradorPageView(View):
                         desglose_por_tipo=desglose,
                         generado_por=request.user
                     )
-                    certificado.servicios.set(servicios)
+                    if servicios_para_enlazar:
+                        certificado.servicios.set(servicios_para_enlazar)
 
                     # Generar PDF con ReportLab
                     generar_pdf_certificado(certificado, request=request)
@@ -597,7 +805,6 @@ class GeneradorPageView(View):
 
                     messages.success(request, f"Certificado {certificado.codigo_certificado} generado exitosamente con el formato oficial Redimir.")
 
-                    # Envío automático por correo si está seleccionado
                     if request.POST.get('enviar_email') == '1':
                         from apps.notificaciones.emails import enviar_email_certificado
                         ok, dest_or_err = enviar_email_certificado(certificado, request=request)
@@ -615,6 +822,14 @@ class GeneradorPageView(View):
             'empresas': empresas,
             'error': error,
             'certificado': certificado,
+            'meses_lista': MESES_NOMBRE,
+            'anios_lista': anios_lista,
+            'mes_sel': mes_sel,
+            'anio_sel': anio_sel,
+            'empresa_id_sel': str(empresa_id or ''),
+            'modo_fecha': modo_fecha,
+            'inicio': inicio,
+            'fin': fin,
         })
 
 

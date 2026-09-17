@@ -135,12 +135,10 @@
             <td>
               {% if edp.estado == 'pagado' %}
               <span class="badge-pill badge-green"><i class="fas fa-check-circle me-1"></i>Pagado</span>
-              {% elif edp.estado == 'emitido' %}
-              <span class="badge-pill badge-blue"><i class="fas fa-paper-plane me-1"></i>Emitido</span>
               {% elif edp.estado == 'anulado' %}
               <span class="badge-pill badge-red"><i class="fas fa-ban me-1"></i>Anulado</span>
               {% else %}
-              <span class="badge-pill badge-amber"><i class="fas fa-clock me-1"></i>Borrador</span>
+              <span class="badge-pill badge-blue"><i class="fas fa-paper-plane me-1"></i>Emitido</span>
               {% endif %}
             </td>
             <td style="font-size:.82rem;" class="text-muted">{{ edp.fecha_emision|date:"d/m/Y" }}</td>
@@ -219,10 +217,9 @@
         <div class="modal-body p-4">
           <p class="text-muted mb-3">Empresa: <strong class="text-dark">{{ edp.empresa.nombre }}</strong> | Total: <strong class="text-success">${{ edp.total_bruto|floatformat:0 }}</strong></p>
           <div class="mb-3">
-            <label class="form-label fw-bold text-dark mb-1">Estado Actual / Nuevo Estado *</label>
+            <label class="form-label fw-bold text-dark mb-1">Estado *</label>
             <select name="estado" class="form-select bg-white text-dark border-secondary" required>
-              <option value="borrador" {% if edp.estado == 'borrador' %}selected{% endif %}>Borrador Interno</option>
-              <option value="emitido" {% if edp.estado == 'emitido' %}selected{% endif %}>Emitido a Cliente</option>
+              <option value="emitido" {% if edp.estado == 'emitido' or edp.estado == 'borrador' %}selected{% endif %}>Emitido a Cliente</option>
               <option value="pagado" {% if edp.estado == 'pagado' %}selected{% endif %}>Pagado / Conforme</option>
               <option value="anulado" {% if edp.estado == 'anulado' %}selected{% endif %}>Anulado</option>
             </select>

@@ -1,97 +1,304 @@
 {% extends 'base.html' %}
-{% block title %}Generador de Certificados — Redimir{% endblock %}
+{% block title %}Generador de Certificados de Transporte — Redimir{% endblock %}
 {% block nav_certificados %}active{% endblock %}
 
 {% block content %}
-<div class="fade-in-up" style="max-width:600px; margin: 0 auto;">
+<div class="fade-in-up" style="max-width:680px; margin: 0 auto;">
 
-<div class="d-flex align-items-center mb-4">
-    <a href="/dashboard/" class="btn btn-sm btn-outline-secondary me-3"><i class="fas fa-arrow-left"></i></a>
-    <div>
-        <h2 class="fw-bold mb-0" style="color:var(--primary); font-size:1.5rem;">
-            <i class="fas fa-file-pdf me-2" style="color:var(--secondary);"></i>Generador de Certificados
-        </h2>
-        <p class="text-muted mb-0" style="font-size:.85rem; font-weight:500;">Emisión de certificados oficiales de trazabilidad (Módulo Consolidado)</p>
+<div class="d-flex align-items-center justify-content-between mb-4 flex-wrap gap-2">
+    <div class="d-flex align-items-center">
+        <a href="/dashboard/" class="btn btn-sm btn-outline-secondary me-3" title="Volver al Dashboard"><i class="fas fa-arrow-left"></i></a>
+        <div>
+            <h2 class="fw-bold mb-0" style="color:var(--primary); font-size:1.5rem;">
+                <i class="fas fa-file-pdf me-2" style="color:var(--secondary);"></i>Certificados de Transporte
+            </h2>
+            <p class="text-muted mb-0" style="font-size:.85rem; font-weight:500;">Emisión de certificados oficiales de transporte y trazabilidad de residuos</p>
+        </div>
     </div>
+    <a href="{% url 'certificado-lista' %}" class="btn btn-sm btn-outline-primary" style="border-radius:6px; font-weight:600;">
+        <i class="fas fa-list me-1"></i>Ver Certificados Emitidos
+    </a>
 </div>
 
 {% if error %}
-<div class="alert-redimir-danger mb-3">
-    <i class="fas fa-exclamation-circle me-2"></i>{{ error }}
+<div class="alert alert-danger d-flex align-items-center mb-3 shadow-sm border-0" style="border-radius: 8px;">
+    <i class="fas fa-exclamation-triangle fa-lg me-3 text-danger"></i>
+    <div>
+        <strong>Atención:</strong> {{ error }}
+    </div>
 </div>
 {% endif %}
 
 {% if messages %}
   {% for message in messages %}
-  <div class="alert-redimir-success mb-3">
-    <i class="fas fa-check-circle me-2"></i>{{ message }}
+  <div class="alert alert-success d-flex align-items-center mb-3 shadow-sm border-0" style="border-radius: 8px;">
+    <i class="fas fa-check-circle fa-lg me-3 text-success"></i>
+    <div>{{ message }}</div>
   </div>
   {% endfor %}
 {% endif %}
 
 {% if certificado and certificado.archivo_pdf %}
-<div class="card-redimir mb-4 text-center" style="border: 2px solid var(--secondary); background: var(--secondary-light);">
+<div class="card-redimir mb-4 text-center p-4" style="border: 2px solid var(--secondary); background: #F0FDF4; border-radius: 12px;">
     <i class="fas fa-check-circle fa-3x mb-2" style="color:var(--secondary);"></i>
-    <h5 class="fw-bold mb-1">¡Certificado Creado con Éxito!</h5>
-    <p class="mb-3" style="font-size:.9rem; font-weight:600;">Folio: {{ certificado.codigo_certificado }} &bull; Cliente: {{ certificado.empresa.nombre }}</p>
+    <h4 class="fw-bold mb-1 text-dark">¡Certificado Emitido con Éxito!</h4>
+    <p class="mb-3 text-muted" style="font-size:.95rem; font-weight:600;">
+        Folio: <span class="badge bg-primary fs-6">{{ certificado.codigo_certificado }}</span> &bull; 
+        Cliente: <strong class="text-dark">{{ certificado.empresa.nombre }}</strong> &bull;
+        Período: {{ certificado.periodo_inicio|date:"d/m/Y" }} al {{ certificado.periodo_fin|date:"d/m/Y" }}
+    </p>
     
     <div class="d-flex justify-content-center gap-2 flex-wrap">
-        <a href="{% url 'descargar_certificado' certificado.id %}" target="_blank" class="btn-success-redimir">
-            <i class="fas fa-download me-2"></i>Descargar PDF
+        <a href="{% url 'descargar_certificado' certificado.id %}" target="_blank" class="btn btn-success fw-bold px-4 py-2 shadow-sm text-white" style="border-radius:8px;">
+            <i class="fas fa-download me-2"></i>Descargar Certificado PDF
         </a>
         <form method="post" action="{% url 'enviar_certificado_email' certificado.id %}" style="display:inline;" onsubmit="return confirm('¿Enviar certificado con PDF adjunto al correo {{ certificado.empresa.email_contacto }}?');">
             {% csrf_token %}
-            <button type="submit" class="btn btn-sm text-white shadow-sm" style="background-color: #006BB8; border: none; border-radius: 6px; font-weight: 600; padding: 8px 16px; color: #FFFFFF !important;" title="Enviar a {{ certificado.empresa.email_contacto }}">
-                <i class="fas fa-envelope me-2"></i>Enviar PDF por Correo
+            <button type="submit" class="btn btn-outline-primary fw-semibold px-3 py-2 shadow-sm" style="border-radius:8px;" title="Enviar a {{ certificado.empresa.email_contacto }}">
+                <i class="fas fa-envelope me-2"></i>Reenviar por Correo
             </button>
         </form>
     </div>
 </div>
 {% endif %}
 
-<div class="card-redimir">
-<form method="post">
+<div class="card-redimir p-4 shadow-sm" style="border-radius: 12px; background: #ffffff;">
+<form method="post" id="formGenerarCertificado">
     {% csrf_token %}
+    <input type="hidden" name="modo_fecha" id="modo_fecha" value="{{ modo_fecha|default:'mes' }}">
 
+    <!-- SELECCIÓN DE EMPRESA -->
     <div class="mb-4">
-        <label for="empresa_id" class="form-label">Cliente / Empresa <span class="required-mark">*</span></label>
-        <select class="form-select" name="empresa_id" id="empresa_id" required>
-            <option value="">-- Selecciona el cliente --</option>
+        <label for="empresa_id" class="form-label fw-bold text-dark">Cliente / Empresa <span class="required-mark text-danger">*</span></label>
+        <select class="form-select form-select-lg border-secondary text-dark fw-semibold" name="empresa_id" id="empresa_id" required onchange="cargarRetirosEmpresa()">
+            <option value="">-- Selecciona la empresa cliente --</option>
             {% for empresa in empresas %}
-            <option value="{{ empresa.id }}">{{ empresa.nombre }} ({{ empresa.rut }})</option>
+            <option value="{{ empresa.id }}" {% if empresa.id|stringformat:"s" == empresa_id_sel %}selected{% endif %}>
+                {{ empresa.nombre }} ({{ empresa.rut }})
+            </option>
             {% endfor %}
         </select>
-        <div class="form-text">Solo empresas con estado 'Aprobada'</div>
+        <div class="form-text">Empresas activas con autorización en plataforma.</div>
     </div>
 
-    <div class="row mb-4">
-        <div class="col-6">
-            <label for="inicio" class="form-label">Fecha Desde (Servicios) <span class="required-mark">*</span></label>
-            <input type="date" class="form-control" name="inicio" id="inicio" required>
+    <!-- PANEL DINÁMICO DE RETIROS REGISTRADOS -->
+    <div id="panelRetirosInfo" class="mb-4 p-3 rounded-3 border d-none" style="background-color: #F8FAFC;">
+        <div class="d-flex align-items-center justify-content-between mb-2">
+            <span class="small fw-bold text-uppercase text-muted" style="letter-spacing:0.5px;">
+                <i class="fas fa-truck-moving me-1 text-primary"></i>Actividad de Retiros Detectada
+            </span>
+            <span id="badgeEstadoRetiros" class="badge bg-secondary">Consultando...</span>
         </div>
-        <div class="col-6">
-            <label for="fin" class="form-label">Fecha Hasta (Servicios) <span class="required-mark">*</span></label>
-            <input type="date" class="form-control" name="fin" id="fin" required>
+        <div id="textoMesesDisponibles" class="small text-muted mb-2"></div>
+        <div id="pillsMeses" class="d-flex flex-wrap gap-1 mb-2"></div>
+        <div id="alertaCertExistente" class="d-none alert alert-warning py-2 px-3 mb-0 small rounded-2 d-flex align-items-center justify-content-between">
+            <div>
+                <i class="fas fa-info-circle me-1"></i> Ya existe un certificado emitido para este período: <strong id="codigoCertExistente"></strong>
+            </div>
+            <a id="btnDescargarExistente" href="#" target="_blank" class="btn btn-sm btn-outline-dark py-1 px-2 fw-bold text-decoration-none">
+                <i class="fas fa-download me-1"></i>Descargar
+            </a>
         </div>
     </div>
 
+    <!-- SELECCIÓN POR MES Y AÑO (IGUAL QUE EN EDP) -->
+    <div id="seccionPorMes" class="mb-4">
+        <label class="form-label fw-bold text-dark mb-1">
+            <i class="fas fa-calendar-alt me-1 text-success"></i> Período a Certificar (Por Mes) <span class="required-mark text-danger">*</span>
+        </label>
+        <div class="row g-2 align-items-center">
+            <div class="col-7 col-sm-8">
+                <label class="small text-muted fw-semibold mb-1">Mes</label>
+                <select name="mes" id="selectMes" class="form-select fw-bold border-secondary text-dark" onchange="verificarMesActual()">
+                    {% for num, nom in meses_lista %}
+                    <option value="{{ num }}" {% if num == mes_sel %}selected{% endif %}>{{ nom }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="col-5 col-sm-4">
+                <label class="small text-muted fw-semibold mb-1">Año</label>
+                <select name="anio" id="selectAnio" class="form-select fw-bold border-secondary text-dark" onchange="verificarMesActual()">
+                    {% for a in anios_lista %}
+                    <option value="{{ a }}" {% if a == anio_sel %}selected{% endif %}>{{ a }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="d-flex justify-content-between align-items-center mt-2">
+            <small class="text-muted" id="textoRangoMes">Cubre del día 1 al fin del mes seleccionado.</small>
+            <button type="button" class="btn btn-link btn-sm text-decoration-none p-0 text-muted" onclick="toggleModoRango()" style="font-size:0.8rem;">
+                <i class="fas fa-sliders-h me-1"></i><span id="btnTextoToggle">Ingresar días específicos</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- RANGO MANUAL DE FECHAS (OPCIONAL / COLAPSABLE) -->
+    <div id="seccionRangoManual" class="mb-4 p-3 border rounded-3 bg-light d-none">
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <label class="form-label fw-bold text-dark mb-0 small text-uppercase">
+                <i class="fas fa-calendar-day me-1 text-primary"></i> Rango Específico de Días
+            </label>
+            <button type="button" class="btn btn-link btn-sm p-0 text-secondary" onclick="toggleModoRango()">
+                <i class="fas fa-times me-1"></i>Volver a selección por Mes
+            </button>
+        </div>
+        <div class="row g-2">
+            <div class="col-6">
+                <label for="inicio" class="form-label small fw-semibold text-muted">Fecha Desde</label>
+                <input type="date" class="form-control border-secondary" name="inicio" id="inicio" value="{{ inicio|default:'' }}">
+            </div>
+            <div class="col-6">
+                <label for="fin" class="form-label small fw-semibold text-muted">Fecha Hasta</label>
+                <input type="date" class="form-control border-secondary" name="fin" id="fin" value="{{ fin|default:'' }}">
+            </div>
+        </div>
+        <small class="text-muted mt-1 d-block" style="font-size:0.75rem;">Úsalo solo si requieres certificar una quincena o rango inferior al mes completo.</small>
+    </div>
+
+    <!-- OPCIÓN DE ENVÍO POR CORREO -->
     <div class="form-check mb-4 p-3" style="background-color: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;">
         <input class="form-check-input ms-0 me-2" type="checkbox" name="enviar_email" id="enviar_email" value="1" checked>
         <label class="form-check-label fw-bold text-dark" for="enviar_email" style="cursor: pointer;">
-            <i class="fas fa-envelope me-1 text-primary"></i> Enviar automáticamente copia con PDF adjunto al correo de la empresa
+            <i class="fas fa-envelope me-1 text-primary"></i> Enviar automáticamente copia con PDF adjunto al correo del cliente
         </label>
         <div class="form-text ms-4">Se enviará al correo oficial de contacto configurado en la ficha de la empresa cliente.</div>
     </div>
     
-    <div class="alert-redimir-info mb-4" style="font-size:.85rem;">
-        <i class="fas fa-info-circle me-2"></i>El certificado incluirá <strong>solamente servicios en estado 'Validado'</strong> que se encuentren dentro del rango de fechas de retiro especificado.
+    <div class="alert alert-info py-2 px-3 mb-4 d-flex align-items-center gap-2" style="font-size:.84rem; background-color:#EFF6FF; border-color:#DBEAFE; color:#1E40AF; border-radius:8px;">
+        <i class="fas fa-shield-alt text-primary fa-lg"></i>
+        <div>
+            El certificado genera un <strong>documento oficial con código QR y Hash criptográfico SHA-256</strong> garantizando la trazabilidad formal de los residuos.
+        </div>
     </div>
 
-    <button type="submit" class="btn-primary-redimir w-100" style="padding:.75rem; border-radius:var(--radius-sm); font-size:1rem;">
+    <button type="submit" id="btnSubmitCert" class="btn-primary-redimir w-100 py-3 text-center fw-bold shadow-sm" style="border-radius:8px; font-size:1.05rem;">
         <i class="fas fa-file-contract me-2"></i>Generar Certificado Oficial
     </button>
 </form>
 </div>
 
 </div>
+
+<script>
+function toggleModoRango() {
+    const modoInput = document.getElementById('modo_fecha');
+    const secMes = document.getElementById('seccionPorMes');
+    const secRango = document.getElementById('seccionRangoManual');
+    const btnTexto = document.getElementById('btnTextoToggle');
+
+    if (modoInput.value === 'mes') {
+        modoInput.value = 'rango';
+        secRango.classList.remove('d-none');
+        btnTexto.innerText = "Usar selección por Mes";
+    } else {
+        modoInput.value = 'mes';
+        secRango.classList.add('d-none');
+        btnTexto.innerText = "Ingresar días específicos";
+    }
+}
+
+function seleccionarMesPill(mes, anio) {
+    document.getElementById('selectMes').value = mes;
+    document.getElementById('selectAnio').value = anio;
+    const modoInput = document.getElementById('modo_fecha');
+    if (modoInput.value === 'rango') {
+        toggleModoRango();
+    }
+    verificarMesActual();
+}
+
+function verificarMesActual() {
+    const empSelect = document.getElementById('empresa_id');
+    const mes = document.getElementById('selectMes').value;
+    const anio = document.getElementById('selectAnio').value;
+    if (empSelect.value) {
+        consultarApiRetiros(empSelect.value, mes, anio);
+    }
+}
+
+function cargarRetirosEmpresa() {
+    const empSelect = document.getElementById('empresa_id');
+    const mes = document.getElementById('selectMes').value;
+    const anio = document.getElementById('selectAnio').value;
+
+    if (!empSelect.value) {
+        document.getElementById('panelRetirosInfo').classList.add('d-none');
+        return;
+    }
+    consultarApiRetiros(empSelect.value, mes, anio);
+}
+
+function consultarApiRetiros(empresaId, mes, anio) {
+    const panel = document.getElementById('panelRetirosInfo');
+    const badge = document.getElementById('badgeEstadoRetiros');
+    const textoMeses = document.getElementById('textoMesesDisponibles');
+    const pills = document.getElementById('pillsMeses');
+    const alertaCert = document.getElementById('alertaCertExistente');
+    const codCert = document.getElementById('codigoCertExistente');
+    const btnDesc = document.getElementById('btnDescargarExistente');
+
+    panel.classList.remove('d-none');
+    badge.className = 'badge bg-secondary';
+    badge.innerText = 'Consultando...';
+
+    fetch(`/certificados/api/verificar-retiros/?empresa_id=${empresaId}&mes=${mes}&anio=${anio}`)
+        .then(res => res.json())
+        .then(data => {
+            if (!data.ok) return;
+
+            // Datos del mes actual
+            if (data.datos_mes) {
+                const tot = data.datos_mes.total_retiros;
+                if (tot > 0) {
+                    badge.className = 'badge bg-success';
+                    badge.innerHTML = `<i class="fas fa-check-circle me-1"></i>${tot} retiros detectados`;
+                } else {
+                    badge.className = 'badge bg-warning text-dark';
+                    badge.innerHTML = `<i class="fas fa-exclamation-circle me-1"></i>0 retiros este mes`;
+                }
+
+                // Certificado existente
+                if (data.datos_mes.cert_existente) {
+                    alertaCert.classList.remove('d-none');
+                    codCert.innerText = data.datos_mes.cert_existente.codigo;
+                    btnDesc.href = data.datos_mes.cert_existente.descarga_url;
+                } else {
+                    alertaCert.classList.add('d-none');
+                }
+            }
+
+            // Meses disponibles con datos
+            pills.innerHTML = '';
+            if (data.meses_disponibles && data.meses_disponibles.length > 0) {
+                textoMeses.innerHTML = '<strong>Meses con retiros registrados:</strong> Haz clic para seleccionarlo:';
+                data.meses_disponibles.forEach(item => {
+                    const btn = document.createElement('button');
+                    btn.type = 'button';
+                    const esActual = (item.mes == mes && item.anio == anio);
+                    btn.className = `btn btn-sm ${esActual ? 'btn-primary' : 'btn-outline-primary'} py-1 px-2 fw-semibold`;
+                    btn.style.borderRadius = '20px';
+                    btn.style.fontSize = '0.78rem';
+                    btn.innerHTML = `<i class="fas fa-calendar-check me-1"></i>${item.nombre} (${item.total} retiros)`;
+                    btn.onclick = () => seleccionarMesPill(item.mes, item.anio);
+                    pills.appendChild(btn);
+                });
+            } else {
+                textoMeses.innerText = 'No se registran retiros previos para esta empresa en ningún mes.';
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            badge.className = 'badge bg-secondary';
+            badge.innerText = 'Información no disponible';
+        });
+}
+
+// Ejecutar al cargar si ya hay empresa preseleccionada
+document.addEventListener('DOMContentLoaded', () => {
+    const empSelect = document.getElementById('empresa_id');
+    if (empSelect && empSelect.value) {
+        cargarRetirosEmpresa();
+    }
+});
+</script>
 {% endblock %}

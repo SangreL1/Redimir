@@ -640,7 +640,7 @@ class EstadoDePagoCrearView(View):
         inicio     = request.POST.get('inicio')
         fin        = request.POST.get('fin')
         subtotal_raw = request.POST.get('subtotal_neto', '0')
-        estado_val   = request.POST.get('estado', 'borrador')
+        estado_val   = request.POST.get('estado', 'emitido')
         obs        = request.POST.get('observaciones', '').strip()
 
         empresas = Empresa.objects.filter(estado='aprobada', activa=True)
