@@ -79,6 +79,16 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
         return f"{self.nombre} {self.apellido}"
 
     @property
+    def username(self):
+        return self.rut
+
+    def get_full_name(self):
+        return self.nombre_completo
+
+    def get_short_name(self):
+        return self.nombre
+
+    @property
     def esta_aprobado(self):
         return self.estado == 'aprobado'
 
