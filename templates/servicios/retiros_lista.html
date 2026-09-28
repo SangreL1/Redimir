@@ -172,11 +172,25 @@
                                 </span>
                             {% endif %}
                         </td>
-                        <td class="text-center">
+                        <td class="text-center align-middle" style="width: 80px;">
                             {% if ticket.respaldo_ticket %}
-                                <a href="{{ ticket.respaldo_ticket.url }}" target="_blank" class="btn btn-sm btn-outline-info p-1 px-2" title="Ver comprobante adjunto">
-                                    <i class="fas fa-paperclip"></i>
-                                </a>
+                                {% if ticket.es_imagen_respaldo %}
+                                    <a href="javascript:void(0);" 
+                                       onclick="mostrarModalRespaldo('{{ ticket.respaldo_ticket.url }}', 'Ticket N° {{ ticket.numero_ticket }} — {{ ticket.empresa.nombre_razon_social }}')" 
+                                       class="d-inline-block text-decoration-none" 
+                                       title="Ver comprobante N° {{ ticket.numero_ticket }}">
+                                        <img src="{{ ticket.respaldo_ticket.url }}" 
+                                             alt="Ticket {{ ticket.numero_ticket }}" 
+                                             class="rounded border shadow-sm" 
+                                             style="width: 45px; height: 45px; object-fit: cover; cursor: pointer; transition: transform 0.2s;"
+                                             onmouseover="this.style.transform='scale(1.25)'; this.style.zIndex='10';" 
+                                             onmouseout="this.style.transform='scale(1)'; this.style.zIndex='1';">
+                                    </a>
+                                {% else %}
+                                    <a href="{{ ticket.respaldo_ticket.url }}" target="_blank" class="btn btn-sm btn-outline-danger py-1 px-2" title="Abrir Documento PDF">
+                                        <i class="fas fa-file-pdf fa-lg"></i>
+                                    </a>
+                                {% endif %}
                             {% else %}
                                 <span class="text-muted small">-</span>
                             {% endif %}
@@ -227,4 +241,38 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Modal Visor de Respaldo -->
+<div class="modal fade" id="modalVisorRespaldo" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0 shadow">
+            <div class="modal-header bg-dark text-white py-2">
+                <h6 class="modal-title mb-0 fw-bold" id="modalRespaldoTitulo">Comprobante de Pesaje</h6>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+            </div>
+            <div class="modal-body text-center p-2 bg-light">
+                <img id="modalRespaldoImg" src="" alt="Comprobante" class="img-fluid rounded border shadow-sm" style="max-height: 80vh; object-fit: contain;">
+            </div>
+            <div class="modal-footer py-2 justify-content-between">
+                <span class="small text-muted">Haz clic en Abrir Original para descargar o imprimir</span>
+                <div>
+                    <a id="modalRespaldoLink" href="#" target="_blank" class="btn btn-sm btn-primary">
+                        <i class="fas fa-external-link-alt me-1"></i> Abrir Original
+                    </a>
+                    <button type="button" class="btn btn-sm btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function mostrarModalRespaldo(url, titulo) {
+    document.getElementById('modalRespaldoImg').src = url;
+    document.getElementById('modalRespaldoTitulo').textContent = titulo;
+    document.getElementById('modalRespaldoLink').href = url;
+    var modal = new bootstrap.Modal(document.getElementById('modalVisorRespaldo'));
+    modal.show();
+}
+</script>
 {% endblock %}
