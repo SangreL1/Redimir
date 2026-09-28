@@ -117,51 +117,54 @@
                     </div>
 
                     <div class="card-body p-0">
-                        {{ formset.management_form }}
                         <div class="table-responsive">
                             <table class="table align-middle mb-0" id="materialesTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="min-width: 180px;">Material</th>
-                                        <th style="width: 120px;" class="text-end">Kilos (kg)</th>
-                                        <th style="width: 110px;" class="text-end">Unidades (un)</th>
+                                        <th style="min-width: 190px;">Material</th>
+                                        <th style="width: 140px;" class="text-end">Kilos (kg)</th>
+                                        <th style="width: 130px;" class="text-end">Unidades (un)</th>
                                         <th style="min-width: 140px;">Observaciones</th>
                                         <th style="width: 50px;" class="text-center"></th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    {% for form_m in formset %}
-                                    <tr class="material-row">
-                                        <td>
-                                            {% for hidden in form_m.hidden_fields %}{{ hidden }}{% endfor %}
-                                            {{ form_m.material }}
-                                            {% if form_m.material.errors %}<div class="text-danger small">{{ form_m.material.errors }}</div>{% endif %}
-                                        </td>
-                                        <td>
-                                            {{ form_m.peso_kg }}
-                                            {% if form_m.peso_kg.errors %}<div class="text-danger small">{{ form_m.peso_kg.errors }}</div>{% endif %}
-                                        </td>
-                                        <td>
-                                            {{ form_m.cantidad_unidades }}
-                                            {% if form_m.cantidad_unidades.errors %}<div class="text-danger small">{{ form_m.cantidad_unidades.errors }}</div>{% endif %}
-                                        </td>
-                                        <td>
-                                            {{ form_m.observaciones }}
-                                        </td>
-                                        <td class="text-center">
-                                            {% if formset.can_delete and form_m.instance.pk %}
-                                                <div style="display:none;">{{ form_m.DELETE }}</div>
-                                                <button type="button" class="btn btn-sm btn-outline-danger delete-existing-row" title="Marcar para eliminar">
-                                                    <i class="fas fa-trash"></i>
+                                <tbody id="materialesTableBody">
+                                    {% if modo_edicion and detalles_existentes %}
+                                        {% for det in detalles_existentes %}
+                                        <tr class="material-row">
+                                            <td>
+                                                <select name="material_id[]" class="form-select form-select-sm material-select" required>
+                                                    <option value="">-- Seleccionar Material --</option>
+                                                    {% for m in materiales_catalogo %}
+                                                    <option value="{{ m.id }}" data-unidad="{{ m.unidad_medida }}" {% if det.material_id == m.id %}selected{% endif %}>
+                                                        {{ m.nombre }} ({{ m.get_categoria_display }})
+                                                    </option>
+                                                    {% endfor %}
+                                                </select>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" step="0.01" min="0" name="peso_kg[]" value="{{ det.peso_kg|stringformat:'.2f' }}" class="form-control text-end peso-input" placeholder="0.00">
+                                                    <span class="input-group-text">kg</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <div class="input-group input-group-sm">
+                                                    <input type="number" step="1" min="0" name="cantidad_unidades[]" value="{{ det.cantidad_unidades|default_if_none:'' }}" class="form-control text-end cant-input" placeholder="0">
+                                                    <span class="input-group-text">un</span>
+                                                </div>
+                                            </td>
+                                            <td>
+                                                <input type="text" name="obs_detalle[]" value="{{ det.observaciones }}" class="form-control form-control-sm" placeholder="Observación / nota">
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Quitar fila">
+                                                    <i class="fas fa-trash-alt"></i>
                                                 </button>
-                                            {% else %}
-                                                <button type="button" class="btn btn-sm btn-outline-danger remove-new-row" title="Quitar fila">
-                                                    <i class="fas fa-times"></i>
-                                                </button>
-                                            {% endif %}
-                                        </td>
-                                    </tr>
-                                    {% endfor %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    {% endif %}
                                 </tbody>
                             </table>
                         </div>
@@ -179,130 +182,127 @@
     </form>
 </div>
 
+<!-- Template para nueva fila de material -->
+<template id="rowTemplate">
+    <tr class="material-row">
+        <td>
+            <select name="material_id[]" class="form-select form-select-sm material-select" required>
+                <option value="">-- Seleccionar Material --</option>
+                {% for m in materiales_catalogo %}
+                <option value="{{ m.id }}" data-unidad="{{ m.unidad_medida }}">{{ m.nombre }} ({{ m.get_categoria_display }})</option>
+                {% endfor %}
+            </select>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <input type="number" step="0.01" min="0" name="peso_kg[]" class="form-control text-end peso-input" placeholder="0.00">
+                <span class="input-group-text">kg</span>
+            </div>
+        </td>
+        <td>
+            <div class="input-group input-group-sm">
+                <input type="number" step="1" min="0" name="cantidad_unidades[]" class="form-control text-end cant-input" placeholder="0">
+                <span class="input-group-text">un</span>
+            </div>
+        </td>
+        <td>
+            <input type="text" name="obs_detalle[]" class="form-control form-control-sm" placeholder="Observación / nota">
+        </td>
+        <td class="text-center">
+            <button type="button" class="btn btn-sm btn-outline-danger remove-row-btn" title="Quitar fila">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </td>
+    </tr>
+</template>
+
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    const totalForms = document.getElementById('id_detalles_materiales-TOTAL_FORMS');
-    const tableBody = document.querySelector('#materialesTable tbody');
+    const tableBody = document.getElementById('materialesTableBody');
     const addBtn = document.getElementById('addMaterialRowBtn');
+    const template = document.getElementById('rowTemplate');
     const pesoTicketInput = document.getElementById('id_peso_total_ticket');
 
     function calculateTotals() {
         const pesoTicket = parseFloat(pesoTicketInput ? pesoTicketInput.value : 0) || 0;
         let sumMateriales = 0;
 
-        document.querySelectorAll('.material-row').forEach(row => {
-            if (row.style.display === 'none') return;
-            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-            if (deleteInput && deleteInput.checked) return;
+        document.querySelectorAll('.peso-input').forEach(input => {
+            const val = parseFloat(input.value) || 0;
+            sumMateriales += val;
+        });
 
-            const pesoInput = row.querySelector('input[name$="-peso_kg"]');
-            if (pesoInput) {
-                const val = parseFloat(pesoInput.value) || 0;
-                sumMateriales += val;
+        const liveTotalTicket = document.getElementById('liveTotalTicket');
+        const liveSumaMateriales = document.getElementById('liveSumaMateriales');
+        const liveBadgeCuadratura = document.getElementById('liveBadgeCuadratura');
+
+        if (liveTotalTicket) {
+            liveTotalTicket.textContent = pesoTicket.toLocaleString('es-CL', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' kg';
+        }
+        if (liveSumaMateriales) {
+            liveSumaMateriales.textContent = sumMateriales.toLocaleString('es-CL', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' kg';
+        }
+        
+        if (liveBadgeCuadratura) {
+            const diff = Math.abs(pesoTicket - sumMateriales);
+            if (pesoTicket > 0 && diff < 0.05) {
+                liveBadgeCuadratura.className = 'badge bg-success';
+                liveBadgeCuadratura.textContent = 'Cuadrado perfecto';
+            } else if (pesoTicket === 0 && sumMateriales === 0) {
+                liveBadgeCuadratura.className = 'badge bg-secondary';
+                liveBadgeCuadratura.textContent = '0 kg';
+            } else {
+                liveBadgeCuadratura.className = 'badge bg-warning text-dark';
+                liveBadgeCuadratura.textContent = 'Diferencia: ' + diff.toFixed(2) + ' kg';
+            }
+        }
+    }
+
+    function addRow() {
+        if (!template || !tableBody) return;
+        const clone = template.content.cloneNode(true);
+        tableBody.appendChild(clone);
+        calculateTotals();
+    }
+
+    if (addBtn) {
+        addBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            addRow();
+        });
+    }
+
+    if (tableBody) {
+        tableBody.addEventListener('click', function(e) {
+            const removeBtn = e.target.closest('.remove-row-btn');
+            if (removeBtn) {
+                const row = removeBtn.closest('tr');
+                if (row) {
+                    row.remove();
+                    if (tableBody.querySelectorAll('.material-row').length === 0) {
+                        addRow();
+                    } else {
+                        calculateTotals();
+                    }
+                }
             }
         });
 
-        document.getElementById('liveTotalTicket').textContent = pesoTicket.toLocaleString('es-CL', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' kg';
-        document.getElementById('liveSumaMateriales').textContent = sumMateriales.toLocaleString('es-CL', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' kg';
-        
-        const diff = Math.abs(pesoTicket - sumMateriales);
-        const badge = document.getElementById('liveBadgeCuadratura');
-        if (pesoTicket > 0 && diff < 0.01) {
-            badge.className = 'badge bg-success';
-            badge.textContent = 'Cuadrado perfecto';
-        } else if (pesoTicket === 0 && sumMateriales === 0) {
-            badge.className = 'badge bg-secondary';
-            badge.textContent = '0 kg';
-        } else {
-            badge.className = 'badge bg-warning text-dark';
-            badge.textContent = 'Diferencia: ' + diff.toFixed(2) + ' kg';
-        }
+        tableBody.addEventListener('input', function(e) {
+            if (e.target && e.target.classList.contains('peso-input')) {
+                calculateTotals();
+            }
+        });
     }
 
     if (pesoTicketInput) {
         pesoTicketInput.addEventListener('input', calculateTotals);
     }
-    tableBody.addEventListener('input', function(e) {
-        if (e.target && e.target.name && e.target.name.endsWith('-peso_kg')) {
-            calculateTotals();
-        }
-    });
 
-    // Add new row
-    addBtn.addEventListener('click', function() {
-        const formIdx = parseInt(totalForms.value, 10);
-        const firstRow = document.querySelector('.material-row');
-        if (!firstRow) return;
-
-        const newRow = firstRow.cloneNode(true);
-        newRow.style.display = '';
-
-        // Reset inputs and update index
-        newRow.querySelectorAll('input, select').forEach(input => {
-            const name = input.name;
-            if (name) {
-                input.name = name.replace(/-\d+-/, '-' + formIdx + '-');
-                input.id = 'id_' + input.name;
-            }
-            if (input.type === 'hidden' && name.endsWith('-id')) {
-                input.value = '';
-            } else if (input.type === 'checkbox') {
-                input.checked = false;
-            } else {
-                input.value = '';
-            }
-        });
-
-        // Set action button to remove-new-row
-        const actionTd = newRow.querySelector('td:last-child');
-        actionTd.innerHTML = '<button type="button" class="btn btn-sm btn-outline-danger remove-new-row" title="Quitar fila"><i class="fas fa-times"></i></button>';
-
-        tableBody.appendChild(newRow);
-        totalForms.value = formIdx + 1;
-        calculateTotals();
-    });
-
-    // Remove row handlers
-    tableBody.addEventListener('click', function(e) {
-        const btnRemove = e.target.closest('.remove-new-row');
-        if (btnRemove) {
-            const row = btnRemove.closest('tr');
-            row.remove();
-            calculateTotals();
-            return;
-        }
-
-        const btnDeleteExisting = e.target.closest('.delete-existing-row');
-        if (btnDeleteExisting) {
-            const row = btnDeleteExisting.closest('tr');
-            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-            if (deleteInput) {
-                deleteInput.checked = true;
-                row.style.opacity = '0.3';
-                row.style.textDecoration = 'line-through';
-                btnDeleteExisting.classList.replace('btn-outline-danger', 'btn-outline-secondary');
-                btnDeleteExisting.innerHTML = '<i class="fas fa-undo"></i>';
-                btnDeleteExisting.className = 'btn btn-sm btn-outline-secondary restore-existing-row';
-            }
-            calculateTotals();
-            return;
-        }
-
-        const btnRestore = e.target.closest('.restore-existing-row');
-        if (btnRestore) {
-            const row = btnRestore.closest('tr');
-            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
-            if (deleteInput) {
-                deleteInput.checked = false;
-                row.style.opacity = '1';
-                row.style.textDecoration = 'none';
-                btnRestore.className = 'btn btn-sm btn-outline-danger delete-existing-row';
-                btnRestore.innerHTML = '<i class="fas fa-trash"></i>';
-            }
-            calculateTotals();
-            return;
-        }
-    });
+    // Si no hay filas cargadas (modo creación), agregar automáticamente la primera fila
+    if (tableBody && tableBody.querySelectorAll('.material-row').length === 0) {
+        addRow();
+    }
 
     calculateTotals();
 });

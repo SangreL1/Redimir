@@ -41,8 +41,8 @@ def retiros_lista(request):
     faena_f = request.GET.get('faena', '').strip()
     servicio_f = request.GET.get('tipo_servicio', '').strip()
     residuo_f = request.GET.get('tipo_residuo', '').strip()
-    desde_f = request.GET.get('desde', '').strip()
-    hasta_f = request.GET.get('hasta', '').strip()
+    desde_f = request.GET.get('desde', '').strip() or request.GET.get('fecha_desde', '').strip()
+    hasta_f = request.GET.get('hasta', '').strip() or request.GET.get('fecha_hasta', '').strip()
 
     if q:
         tickets = tickets.filter(
@@ -77,12 +77,22 @@ def retiros_lista(request):
     total_kilos = tickets.aggregate(total=Sum('peso_total_ticket'))['total'] or Decimal('0.00')
 
     detalles_qs = DetalleMaterialTicket.objects.filter(ticket__in=tickets)
-    kilos_reciclaje = detalles_qs.filter(material__categoria='Reciclaje').aggregate(total=Sum('peso_kg'))['total'] or Decimal('0.00')
-    kilos_maderas = detalles_qs.filter(material__categoria='Madera').aggregate(total=Sum('peso_kg'))['total'] or Decimal('0.00')
-    kilos_domesticos = detalles_qs.filter(material__categoria='Domestico').aggregate(total=Sum('peso_kg'))['total'] or Decimal('0.00')
+    total_desglose = detalles_qs.aggregate(total=Sum('peso_kg'))['total'] or Decimal('0.00')
+    total_unidades = detalles_qs.aggregate(total=Sum('cantidad_unidades'))['total'] or Decimal('0.00')
+
+    kilos_reciclaje = detalles_qs.filter(material__categoria__icontains='recicl').aggregate(total=Sum('peso_kg'))['total'] or Decimal('0.00')
+    kilos_maderas = detalles_qs.filter(material__categoria__icontains='valori').aggregate(total=Sum('peso_kg'))['total'] or Decimal('0.00')
+    kilos_domesticos = detalles_qs.filter(material__categoria__icontains='gene').aggregate(total=Sum('peso_kg'))['total'] or Decimal('0.00')
 
     tickets_con_respaldo = tickets.exclude(respaldo_ticket='').exclude(respaldo_ticket__isnull=True).count()
     pct_respaldo = round((tickets_con_respaldo / total_tickets * 100), 1) if total_tickets > 0 else 0
+
+    kpis = {
+        'total_tickets': total_tickets,
+        'total_kilos_ticket': total_kilos,
+        'total_kilos_desglose': total_desglose,
+        'total_unidades': total_unidades,
+    }
 
     paginator = Paginator(tickets, 25)
     page_number = request.GET.get('page')
@@ -91,12 +101,16 @@ def retiros_lista(request):
     context = {
         'page_obj': page_obj,
         'tickets': page_obj,
+        'kpis': kpis,
         'total_tickets': total_tickets,
         'total_kilos': total_kilos,
+        'total_desglose': total_desglose,
+        'total_unidades': total_unidades,
         'kilos_reciclaje': kilos_reciclaje,
         'kilos_maderas': kilos_maderas,
         'kilos_domesticos': kilos_domesticos,
         'pct_respaldo': pct_respaldo,
+        'empresas': empresas_list,
         'empresas_list': empresas_list,
         'servicios_list': servicios_list,
         'residuos_list': residuos_list,
@@ -191,8 +205,10 @@ def retiro_crear(request):
     return render(request, 'servicios/retiro_form.html', {
         'form': form,
         'materiales_catalogo': materiales_catalogo,
+        'empresas': empresas_disponibles,
         'empresas_disponibles': empresas_disponibles,
         'modo_edicion': False,
+        'detalles_existentes': [],
     })
 
 
@@ -273,6 +289,7 @@ def retiro_editar(request, pk):
         'ticket': ticket,
         'detalles_existentes': detalles_existentes,
         'materiales_catalogo': materiales_catalogo,
+        'empresas': empresas_disponibles,
         'empresas_disponibles': empresas_disponibles,
         'modo_edicion': True,
     })
@@ -333,8 +350,8 @@ def retiros_informe(request):
     faena = request.GET.get('faena', '').strip()
     tipo_servicio = request.GET.get('tipo_servicio', '').strip()
     tipo_residuo = request.GET.get('tipo_residuo', '').strip()
-    desde = request.GET.get('desde', '').strip()
-    hasta = request.GET.get('hasta', '').strip()
+    desde = request.GET.get('desde', '').strip() or request.GET.get('fecha_desde', '').strip()
+    hasta = request.GET.get('hasta', '').strip() or request.GET.get('fecha_hasta', '').strip()
 
     qs = TicketRetiro.objects.select_related('empresa').prefetch_related('detalles__material').all().order_by('fecha', 'id')
 
@@ -364,52 +381,78 @@ def retiros_informe(request):
     tickets = list(qs)
 
     materiales_presentes_ids = DetalleMaterialTicket.objects.filter(ticket__in=qs).values_list('material_id', flat=True).distinct()
-    columnas_materiales = list(CatalogoMaterialRetiro.objects.filter(id__in=materiales_presentes_ids).order_by('orden', 'nombre'))
+    if materiales_presentes_ids:
+        materiales = list(CatalogoMaterialRetiro.objects.filter(id__in=materiales_presentes_ids).order_by('orden', 'nombre'))
+    else:
+        materiales = list(CatalogoMaterialRetiro.objects.filter(activo=True).order_by('orden', 'nombre'))
 
-    matriz_filas = []
-    totales_materiales = {mat.id: {'peso': Decimal('0.00'), 'cantidad': Decimal('0.00')} for mat in columnas_materiales}
+    filas = []
+    totales_por_mat = {mat.id: Decimal('0.00') for mat in materiales}
     total_peso_bascula = Decimal('0.00')
+    total_desglose_general = Decimal('0.00')
+    total_unidades_general = Decimal('0.00')
 
     for t in tickets:
         total_peso_bascula += (t.peso_total_ticket or Decimal('0.00'))
         det_map = {d.material_id: d for d in t.detalles.all()}
         
-        celdas = []
-        for mat in columnas_materiales:
+        mat_cols = []
+        total_desglose_ticket = Decimal('0.00')
+        
+        for mat in materiales:
             det = det_map.get(mat.id)
             if det:
-                peso = det.peso_kg or Decimal('0.00')
-                cant = det.cantidad_unidades
-                totales_materiales[mat.id]['peso'] += peso
-                if cant:
-                    totales_materiales[mat.id]['cantidad'] += cant
-                celdas.append({
-                    'material_id': mat.id,
-                    'peso': peso if peso > 0 else None,
-                    'cantidad': cant if cant and cant > 0 else None,
+                if mat.unidad_medida == 'un':
+                    val = det.cantidad_unidades or Decimal('0.00')
+                    total_unidades_general += val
+                else:
+                    val = det.peso_kg or Decimal('0.00')
+                    total_desglose_general += val
+                    total_desglose_ticket += val
+                
+                totales_por_mat[mat.id] += val
+                mat_cols.append({
+                    'material': mat,
+                    'valor': val,
+                    'unidad': mat.unidad_medida,
                 })
             else:
-                celdas.append({
-                    'material_id': mat.id,
-                    'peso': None,
-                    'cantidad': None,
+                mat_cols.append({
+                    'material': mat,
+                    'valor': Decimal('0.00'),
+                    'unidad': mat.unidad_medida,
                 })
 
-        matriz_filas.append({
+        filas.append({
             'ticket': t,
-            'celdas': celdas,
+            'materiales_cols': mat_cols,
+            'total_desglose_kg': total_desglose_ticket,
         })
+
+    totales_fila = {
+        'total_tickets': len(tickets),
+        'peso_total_ticket': total_peso_bascula,
+        'total_desglose_kg': total_desglose_general,
+        'total_unidades': total_unidades_general,
+        'materiales': [{'valor': totales_por_mat[mat.id]} for mat in materiales],
+    }
 
     servicios_list = TicketRetiro.objects.values_list('tipo_servicio', flat=True).exclude(tipo_servicio__isnull=True).exclude(tipo_servicio='').distinct().order_by('tipo_servicio')
 
     context = {
+        'filas': filas,
+        'materiales': materiales,
+        'totales_fila': totales_fila,
         'tickets_count': len(tickets),
-        'columnas_materiales': columnas_materiales,
-        'matriz_filas': matriz_filas,
-        'totales_materiales': totales_materiales,
+        'columnas_materiales': materiales,
+        'matriz_filas': filas,
         'total_peso_bascula': total_peso_bascula,
+        'empresas': empresas_list,
         'empresas_list': empresas_list,
+        'empresa_seleccionada': empresa_id,
         'empresa_actual': empresa_actual,
+        'fecha_desde': desde,
+        'fecha_hasta': hasta,
         'servicios_list': servicios_list,
         'filtros': {
             'empresa': empresa_id,
@@ -432,8 +475,8 @@ def exportar_retiros_excel(request):
     faena = request.GET.get('faena', '').strip()
     tipo_servicio = request.GET.get('tipo_servicio', '').strip()
     tipo_residuo = request.GET.get('tipo_residuo', '').strip()
-    desde = request.GET.get('desde', '').strip()
-    hasta = request.GET.get('hasta', '').strip()
+    desde = request.GET.get('desde', '').strip() or request.GET.get('fecha_desde', '').strip()
+    hasta = request.GET.get('hasta', '').strip() or request.GET.get('fecha_hasta', '').strip()
 
     qs = TicketRetiro.objects.select_related('empresa').prefetch_related('detalles__material').all().order_by('fecha', 'id')
 
