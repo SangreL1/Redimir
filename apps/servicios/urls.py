@@ -4,6 +4,12 @@ from .views import (
     RegistrarRetiroView, RegistroExitosoView, ValidacionesPendientesView,
     EditarServicioRegistroView, ServicioEnviarEmailView,
 )
+from .views_retiros import (
+    retiros_lista, retiro_crear, retiro_detalle,
+    retiro_editar, retiro_eliminar,
+    retiros_informe, exportar_retiros_excel,
+    api_materiales_retiro
+)
 
 urlpatterns = [
     # Servicios CRUD
@@ -19,5 +25,14 @@ urlpatterns = [
 
     # Validaciones admin
     path('validaciones/',                 ValidacionesPendientesView.as_view(), name='validaciones'),
-]
 
+    # NUEVO MÓDULO REDIMIR: Gestión relacional de Retiros y Tickets
+    path('retiros/',                      retiros_lista,          name='retiros-lista'),
+    path('retiros/nuevo/',                retiro_crear,           name='retiro-crear'),
+    path('retiros/<int:pk>/',             retiro_detalle,         name='retiro-detalle'),
+    path('retiros/<int:pk>/editar/',      retiro_editar,          name='retiro-editar'),
+    path('retiros/<int:pk>/eliminar/',    retiro_eliminar,        name='retiro-eliminar'),
+    path('retiros/informe/',              retiros_informe,        name='retiros-informe'),
+    path('retiros/informe/excel/',        exportar_retiros_excel, name='retiros-informe-excel'),
+    path('api/retiros/materiales/',       api_materiales_retiro,  name='retiros-api-materiales'),
+]

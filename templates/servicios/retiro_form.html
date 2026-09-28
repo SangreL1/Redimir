@@ -1,0 +1,310 @@
+{% extends "base.html" %}
+{% block title %}{% if ticket %}Editar Ticket #{{ ticket.numero_ticket }}{% else %}Registrar Nuevo Ticket{% endif %} | REDIMIR{% endblock %}
+{% block nav_retiros %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <div class="small text-muted mb-1">
+                <a href="{% url 'retiros-lista' %}" class="text-decoration-none"><i class="fas fa-arrow-left me-1"></i>Volver al listado</a>
+            </div>
+            <h1 class="h3 mb-0" style="font-weight:700; color:var(--dark-navy,#1a2b49);">
+                {% if ticket %}<i class="fas fa-edit me-2 text-primary"></i>Editar Ticket #{{ ticket.numero_ticket }}{% else %}<i class="fas fa-plus-circle me-2 text-success"></i>Registrar Nuevo Ticket de Pesaje{% endif %}
+            </h1>
+        </div>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" id="ticketForm">
+        {% csrf_token %}
+        <div class="row g-4">
+            <!-- Columna Datos Principales -->
+            <div class="col-12 col-lg-5">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white py-3 border-bottom">
+                        <h5 class="card-title mb-0 fw-bold"><i class="fas fa-ticket-alt text-primary me-2"></i>Encabezado del Ticket</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Empresa Generadora <span class="text-danger">*</span></label>
+                            {{ form.empresa }}
+                            {% if form.empresa.errors %}<div class="text-danger small mt-1">{{ form.empresa.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">N° Ticket Báscula <span class="text-danger">*</span></label>
+                                {{ form.numero_ticket }}
+                                {% if form.numero_ticket.errors %}<div class="text-danger small mt-1">{{ form.numero_ticket.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Fecha Retiro <span class="text-danger">*</span></label>
+                                {{ form.fecha }}
+                                {% if form.fecha.errors %}<div class="text-danger small mt-1">{{ form.fecha.errors }}</div>{% endif %}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Faena / Área</label>
+                            {{ form.faena_area }}
+                            {% if form.faena_area.errors %}<div class="text-danger small mt-1">{{ form.faena_area.errors }}</div>{% endif %}
+                        </div>
+
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Tipo de Servicio</label>
+                                {{ form.tipo_servicio }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Tipo de Residuo</label>
+                                {{ form.tipo_residuo }}
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Peso Total Báscula (kg) <span class="text-danger">*</span></label>
+                            {{ form.peso_total_ticket }}
+                            {% if form.peso_total_ticket.errors %}<div class="text-danger small mt-1">{{ form.peso_total_ticket.errors }}</div>{% endif %}
+                            <div class="form-text small">Peso total registrado en ticket o báscula de pesaje.</div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label fw-semibold">Voucher / Respaldo (Foto o PDF)</label>
+                            {{ form.respaldo_ticket }}
+                            {% if form.respaldo_ticket.errors %}<div class="text-danger small mt-1">{{ form.respaldo_ticket.errors }}</div>{% endif %}
+                            {% if ticket.respaldo_ticket %}
+                            <div class="mt-2 small text-muted">
+                                Respaldo actual: <a href="{{ ticket.respaldo_ticket.url }}" target="_blank">Ver archivo</a>
+                            </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="mb-0">
+                            <label class="form-label fw-semibold">Observaciones</label>
+                            {{ form.observaciones }}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resumen de Cuadratura en Vivo -->
+                <div class="card border-0 shadow-sm p-3 bg-light">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted fw-semibold">Total Báscula:</span>
+                        <span class="fw-bold" id="liveTotalTicket">0 kg</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="text-muted fw-semibold">Suma Materiales (kg):</span>
+                        <span class="fw-bold text-primary" id="liveSumaMateriales">0 kg</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center pt-2 border-top">
+                        <span class="fw-bold">Diferencia:</span>
+                        <span class="badge bg-secondary" id="liveBadgeCuadratura">0 kg</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Columna Desglose de Materiales -->
+            <div class="col-12 col-lg-7">
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                        <div>
+                            <h5 class="card-title mb-0 fw-bold"><i class="fas fa-boxes text-info me-2"></i>Desglose de Materiales</h5>
+                            <small class="text-muted">Agrega los materiales que componen este retiro (Cartón, Papel, Botellas, etc.)</small>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-success" id="addMaterialRowBtn">
+                            <i class="fas fa-plus me-1"></i> Agregar Material
+                        </button>
+                    </div>
+
+                    <div class="card-body p-0">
+                        {{ formset.management_form }}
+                        <div class="table-responsive">
+                            <table class="table align-middle mb-0" id="materialesTable">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th style="min-width: 180px;">Material</th>
+                                        <th style="width: 120px;" class="text-end">Kilos (kg)</th>
+                                        <th style="width: 110px;" class="text-end">Unidades (un)</th>
+                                        <th style="min-width: 140px;">Observaciones</th>
+                                        <th style="width: 50px;" class="text-center"></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for form_m in formset %}
+                                    <tr class="material-row">
+                                        <td>
+                                            {% for hidden in form_m.hidden_fields %}{{ hidden }}{% endfor %}
+                                            {{ form_m.material }}
+                                            {% if form_m.material.errors %}<div class="text-danger small">{{ form_m.material.errors }}</div>{% endif %}
+                                        </td>
+                                        <td>
+                                            {{ form_m.peso_kg }}
+                                            {% if form_m.peso_kg.errors %}<div class="text-danger small">{{ form_m.peso_kg.errors }}</div>{% endif %}
+                                        </td>
+                                        <td>
+                                            {{ form_m.cantidad_unidades }}
+                                            {% if form_m.cantidad_unidades.errors %}<div class="text-danger small">{{ form_m.cantidad_unidades.errors }}</div>{% endif %}
+                                        </td>
+                                        <td>
+                                            {{ form_m.observaciones }}
+                                        </td>
+                                        <td class="text-center">
+                                            {% if formset.can_delete and form_m.instance.pk %}
+                                                <div style="display:none;">{{ form_m.DELETE }}</div>
+                                                <button type="button" class="btn btn-sm btn-outline-danger delete-existing-row" title="Marcar para eliminar">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            {% else %}
+                                                <button type="button" class="btn btn-sm btn-outline-danger remove-new-row" title="Quitar fila">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end gap-2 mb-4">
+                    <a href="{% url 'retiros-lista' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
+                    <button type="submit" class="btn btn-primary px-5 fw-bold" style="background-color:#006BB8; border-color:#005a9c;">
+                        <i class="fas fa-save me-1"></i> Guardar Ticket y Desglose
+                    </button>
+                </div>
+            </div>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const totalForms = document.getElementById('id_detalles_materiales-TOTAL_FORMS');
+    const tableBody = document.querySelector('#materialesTable tbody');
+    const addBtn = document.getElementById('addMaterialRowBtn');
+    const pesoTicketInput = document.getElementById('id_peso_total_ticket');
+
+    function calculateTotals() {
+        const pesoTicket = parseFloat(pesoTicketInput ? pesoTicketInput.value : 0) || 0;
+        let sumMateriales = 0;
+
+        document.querySelectorAll('.material-row').forEach(row => {
+            if (row.style.display === 'none') return;
+            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (deleteInput && deleteInput.checked) return;
+
+            const pesoInput = row.querySelector('input[name$="-peso_kg"]');
+            if (pesoInput) {
+                const val = parseFloat(pesoInput.value) || 0;
+                sumMateriales += val;
+            }
+        });
+
+        document.getElementById('liveTotalTicket').textContent = pesoTicket.toLocaleString('es-CL', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' kg';
+        document.getElementById('liveSumaMateriales').textContent = sumMateriales.toLocaleString('es-CL', {minimumFractionDigits: 0, maximumFractionDigits: 2}) + ' kg';
+        
+        const diff = Math.abs(pesoTicket - sumMateriales);
+        const badge = document.getElementById('liveBadgeCuadratura');
+        if (pesoTicket > 0 && diff < 0.01) {
+            badge.className = 'badge bg-success';
+            badge.textContent = 'Cuadrado perfecto';
+        } else if (pesoTicket === 0 && sumMateriales === 0) {
+            badge.className = 'badge bg-secondary';
+            badge.textContent = '0 kg';
+        } else {
+            badge.className = 'badge bg-warning text-dark';
+            badge.textContent = 'Diferencia: ' + diff.toFixed(2) + ' kg';
+        }
+    }
+
+    if (pesoTicketInput) {
+        pesoTicketInput.addEventListener('input', calculateTotals);
+    }
+    tableBody.addEventListener('input', function(e) {
+        if (e.target && e.target.name && e.target.name.endsWith('-peso_kg')) {
+            calculateTotals();
+        }
+    });
+
+    // Add new row
+    addBtn.addEventListener('click', function() {
+        const formIdx = parseInt(totalForms.value, 10);
+        const firstRow = document.querySelector('.material-row');
+        if (!firstRow) return;
+
+        const newRow = firstRow.cloneNode(true);
+        newRow.style.display = '';
+
+        // Reset inputs and update index
+        newRow.querySelectorAll('input, select').forEach(input => {
+            const name = input.name;
+            if (name) {
+                input.name = name.replace(/-\d+-/, '-' + formIdx + '-');
+                input.id = 'id_' + input.name;
+            }
+            if (input.type === 'hidden' && name.endsWith('-id')) {
+                input.value = '';
+            } else if (input.type === 'checkbox') {
+                input.checked = false;
+            } else {
+                input.value = '';
+            }
+        });
+
+        // Set action button to remove-new-row
+        const actionTd = newRow.querySelector('td:last-child');
+        actionTd.innerHTML = '<button type="button" class="btn btn-sm btn-outline-danger remove-new-row" title="Quitar fila"><i class="fas fa-times"></i></button>';
+
+        tableBody.appendChild(newRow);
+        totalForms.value = formIdx + 1;
+        calculateTotals();
+    });
+
+    // Remove row handlers
+    tableBody.addEventListener('click', function(e) {
+        const btnRemove = e.target.closest('.remove-new-row');
+        if (btnRemove) {
+            const row = btnRemove.closest('tr');
+            row.remove();
+            calculateTotals();
+            return;
+        }
+
+        const btnDeleteExisting = e.target.closest('.delete-existing-row');
+        if (btnDeleteExisting) {
+            const row = btnDeleteExisting.closest('tr');
+            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (deleteInput) {
+                deleteInput.checked = true;
+                row.style.opacity = '0.3';
+                row.style.textDecoration = 'line-through';
+                btnDeleteExisting.classList.replace('btn-outline-danger', 'btn-outline-secondary');
+                btnDeleteExisting.innerHTML = '<i class="fas fa-undo"></i>';
+                btnDeleteExisting.className = 'btn btn-sm btn-outline-secondary restore-existing-row';
+            }
+            calculateTotals();
+            return;
+        }
+
+        const btnRestore = e.target.closest('.restore-existing-row');
+        if (btnRestore) {
+            const row = btnRestore.closest('tr');
+            const deleteInput = row.querySelector('input[type="checkbox"][name$="-DELETE"]');
+            if (deleteInput) {
+                deleteInput.checked = false;
+                row.style.opacity = '1';
+                row.style.textDecoration = 'none';
+                btnRestore.className = 'btn btn-sm btn-outline-danger delete-existing-row';
+                btnRestore.innerHTML = '<i class="fas fa-trash"></i>';
+            }
+            calculateTotals();
+            return;
+        }
+    });
+
+    calculateTotals();
+});
+</script>
+{% endblock %}

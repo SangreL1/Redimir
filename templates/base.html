@@ -778,6 +778,8 @@
         <span class="sidebar-section">Servicios</span>
         <a href="/servicios/crear/" class="sidebar-item"><i class="fas fa-truck"></i>Crear Servicio</a>
         <a href="/servicios/" class="sidebar-item"><i class="fas fa-clipboard-list"></i>Todos los Servicios</a>
+        <a href="/retiros/" class="sidebar-item"><i class="fas fa-ticket-alt"></i>Tickets y Retiros</a>
+        <a href="/retiros/informe/" class="sidebar-item"><i class="fas fa-table"></i>Informe Consolidado</a>
         <a href="/solicitudes/" class="sidebar-item"><i class="fas fa-inbox"></i>Solicitudes Web</a>
         <a href="/validaciones/" class="sidebar-item" style="color:var(--accent-dark);">
             <i class="fas fa-exclamation-circle"></i>Validaciones Pend.
@@ -851,6 +853,12 @@
         </a>
         <a href="/servicios/" class="sidebar-item {% block nav_servicios %}{% endblock %}">
             <i class="fas fa-clipboard-list"></i>Todos los Servicios
+        </a>
+        <a href="/retiros/" class="sidebar-item {% block nav_retiros %}{% endblock %}">
+            <i class="fas fa-ticket-alt"></i>Tickets y Retiros
+        </a>
+        <a href="/retiros/informe/" class="sidebar-item {% block nav_retiros_informe %}{% endblock %}">
+            <i class="fas fa-table"></i>Informe Consolidado
         </a>
         <a href="/recolecciones/" class="sidebar-item {% block nav_lotes %}{% endblock %}">
             <i class="fas fa-boxes"></i>Lotes de Recolección

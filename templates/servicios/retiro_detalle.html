@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+{% block title %}Ticket #{{ ticket.numero_ticket }} | REDIMIR{% endblock %}
+{% block nav_retiros %}active{% endblock %}
+
+{% block content %}
+<div class="container-fluid px-0">
+    <div class="d-flex flex-wrap justify-content-between align-items-center mb-4 gap-3">
+        <div>
+            <div class="small text-muted mb-1">
+                <a href="{% url 'retiros-lista' %}" class="text-decoration-none"><i class="fas fa-arrow-left me-1"></i>Volver al listado</a>
+            </div>
+            <h1 class="h3 mb-0" style="font-weight:700; color:var(--dark-navy,#1a2b49);">
+                Ticket de Pesaje #{{ ticket.numero_ticket }}
+            </h1>
+        </div>
+        <div class="d-flex gap-2">
+            <a href="{% url 'retiro-editar' ticket.pk %}" class="btn btn-primary">
+                <i class="fas fa-edit me-1"></i> Editar Ticket
+            </a>
+            <a href="{% url 'retiro-eliminar' ticket.pk %}" class="btn btn-outline-danger">
+                <i class="fas fa-trash me-1"></i> Eliminar
+            </a>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <!-- Ticket General Info -->
+        <div class="col-12 col-lg-5">
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header bg-white py-3 border-bottom">
+                    <h5 class="card-title mb-0 fw-bold"><i class="fas fa-info-circle text-primary me-2"></i>Información Principal</h5>
+                </div>
+                <div class="card-body">
+                    <dl class="row mb-0" style="font-size:0.9rem;">
+                        <dt class="col-sm-5 text-muted">Empresa Generadora:</dt>
+                        <dd class="col-sm-7 fw-bold">{{ ticket.empresa.nombre_razon_social }}</dd>
+
+                        <dt class="col-sm-5 text-muted">Fecha del Retiro:</dt>
+                        <dd class="col-sm-7">{{ ticket.fecha|date:"d/m/Y" }}</dd>
+
+                        <dt class="col-sm-5 text-muted">Faena / Área:</dt>
+                        <dd class="col-sm-7">{{ ticket.faena_area|default:"No especificada" }}</dd>
+
+                        <dt class="col-sm-5 text-muted">Tipo de Servicio:</dt>
+                        <dd class="col-sm-7">{{ ticket.tipo_servicio|default:"-" }}</dd>
+
+                        <dt class="col-sm-5 text-muted">Tipo de Residuo:</dt>
+                        <dd class="col-sm-7">{{ ticket.tipo_residuo|default:"-" }}</dd>
+
+                        <dt class="col-sm-5 text-muted">Peso Total Báscula:</dt>
+                        <dd class="col-sm-7"><span class="h5 fw-bold text-primary">{{ ticket.peso_total_ticket|floatformat:2 }} kg</span></dd>
+
+                        <dt class="col-sm-5 text-muted">Total Desglosado:</dt>
+                        <dd class="col-sm-7 fw-semibold">{{ ticket.total_kilos_desglosados|floatformat:2 }} kg</dd>
+
+                        <dt class="col-sm-5 text-muted">Cuadratura:</dt>
+                        <dd class="col-sm-7">
+                            {% if ticket.is_cuadrado %}
+                                <span class="badge bg-success text-white"><i class="fas fa-check-circle me-1"></i>Cuadrado</span>
+                            {% else %}
+                                <span class="badge bg-warning text-dark"><i class="fas fa-exclamation-triangle me-1"></i>Diferencia: {{ ticket.diferencia_peso|floatformat:2 }} kg</span>
+                            {% endif %}
+                        </dd>
+
+                        <dt class="col-sm-5 text-muted">Registrado por:</dt>
+                        <dd class="col-sm-7">{{ ticket.registrado_por.get_full_name|default:ticket.registrado_por.username|default:"Sistema" }}</dd>
+
+                        {% if ticket.observaciones %}
+                        <dt class="col-sm-5 text-muted">Observaciones:</dt>
+                        <dd class="col-sm-7 small text-secondary">{{ ticket.observaciones }}</dd>
+                        {% endif %}
+                    </dl>
+                </div>
+            </div>
+
+            <!-- Respaldo Foto/Voucher -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold"><i class="fas fa-file-invoice text-success me-2"></i>Voucher / Respaldo</h5>
+                    {% if ticket.respaldo_ticket %}
+                    <a href="{{ ticket.respaldo_ticket.url }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        <i class="fas fa-external-link-alt me-1"></i> Abrir Original
+                    </a>
+                    {% endif %}
+                </div>
+                <div class="card-body text-center p-3">
+                    {% if ticket.respaldo_ticket %}
+                        {% if ticket.es_imagen_respaldo %}
+                            <img src="{{ ticket.respaldo_ticket.url }}" alt="Ticket {{ ticket.numero_ticket }}" class="img-fluid rounded border shadow-sm" style="max-height: 450px; object-fit: contain;">
+                        {% else %}
+                            <div class="py-5">
+                                <i class="fas fa-file-pdf fa-4x text-danger mb-3"></i>
+                                <p class="mb-2 fw-semibold">Documento adjunto en PDF / Archivo</p>
+                                <a href="{{ ticket.respaldo_ticket.url }}" target="_blank" class="btn btn-sm btn-primary">Descargar Respaldo</a>
+                            </div>
+                        {% endif %}
+                    {% else %}
+                        <div class="py-5 text-muted">
+                            <i class="fas fa-camera fa-3x mb-3 text-secondary opacity-50"></i>
+                            <p class="mb-0">No se adjuntó imagen ni archivo de respaldo para este ticket.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Material Breakdown Table -->
+        <div class="col-12 col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
+                    <h5 class="card-title mb-0 fw-bold"><i class="fas fa-boxes text-info me-2"></i>Desglose Relacional de Materiales</h5>
+                    <span class="badge bg-primary rounded-pill">{{ ticket.detalles_materiales.count }} ítems</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Material / Categoría</th>
+                                <th class="text-center">Tipo de Unidad</th>
+                                <th class="text-end">Peso (kg)</th>
+                                <th class="text-end">Unidades (cant.)</th>
+                                <th>Notas</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for det in ticket.detalles_materiales.all %}
+                            <tr>
+                                <td>
+                                    <div class="fw-bold text-dark">{{ det.material.nombre }}</div>
+                                    <small class="text-muted">{{ det.material.get_categoria_display }}</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border">{{ det.material.get_unidad_medida_display }}</span>
+                                </td>
+                                <td class="text-end">
+                                    {% if det.peso_kg %}
+                                        <span class="fw-bold text-dark">{{ det.peso_kg|floatformat:2 }}</span> <small class="text-muted">kg</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end">
+                                    {% if det.cantidad_unidades %}
+                                        <span class="fw-bold text-primary">{{ det.cantidad_unidades }}</span> <small class="text-muted">un</small>
+                                    {% else %}
+                                        <span class="text-muted">-</span>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <small class="text-muted">{{ det.observaciones|default:"-" }}</small>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="5" class="text-center py-4 text-muted">
+                                    No hay materiales desglosados en este ticket.
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                        <tfoot class="table-light fw-bold">
+                            <tr>
+                                <td>TOTALES DESGLOSADOS</td>
+                                <td></td>
+                                <td class="text-end">{{ ticket.total_kilos_desglosados|floatformat:2 }} kg</td>
+                                <td class="text-end">
+                                    {% for det in ticket.detalles_materiales.all %}
+                                        {% if forloop.first %}{{ ticket.detalles_materiales.all|length }} reg.{% endif %}
+                                    {% endfor %}
+                                </td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

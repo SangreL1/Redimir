@@ -1,0 +1,3483 @@
+[
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 1,
+  "fields": {
+    "nombre": "Cartón",
+    "codigo": null,
+    "categoria": "reciclable",
+    "unidad_medida": "kg",
+    "orden": 1,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 2,
+  "fields": {
+    "nombre": "Papel",
+    "codigo": null,
+    "categoria": "reciclable",
+    "unidad_medida": "kg",
+    "orden": 2,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 3,
+  "fields": {
+    "nombre": "Botellas Plásticas / PET",
+    "codigo": null,
+    "categoria": "reciclable",
+    "unidad_medida": "kg",
+    "orden": 3,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 4,
+  "fields": {
+    "nombre": "Film",
+    "codigo": null,
+    "categoria": "reciclable",
+    "unidad_medida": "kg",
+    "orden": 4,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 5,
+  "fields": {
+    "nombre": "Latas de Aluminio",
+    "codigo": null,
+    "categoria": "reciclable",
+    "unidad_medida": "kg",
+    "orden": 5,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 6,
+  "fields": {
+    "nombre": "Zuncho",
+    "codigo": null,
+    "categoria": "reciclable",
+    "unidad_medida": "kg",
+    "orden": 6,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 7,
+  "fields": {
+    "nombre": "Pallets",
+    "codigo": null,
+    "categoria": "valorizable",
+    "unidad_medida": "un",
+    "orden": 7,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 8,
+  "fields": {
+    "nombre": "Carretes de Madera",
+    "codigo": null,
+    "categoria": "valorizable",
+    "unidad_medida": "un",
+    "orden": 8,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 9,
+  "fields": {
+    "nombre": "Tambores",
+    "codigo": null,
+    "categoria": "valorizable",
+    "unidad_medida": "un",
+    "orden": 9,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 10,
+  "fields": {
+    "nombre": "PP (Polipropileno)",
+    "codigo": null,
+    "categoria": "reciclable",
+    "unidad_medida": "kg",
+    "orden": 10,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 11,
+  "fields": {
+    "nombre": "Barras de Perforación",
+    "codigo": null,
+    "categoria": "valorizable",
+    "unidad_medida": "kg",
+    "orden": 11,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 12,
+  "fields": {
+    "nombre": "Descarga y Acopio",
+    "codigo": null,
+    "categoria": "general",
+    "unidad_medida": "kg",
+    "orden": 12,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 13,
+  "fields": {
+    "nombre": "Chatarra / Metales",
+    "codigo": null,
+    "categoria": "valorizable",
+    "unidad_medida": "kg",
+    "orden": 13,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 14,
+  "fields": {
+    "nombre": "Residuos Generales",
+    "codigo": null,
+    "categoria": "general",
+    "unidad_medida": "kg",
+    "orden": 14,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.catalogomaterialretiro",
+  "pk": 15,
+  "fields": {
+    "nombre": "Residuos Domésticos / Asimilables",
+    "codigo": null,
+    "categoria": "general",
+    "unidad_medida": "kg",
+    "orden": 14,
+    "activo": true
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 1,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "N° de Ticket",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "Peso (Kg.)",
+    "tipo_residuo": "fecha",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_open_N_de_Ticket.png",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.323Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 2,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "146900",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "520.0",
+    "tipo_residuo": "2026-07-03 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_open_146900.png",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.341Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 3,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "147011",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "560.0",
+    "tipo_residuo": "2026-07-06 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_open_147011.png",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.357Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 4,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "147139",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "760.0",
+    "tipo_residuo": "2026-07-10 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_open_147139.png",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.374Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 5,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "147319",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "490.0",
+    "tipo_residuo": "2026-07-13 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.389Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 6,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "147437",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "700.0",
+    "tipo_residuo": "2026-07-17 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_open_147437.png",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.395Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 7,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "147559",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "470.0",
+    "tipo_residuo": "2026-07-20 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_open_147559.png",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.410Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 8,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "147727",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "560.0",
+    "tipo_residuo": "2026-07-24 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_open_147727.png",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.425Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 9,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "147800",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "440.0",
+    "tipo_residuo": "2026-07-27 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_open_147800.png",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.441Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 10,
+  "fields": {
+    "empresa": 5,
+    "servicio": null,
+    "numero_ticket": "147938",
+    "fecha": "2026-09-28",
+    "faena_area": "Plaza Calama",
+    "tipo_servicio": "720.0",
+    "tipo_residuo": "2026-07-31 00:00:00",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:12.456Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 11,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "390.0",
+    "fecha": "2026-01-02",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.542Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 12,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "1150.0",
+    "fecha": "2026-01-06",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "26.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.591Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 13,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "750.0",
+    "fecha": "2026-02-05",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "40.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.602Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 14,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "870.0",
+    "fecha": "2026-01-08",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "4.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.636Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 15,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "960.0",
+    "fecha": "2026-01-22",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.645Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 16,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "600.0",
+    "fecha": "2026-01-09",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.656Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 17,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "760.0",
+    "fecha": "2026-01-13",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "10.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.690Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 18,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "500.0",
+    "fecha": "2026-01-13",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.700Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 19,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "800.0",
+    "fecha": "2026-01-29",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.734Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 20,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "860.0",
+    "fecha": "2026-01-15",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.742Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 21,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "450.0",
+    "fecha": "2026-01-16",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.752Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 22,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "880.0",
+    "fecha": "2026-01-20",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.785Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 23,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "560.0",
+    "fecha": "2026-01-20",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.795Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 24,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "970.0",
+    "fecha": "2026-01-22",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.838Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 25,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "850.0",
+    "fecha": "2026-01-23",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.847Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 26,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "840.0",
+    "fecha": "2026-01-29",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.882Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 27,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "740.0",
+    "fecha": "2026-01-27",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.893Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 28,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "610.0",
+    "fecha": "2026-01-30",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.944Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 29,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "13045.5",
+    "fecha": "2026-09-28",
+    "faena_area": "Faena Enaex",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "Reciclables",
+    "peso_total_ticket": "56.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:15.976Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 30,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "Cantidad en Un.",
+    "fecha": "2026-09-28",
+    "faena_area": "Tipo de residuo",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "Cantidad en Kg.",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:16.011Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 31,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "1070.0",
+    "fecha": "2026-02-03",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.606Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 32,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "1030.0",
+    "fecha": "2026-02-03",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "18.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.638Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 33,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "730.0",
+    "fecha": "2026-02-05",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.656Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 34,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "820.0",
+    "fecha": "2026-02-06",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.667Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 35,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "770.0",
+    "fecha": "2026-02-10",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "14.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.694Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 36,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "1020.0",
+    "fecha": "2026-02-10",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.703Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 37,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "910.0",
+    "fecha": "2026-02-24",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "12.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.734Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 38,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "670.0",
+    "fecha": "2026-02-13",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.752Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 39,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "1010.0",
+    "fecha": "2026-02-17",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "6.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.780Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 40,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "525.0",
+    "fecha": "2026-02-17",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.790Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 41,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "950.0",
+    "fecha": "2026-02-19",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.819Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 42,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "930.0",
+    "fecha": "2026-02-19",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.827Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 43,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "400.0",
+    "fecha": "2026-02-20",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.838Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 44,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "580.0",
+    "fecha": "2026-02-24",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.889Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 45,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "700.0",
+    "fecha": "2026-02-26",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.936Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 46,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "900.0",
+    "fecha": "2026-02-26",
+    "faena_area": "AREAS PRODUCTIVAS",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.980Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 47,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "630.0",
+    "fecha": "2026-02-27",
+    "faena_area": "bod, Apd, Ácido,puntos verdes y HSEC",
+    "tipo_servicio": "Retiro Residuos Industriales",
+    "tipo_residuo": "reciclaje",
+    "peso_total_ticket": "0.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:41:18.991Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 48,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "127889.0",
+    "fecha": "2025-08-20",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "530.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.209Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 49,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "127832.0",
+    "fecha": "2025-08-20",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "430.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.253Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 50,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "127994.0",
+    "fecha": "2025-08-22",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "780.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.276Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 51,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "128138.0",
+    "fecha": "2025-08-25",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "1010.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.295Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 52,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "128324.0",
+    "fecha": "2025-08-27",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "970.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.313Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 53,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "128430.0",
+    "fecha": "2025-08-29",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "830.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.332Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 54,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "128588.0",
+    "fecha": "2025-09-01",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "700.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.602Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 55,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "128754.0",
+    "fecha": "2025-09-03",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "640.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.633Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 56,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "128894.0",
+    "fecha": "2025-09-05",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "600.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.653Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 57,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "129021.0",
+    "fecha": "2025-09-08",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "630.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.671Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 58,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "129186.0",
+    "fecha": "2025-09-10",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "530.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.693Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 59,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "129352.0",
+    "fecha": "2025-09-12",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "800.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.716Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 60,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "129492.0",
+    "fecha": "2025-09-15",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "570.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.734Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 61,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "129642.0",
+    "fecha": "2025-09-17",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "420.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.795Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 62,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "129881.0",
+    "fecha": "2025-09-22",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "340.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.814Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 63,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "129908.0",
+    "fecha": "2025-09-23",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "720.00",
+    "respaldo_ticket": "",
+    "observaciones": "TICKET CORRESPONDE A RETIRO REALIZADO 22-09-2025",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.834Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 64,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "130051.0",
+    "fecha": "2025-09-24",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "770.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.855Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 65,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "130165.0",
+    "fecha": "2025-09-26",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "390.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.876Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 66,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "130288.0",
+    "fecha": "2025-09-29",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "460.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:25.896Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 67,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "130485.0",
+    "fecha": "2025-10-01",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "800.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.435Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 68,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "130630.0",
+    "fecha": "2025-10-03",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "840.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.463Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 69,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "130771.0",
+    "fecha": "2025-10-06",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "980.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.481Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 70,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "130935.0",
+    "fecha": "2025-10-08",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "800.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.501Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 71,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "131063.0",
+    "fecha": "2025-10-10",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "540.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.528Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 72,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "131217.0",
+    "fecha": "2025-10-13",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "440.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.550Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 73,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "131367.0",
+    "fecha": "2025-10-15",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "500.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.572Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 74,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "131527.0",
+    "fecha": "2025-10-17",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "770.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.594Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 75,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "131663.0",
+    "fecha": "2025-10-20",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "620.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.615Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 76,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "131811.0",
+    "fecha": "2025-10-22",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "450.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.635Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 77,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "131943.0",
+    "fecha": "2025-10-24",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "550.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.655Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 78,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "132084.0",
+    "fecha": "2025-10-27",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "660.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.678Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 79,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "132226.0",
+    "fecha": "2025-10-29",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "590.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:26.696Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 80,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "132462.0",
+    "fecha": "2025-10-03",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "910.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.085Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 81,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "132625.0",
+    "fecha": "2025-11-05",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "680.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.181Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 82,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "132741.0",
+    "fecha": "2025-11-07",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "400.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.217Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 83,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "132879.0",
+    "fecha": "2025-11-10",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "580.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.248Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 84,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "133034.0",
+    "fecha": "2025-11-12",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "460.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.272Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 85,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "133133.0",
+    "fecha": "2025-11-14",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "430.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.294Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 86,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "133265.0",
+    "fecha": "2025-11-17",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "490.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.313Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 87,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "133409.0",
+    "fecha": "2025-11-19",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "570.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.332Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 88,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "133547.0",
+    "fecha": "2025-11-21",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "920.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.349Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 89,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "133725.0",
+    "fecha": "2025-11-24",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "550.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.365Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 90,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "133846.0",
+    "fecha": "2025-11-26",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "510.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.383Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 91,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "133998.0",
+    "fecha": "2025-11-28",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "860.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.401Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 92,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "134145",
+    "fecha": "2025-12-01",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "830.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.699Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 93,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "134311",
+    "fecha": "2025-12-03",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "590.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.744Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 94,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "134448",
+    "fecha": "2025-12-05",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "620.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.765Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 95,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "134686",
+    "fecha": "2025-12-09",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "1000.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.783Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 96,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "134746",
+    "fecha": "2025-12-10",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "240.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.803Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 97,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "134892",
+    "fecha": "2025-12-12",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "470.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.823Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 98,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "135051",
+    "fecha": "2025-12-15",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "520.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.847Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 99,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "135224",
+    "fecha": "2025-12-17",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "650.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.871Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 100,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "135360",
+    "fecha": "2025-12-19",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "480.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.894Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 101,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "135521",
+    "fecha": "2025-12-22",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "770.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.915Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 102,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "135695",
+    "fecha": "2025-12-24",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "650.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.933Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 103,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "135802",
+    "fecha": "2025-12-26",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "540.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.954Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 104,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "135985",
+    "fecha": "2025-12-29",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "660.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:27.977Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 105,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "136175",
+    "fecha": "2025-12-31",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "830.00",
+    "respaldo_ticket": "",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:28.001Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 106,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "139798",
+    "fecha": "2026-03-02",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "590.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_139798.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:30.813Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 107,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "139954",
+    "fecha": "2026-03-04",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "620.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_139954.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:30.863Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 108,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "140105",
+    "fecha": "2026-03-06",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "920.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_140105.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:30.888Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 109,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "140241",
+    "fecha": "2026-03-09",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "540.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_140241.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:30.915Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 110,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "140391",
+    "fecha": "2026-03-11",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "650.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_140391.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:30.938Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 111,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "140517",
+    "fecha": "2026-03-13",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "660.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_140517.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:30.966Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 112,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "140658",
+    "fecha": "2026-03-16",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "680.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_140658.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:30.993Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 113,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "140835",
+    "fecha": "2026-03-18",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "390.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_140835.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:31.018Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 114,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "140941",
+    "fecha": "2026-03-20",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "560.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_140941.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:31.048Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 115,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "141061",
+    "fecha": "2026-03-23",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "630.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_141061.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:31.077Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 116,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "141217",
+    "fecha": "2026-03-25",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "610.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_141217.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:31.106Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 117,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "141323",
+    "fecha": "2026-03-27",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "440.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_141323.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:31.134Z"
+  }
+},
+{
+  "model": "servicios.ticketretiro",
+  "pk": 118,
+  "fields": {
+    "empresa": 6,
+    "servicio": null,
+    "numero_ticket": "141459",
+    "fecha": "2026-03-30",
+    "faena_area": "Planta Río Loa",
+    "tipo_servicio": "Retiro Residuos Domésticos",
+    "tipo_residuo": "Residuos Domésticos / Asimilables",
+    "peso_total_ticket": "610.00",
+    "respaldo_ticket": "tickets_retiro/respaldos/2026/09/ticket_domestico_141459.jpg",
+    "observaciones": "",
+    "usuario_registro": null,
+    "fecha_registro": "2026-09-28T21:43:31.162Z"
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 1,
+  "fields": {
+    "ticket": 11,
+    "material": 1,
+    "peso_kg": "375.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 2,
+  "fields": {
+    "ticket": 11,
+    "material": 4,
+    "peso_kg": "6.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 3,
+  "fields": {
+    "ticket": 13,
+    "material": 1,
+    "peso_kg": "710.70",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 4,
+  "fields": {
+    "ticket": 13,
+    "material": 4,
+    "peso_kg": "6.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 5,
+  "fields": {
+    "ticket": 16,
+    "material": 1,
+    "peso_kg": "501.80",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 6,
+  "fields": {
+    "ticket": 16,
+    "material": 4,
+    "peso_kg": "90.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 7,
+  "fields": {
+    "ticket": 18,
+    "material": 1,
+    "peso_kg": "467.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 8,
+  "fields": {
+    "ticket": 18,
+    "material": 4,
+    "peso_kg": "21.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 9,
+  "fields": {
+    "ticket": 21,
+    "material": 1,
+    "peso_kg": "435.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 10,
+  "fields": {
+    "ticket": 21,
+    "material": 4,
+    "peso_kg": "12.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 11,
+  "fields": {
+    "ticket": 23,
+    "material": 1,
+    "peso_kg": "518.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 12,
+  "fields": {
+    "ticket": 23,
+    "material": 4,
+    "peso_kg": "24.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 13,
+  "fields": {
+    "ticket": 25,
+    "material": 1,
+    "peso_kg": "831.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 14,
+  "fields": {
+    "ticket": 25,
+    "material": 4,
+    "peso_kg": "10.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 15,
+  "fields": {
+    "ticket": 27,
+    "material": 1,
+    "peso_kg": "691.80",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 16,
+  "fields": {
+    "ticket": 27,
+    "material": 4,
+    "peso_kg": "21.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 17,
+  "fields": {
+    "ticket": 28,
+    "material": 1,
+    "peso_kg": "562.90",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 18,
+  "fields": {
+    "ticket": 28,
+    "material": 4,
+    "peso_kg": "18.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 19,
+  "fields": {
+    "ticket": 29,
+    "material": 1,
+    "peso_kg": "5094.20",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 20,
+  "fields": {
+    "ticket": 29,
+    "material": 4,
+    "peso_kg": "209.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 21,
+  "fields": {
+    "ticket": 31,
+    "material": 1,
+    "peso_kg": "1055.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 22,
+  "fields": {
+    "ticket": 31,
+    "material": 4,
+    "peso_kg": "6.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 23,
+  "fields": {
+    "ticket": 34,
+    "material": 1,
+    "peso_kg": "780.70",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 24,
+  "fields": {
+    "ticket": 34,
+    "material": 4,
+    "peso_kg": "6.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 25,
+  "fields": {
+    "ticket": 36,
+    "material": 1,
+    "peso_kg": "921.80",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 26,
+  "fields": {
+    "ticket": 36,
+    "material": 4,
+    "peso_kg": "90.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 27,
+  "fields": {
+    "ticket": 38,
+    "material": 1,
+    "peso_kg": "637.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 28,
+  "fields": {
+    "ticket": 38,
+    "material": 4,
+    "peso_kg": "21.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 29,
+  "fields": {
+    "ticket": 40,
+    "material": 1,
+    "peso_kg": "510.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 30,
+  "fields": {
+    "ticket": 40,
+    "material": 4,
+    "peso_kg": "12.50",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 31,
+  "fields": {
+    "ticket": 43,
+    "material": 1,
+    "peso_kg": "358.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 32,
+  "fields": {
+    "ticket": 43,
+    "material": 4,
+    "peso_kg": "24.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 33,
+  "fields": {
+    "ticket": 44,
+    "material": 1,
+    "peso_kg": "532.80",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 34,
+  "fields": {
+    "ticket": 44,
+    "material": 4,
+    "peso_kg": "21.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 35,
+  "fields": {
+    "ticket": 47,
+    "material": 1,
+    "peso_kg": "582.90",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 36,
+  "fields": {
+    "ticket": 47,
+    "material": 4,
+    "peso_kg": "18.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 37,
+  "fields": {
+    "ticket": 48,
+    "material": 15,
+    "peso_kg": "530.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 38,
+  "fields": {
+    "ticket": 49,
+    "material": 15,
+    "peso_kg": "430.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 39,
+  "fields": {
+    "ticket": 50,
+    "material": 15,
+    "peso_kg": "780.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 40,
+  "fields": {
+    "ticket": 51,
+    "material": 15,
+    "peso_kg": "1010.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 41,
+  "fields": {
+    "ticket": 52,
+    "material": 15,
+    "peso_kg": "970.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 42,
+  "fields": {
+    "ticket": 53,
+    "material": 15,
+    "peso_kg": "830.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 43,
+  "fields": {
+    "ticket": 54,
+    "material": 15,
+    "peso_kg": "700.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 44,
+  "fields": {
+    "ticket": 55,
+    "material": 15,
+    "peso_kg": "640.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 45,
+  "fields": {
+    "ticket": 56,
+    "material": 15,
+    "peso_kg": "600.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 46,
+  "fields": {
+    "ticket": 57,
+    "material": 15,
+    "peso_kg": "630.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 47,
+  "fields": {
+    "ticket": 58,
+    "material": 15,
+    "peso_kg": "530.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 48,
+  "fields": {
+    "ticket": 59,
+    "material": 15,
+    "peso_kg": "800.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 49,
+  "fields": {
+    "ticket": 60,
+    "material": 15,
+    "peso_kg": "570.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 50,
+  "fields": {
+    "ticket": 61,
+    "material": 15,
+    "peso_kg": "420.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 51,
+  "fields": {
+    "ticket": 62,
+    "material": 15,
+    "peso_kg": "340.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 52,
+  "fields": {
+    "ticket": 63,
+    "material": 15,
+    "peso_kg": "720.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 53,
+  "fields": {
+    "ticket": 64,
+    "material": 15,
+    "peso_kg": "770.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 54,
+  "fields": {
+    "ticket": 65,
+    "material": 15,
+    "peso_kg": "390.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 55,
+  "fields": {
+    "ticket": 66,
+    "material": 15,
+    "peso_kg": "460.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 56,
+  "fields": {
+    "ticket": 67,
+    "material": 15,
+    "peso_kg": "800.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 57,
+  "fields": {
+    "ticket": 68,
+    "material": 15,
+    "peso_kg": "840.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 58,
+  "fields": {
+    "ticket": 69,
+    "material": 15,
+    "peso_kg": "980.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 59,
+  "fields": {
+    "ticket": 70,
+    "material": 15,
+    "peso_kg": "800.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 60,
+  "fields": {
+    "ticket": 71,
+    "material": 15,
+    "peso_kg": "540.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 61,
+  "fields": {
+    "ticket": 72,
+    "material": 15,
+    "peso_kg": "440.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 62,
+  "fields": {
+    "ticket": 73,
+    "material": 15,
+    "peso_kg": "500.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 63,
+  "fields": {
+    "ticket": 74,
+    "material": 15,
+    "peso_kg": "770.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 64,
+  "fields": {
+    "ticket": 75,
+    "material": 15,
+    "peso_kg": "620.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 65,
+  "fields": {
+    "ticket": 76,
+    "material": 15,
+    "peso_kg": "450.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 66,
+  "fields": {
+    "ticket": 77,
+    "material": 15,
+    "peso_kg": "550.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 67,
+  "fields": {
+    "ticket": 78,
+    "material": 15,
+    "peso_kg": "660.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 68,
+  "fields": {
+    "ticket": 79,
+    "material": 15,
+    "peso_kg": "590.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 69,
+  "fields": {
+    "ticket": 80,
+    "material": 15,
+    "peso_kg": "910.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 70,
+  "fields": {
+    "ticket": 81,
+    "material": 15,
+    "peso_kg": "680.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 71,
+  "fields": {
+    "ticket": 82,
+    "material": 15,
+    "peso_kg": "400.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 72,
+  "fields": {
+    "ticket": 83,
+    "material": 15,
+    "peso_kg": "580.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 73,
+  "fields": {
+    "ticket": 84,
+    "material": 15,
+    "peso_kg": "460.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 74,
+  "fields": {
+    "ticket": 85,
+    "material": 15,
+    "peso_kg": "430.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 75,
+  "fields": {
+    "ticket": 86,
+    "material": 15,
+    "peso_kg": "490.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 76,
+  "fields": {
+    "ticket": 87,
+    "material": 15,
+    "peso_kg": "570.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 77,
+  "fields": {
+    "ticket": 88,
+    "material": 15,
+    "peso_kg": "920.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 78,
+  "fields": {
+    "ticket": 89,
+    "material": 15,
+    "peso_kg": "550.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 79,
+  "fields": {
+    "ticket": 90,
+    "material": 15,
+    "peso_kg": "510.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 80,
+  "fields": {
+    "ticket": 91,
+    "material": 15,
+    "peso_kg": "860.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 81,
+  "fields": {
+    "ticket": 92,
+    "material": 15,
+    "peso_kg": "830.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 82,
+  "fields": {
+    "ticket": 93,
+    "material": 15,
+    "peso_kg": "590.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 83,
+  "fields": {
+    "ticket": 94,
+    "material": 15,
+    "peso_kg": "620.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 84,
+  "fields": {
+    "ticket": 95,
+    "material": 15,
+    "peso_kg": "1000.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 85,
+  "fields": {
+    "ticket": 96,
+    "material": 15,
+    "peso_kg": "240.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 86,
+  "fields": {
+    "ticket": 97,
+    "material": 15,
+    "peso_kg": "470.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 87,
+  "fields": {
+    "ticket": 98,
+    "material": 15,
+    "peso_kg": "520.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 88,
+  "fields": {
+    "ticket": 99,
+    "material": 15,
+    "peso_kg": "650.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 89,
+  "fields": {
+    "ticket": 100,
+    "material": 15,
+    "peso_kg": "480.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 90,
+  "fields": {
+    "ticket": 101,
+    "material": 15,
+    "peso_kg": "770.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 91,
+  "fields": {
+    "ticket": 102,
+    "material": 15,
+    "peso_kg": "650.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 92,
+  "fields": {
+    "ticket": 103,
+    "material": 15,
+    "peso_kg": "540.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 93,
+  "fields": {
+    "ticket": 104,
+    "material": 15,
+    "peso_kg": "660.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 94,
+  "fields": {
+    "ticket": 105,
+    "material": 15,
+    "peso_kg": "830.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 95,
+  "fields": {
+    "ticket": 106,
+    "material": 15,
+    "peso_kg": "590.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 96,
+  "fields": {
+    "ticket": 107,
+    "material": 15,
+    "peso_kg": "620.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 97,
+  "fields": {
+    "ticket": 108,
+    "material": 15,
+    "peso_kg": "920.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 98,
+  "fields": {
+    "ticket": 109,
+    "material": 15,
+    "peso_kg": "540.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 99,
+  "fields": {
+    "ticket": 110,
+    "material": 15,
+    "peso_kg": "650.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 100,
+  "fields": {
+    "ticket": 111,
+    "material": 15,
+    "peso_kg": "660.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 101,
+  "fields": {
+    "ticket": 112,
+    "material": 15,
+    "peso_kg": "680.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 102,
+  "fields": {
+    "ticket": 113,
+    "material": 15,
+    "peso_kg": "390.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 103,
+  "fields": {
+    "ticket": 114,
+    "material": 15,
+    "peso_kg": "560.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 104,
+  "fields": {
+    "ticket": 115,
+    "material": 15,
+    "peso_kg": "630.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 105,
+  "fields": {
+    "ticket": 116,
+    "material": 15,
+    "peso_kg": "610.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 106,
+  "fields": {
+    "ticket": 117,
+    "material": 15,
+    "peso_kg": "440.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+},
+{
+  "model": "servicios.detallematerialticket",
+  "pk": 107,
+  "fields": {
+    "ticket": 118,
+    "material": 15,
+    "peso_kg": "610.00",
+    "cantidad_unidades": null,
+    "observaciones": ""
+  }
+}
+]

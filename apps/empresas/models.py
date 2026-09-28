@@ -34,6 +34,10 @@ class Empresa(models.Model):
     giro = models.CharField(max_length=150, blank=True, verbose_name='Giro Comercial')
 
     @property
+    def nombre_razon_social(self):
+        return self.nombre
+
+    @property
     def rubro_display(self):
         if self.rubro == 'otro' and self.rubro_otro:
             return f"Otro ({self.rubro_otro})"

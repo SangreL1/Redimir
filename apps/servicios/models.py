@@ -289,3 +289,144 @@ class FotoRegistroReciclables(models.Model):
 
     class Meta:
         db_table = 'fotos_reciclables'
+
+
+# ══════════════════════════════════════════════════════════════════════════════
+# MÓDULO REDIMIR — RETIROS RELACIONALES, TICKETS DE BÁSCULA E INFORMES
+# ══════════════════════════════════════════════════════════════════════════════
+
+class CatalogoMaterialRetiro(models.Model):
+    CATEGORIAS = [
+        ('Reciclaje', 'Reciclaje (Papel, Cartón, Plástico, etc.)'),
+        ('Madera', 'Madera y Derivados (Pallets, Carretes)'),
+        ('Envases', 'Envases y Contenedores (Tambores, Bidones)'),
+        ('Metales', 'Metales y Chatarra (Aluminio, Zuncho, etc.)'),
+        ('Domestico', 'Residuos Domésticos / Basura'),
+        ('Peligroso', 'Residuos Peligrosos (RESPEL)'),
+        ('Otro', 'Otros Residuos'),
+    ]
+
+    UNIDADES_MEDIDA = [
+        ('kg', 'Solo Kilogramos (kg)'),
+        ('un', 'Solo Unidades (un)'),
+        ('kg_un', 'Kilogramos y Unidades (kg + un)'),
+    ]
+
+    nombre = models.CharField(max_length=150, unique=True, verbose_name="Nombre del Material")
+    codigo = models.CharField(max_length=50, blank=True, null=True, verbose_name="Código / Abreviación")
+    categoria = models.CharField(max_length=50, choices=CATEGORIAS, default='Reciclaje', verbose_name="Categoría")
+    unidad_medida = models.CharField(max_length=20, choices=UNIDADES_MEDIDA, default='kg', verbose_name="Unidad de Medida")
+    orden = models.IntegerField(default=0, verbose_name="Orden de visualización")
+    activo = models.BooleanField(default=True, verbose_name="Activo")
+
+    def __str__(self):
+        return self.nombre
+
+    class Meta:
+        db_table = 'catalogos_material_retiro'
+        verbose_name = "Catálogo Material Retiro"
+        verbose_name_plural = "Catálogo Materiales Retiro"
+        ordering = ['orden', 'nombre']
+
+
+class TicketRetiro(models.Model):
+    empresa = models.ForeignKey(
+        'empresas.Empresa', on_delete=models.CASCADE,
+        related_name='tickets_retiro', verbose_name="Empresa / Cliente"
+    )
+    servicio = models.ForeignKey(
+        Servicio, on_delete=models.SET_NULL, null=True, blank=True,
+        related_name='tickets_pesaje', verbose_name="Servicio Asociado"
+    )
+    numero_ticket = models.CharField(max_length=100, db_index=True, verbose_name="N° de Ticket / Folio")
+    fecha = models.DateField(verbose_name="Fecha de Retiro")
+    faena_area = models.CharField(max_length=200, blank=True, verbose_name="Instalación / Faena / Área")
+    tipo_servicio = models.CharField(
+        max_length=200, blank=True, verbose_name="Tipo de Servicio / Área",
+        help_text="Ej: Áreas Productivas, Bodega APD, Puntos Verdes, Retiro Doméstico, Recepción de Ramplas"
+    )
+    tipo_residuo = models.CharField(
+        max_length=200, default='Reciclaje', verbose_name="Tipo de Residuo General",
+        help_text="Ej: Reciclaje, Residuos Domésticos, Chatarra"
+    )
+    peso_total_ticket = models.DecimalField(
+        max_digits=12, decimal_places=2, verbose_name="Peso Total Báscula (kg)",
+        help_text="Peso oficial de pesaje / báscula"
+    )
+    respaldo_ticket = models.FileField(
+        upload_to='tickets_retiro/respaldos/%Y/%m/', blank=True, null=True,
+        verbose_name="Comprobante de Pesaje (Foto / PDF)"
+    )
+    observaciones = models.TextField(blank=True, verbose_name="Observaciones")
+    usuario_registro = models.ForeignKey(
+        'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
+        verbose_name="Registrado por"
+    )
+    fecha_registro = models.DateTimeField(auto_now_add=True)
+
+    @property
+    def total_kilos_desglosados(self):
+        total = self.detalles.aggregate(total=models.Sum('peso_kg'))['total']
+        return total if total is not None else 0.0
+
+    @property
+    def diferencia_peso(self):
+        if self.peso_total_ticket is not None:
+            return round(float(self.peso_total_ticket) - float(self.total_kilos_desglosados), 2)
+        return 0.0
+
+    @property
+    def tiene_desglose(self):
+        return self.detalles.exists()
+
+    @property
+    def is_cuadrado(self):
+        if not self.tiene_desglose:
+            return True
+        return abs(self.diferencia_peso) < 0.05
+
+    @property
+    def es_imagen_respaldo(self):
+        if not self.respaldo_ticket:
+            return False
+        nombre = self.respaldo_ticket.name.lower()
+        return any(nombre.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'])
+
+    def __str__(self):
+        return f"Ticket N° {self.numero_ticket} — {self.empresa.nombre} ({self.fecha})"
+
+    class Meta:
+        db_table = 'tickets_retiro'
+        verbose_name = "Ticket de Retiro"
+        verbose_name_plural = "Tickets de Retiro"
+        ordering = ['-fecha', '-numero_ticket']
+
+
+class DetalleMaterialTicket(models.Model):
+    ticket = models.ForeignKey(
+        TicketRetiro, on_delete=models.CASCADE,
+        related_name='detalles', verbose_name="Ticket de Retiro"
+    )
+    material = models.ForeignKey(
+        CatalogoMaterialRetiro, on_delete=models.PROTECT,
+        related_name='detalles', verbose_name="Material"
+    )
+    peso_kg = models.DecimalField(
+        max_digits=10, decimal_places=2, default=0.00,
+        verbose_name="Peso (kg)"
+    )
+    cantidad_unidades = models.DecimalField(
+        max_digits=10, decimal_places=2, null=True, blank=True,
+        verbose_name="Cantidad (Unidades)",
+        help_text="Opcional: unidades de pallets, tambores, carretes, etc."
+    )
+    observaciones = models.CharField(max_length=255, blank=True, verbose_name="Observaciones / Detalle")
+
+    def __str__(self):
+        return f"{self.material.nombre}: {self.peso_kg} kg — Ticket {self.ticket.numero_ticket}"
+
+    class Meta:
+        db_table = 'detalles_material_ticket'
+        verbose_name = "Detalle de Material en Ticket"
+        verbose_name_plural = "Detalles de Materiales en Tickets"
+        ordering = ['material__orden', 'material__nombre']
