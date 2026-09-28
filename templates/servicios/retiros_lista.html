@@ -159,7 +159,7 @@
                         </td>
                         <td class="text-end">
                             <span class="text-dark">{{ ticket.total_kilos_desglosados|floatformat:0 }} kg</span>
-                            <div class="small text-muted">{{ ticket.detalles_materiales.count }} ítems</div>
+                            <div class="small text-muted">{{ ticket.detalles.count }} ítems</div>
                         </td>
                         <td class="text-center">
                             {% if ticket.is_cuadrado %}

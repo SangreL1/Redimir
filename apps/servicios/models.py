@@ -392,6 +392,14 @@ class TicketRetiro(models.Model):
         nombre = self.respaldo_ticket.name.lower()
         return any(nombre.endswith(ext) for ext in ['.jpg', '.jpeg', '.png', '.webp', '.gif', '.bmp'])
 
+    @property
+    def registrado_por(self):
+        return self.usuario_registro
+
+    @property
+    def detalles_materiales(self):
+        return self.detalles
+
     def __str__(self):
         return f"Ticket N° {self.numero_ticket} — {self.empresa.nombre} ({self.fecha})"
 

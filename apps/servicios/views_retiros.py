@@ -283,7 +283,10 @@ def retiro_detalle(request, pk):
     """
     Ficha de detalle técnico del ticket con visor de comprobante y desglose.
     """
-    ticket = get_object_or_404(TicketRetiro.objects.select_related('empresa').prefetch_related('detalles__material'), pk=pk)
+    ticket = get_object_or_404(
+        TicketRetiro.objects.select_related('empresa', 'usuario_registro').prefetch_related('detalles__material'),
+        pk=pk
+    )
 
     if getattr(request.user, 'rol', '') == 'empresa' and getattr(request.user, 'empresa', None):
         if ticket.empresa != request.user.empresa:

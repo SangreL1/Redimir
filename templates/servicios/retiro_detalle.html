@@ -63,7 +63,13 @@
                         </dd>
 
                         <dt class="col-sm-5 text-muted">Registrado por:</dt>
-                        <dd class="col-sm-7">{{ ticket.registrado_por.get_full_name|default:ticket.registrado_por.username|default:"Sistema" }}</dd>
+                        <dd class="col-sm-7">
+                            {% if ticket.usuario_registro %}
+                                {{ ticket.usuario_registro.get_full_name|default:ticket.usuario_registro.username }}
+                            {% else %}
+                                Sistema
+                            {% endif %}
+                        </dd>
 
                         {% if ticket.observaciones %}
                         <dt class="col-sm-5 text-muted">Observaciones:</dt>
@@ -109,7 +115,7 @@
             <div class="card border-0 shadow-sm">
                 <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                     <h5 class="card-title mb-0 fw-bold"><i class="fas fa-boxes text-info me-2"></i>Desglose Relacional de Materiales</h5>
-                    <span class="badge bg-primary rounded-pill">{{ ticket.detalles_materiales.count }} ítems</span>
+                    <span class="badge bg-primary rounded-pill">{{ detalles|length }} ítems</span>
                 </div>
                 <div class="table-responsive">
                     <table class="table table-hover align-middle mb-0">
@@ -123,7 +129,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            {% for det in ticket.detalles_materiales.all %}
+                            {% for det in detalles %}
                             <tr>
                                 <td>
                                     <div class="fw-bold text-dark">{{ det.material.nombre }}</div>
@@ -163,11 +169,7 @@
                                 <td>TOTALES DESGLOSADOS</td>
                                 <td></td>
                                 <td class="text-end">{{ ticket.total_kilos_desglosados|floatformat:2 }} kg</td>
-                                <td class="text-end">
-                                    {% for det in ticket.detalles_materiales.all %}
-                                        {% if forloop.first %}{{ ticket.detalles_materiales.all|length }} reg.{% endif %}
-                                    {% endfor %}
-                                </td>
+                                <td class="text-end">{{ detalles|length }} reg.</td>
                                 <td></td>
                             </tr>
                         </tfoot>
