@@ -866,3 +866,18 @@ def galeria_fotos(request):
         }
     }
     return render(request, 'servicios/galeria.html', context)
+
+
+@login_required
+def migrar_lotes_a_tickets_view(request):
+    """Acción rápida para administradores que sincroniza retiros de Lotes hacia Tickets."""
+    if not _es_admin(request.user):
+        messages.error(request, "Solo administradores pueden ejecutar esta sincronización.")
+        return redirect('retiros-lista')
+
+    from django.core.management import call_command
+    from io import StringIO
+    out = StringIO()
+    call_command('migrar_lotes_a_tickets', stdout=out)
+    messages.success(request, "✅ Se han sincronizado y migrado exitosamente todos los retiros desde Lotes de Recolección hacia el sistema de Tickets.")
+    return redirect('retiros-lista')

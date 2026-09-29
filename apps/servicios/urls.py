@@ -8,7 +8,8 @@ from .views_retiros import (
     retiros_lista, retiro_crear, retiro_detalle,
     retiro_editar, retiro_eliminar,
     retiros_informe, exportar_retiros_excel,
-    api_materiales_retiro, galeria_fotos
+    api_materiales_retiro, galeria_fotos,
+    migrar_lotes_a_tickets_view
 )
 
 urlpatterns = [
@@ -36,5 +37,6 @@ urlpatterns = [
     path('retiros/informe/excel/',        exportar_retiros_excel, name='retiros-informe-excel'),
     path('retiros/galeria/',              galeria_fotos,          name='retiros-galeria'),
     path('galeria/',                      galeria_fotos,          name='galeria-fotos'),
+    path('retiros/sincronizar-lotes/',    migrar_lotes_a_tickets_view, name='retiros-sincronizar-lotes'),
     path('api/retiros/materiales/',       api_materiales_retiro,  name='retiros-api-materiales'),
 ]
