@@ -21,4 +21,5 @@ staticfiles/
 tmp/
 *.log
 *.pdf
+*.xlsx
 

@@ -52,8 +52,13 @@
 
                         <div class="row g-2 mb-3">
                             <div class="col-6">
-                                <label class="form-label fw-semibold">Tipo de Servicio</label>
+                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                    <label class="form-label fw-semibold mb-0">Tipo de Servicio</label>
+                                    <span class="badge bg-light text-primary border" style="font-size:0.68rem;" id="badgeServiciosCount">Predeterminados</span>
+                                </div>
                                 {{ form.tipo_servicio }}
+                                <!-- Chips de servicios predeterminados de la empresa -->
+                                <div id="serviciosChipsContainer" class="d-flex flex-wrap gap-1 mt-2"></div>
                             </div>
                             <div class="col-6">
                                 <label class="form-label fw-semibold">Tipo de Residuo</label>
@@ -305,6 +310,70 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     calculateTotals();
+
+    // ── Servicios Predeterminados por Empresa ──────────────────────────────────
+    const empresasServicios = {{ empresas_servicios_json|default:'{}'|safe }};
+    const empresaSelect = document.getElementById('id_empresa');
+    const tipoServicioInput = document.getElementById('id_tipo_servicio');
+    const chipsContainer = document.getElementById('serviciosChipsContainer');
+    const badgeServiciosCount = document.getElementById('badgeServiciosCount');
+
+    function updateServiciosChips(autoSetFirst = false) {
+        if (!chipsContainer || !empresaSelect || !tipoServicioInput) return;
+        const selectedEmpresaId = empresaSelect.value;
+        const servicios = empresasServicios[selectedEmpresaId] || [];
+
+        chipsContainer.innerHTML = '';
+        if (badgeServiciosCount) {
+            badgeServiciosCount.textContent = servicios.length > 0 ? `${servicios.length} de la empresa` : 'Estándar';
+        }
+
+        if (servicios.length === 0) return;
+
+        if (autoSetFirst && (!tipoServicioInput.value || tipoServicioInput.value.trim() === '')) {
+            tipoServicioInput.value = servicios[0];
+        }
+
+        servicios.forEach(s => {
+            const btn = document.createElement('button');
+            btn.type = 'button';
+            const isCurrent = (tipoServicioInput.value.trim().toLowerCase() === s.trim().toLowerCase());
+            btn.className = `btn btn-sm ${isCurrent ? 'btn-primary' : 'btn-outline-secondary'} py-0 px-2 chip-servicio`;
+            btn.style.fontSize = '0.75rem';
+            btn.style.borderRadius = '20px';
+            btn.textContent = s;
+            btn.onclick = function() {
+                tipoServicioInput.value = s;
+                document.querySelectorAll('.chip-servicio').forEach(b => {
+                    b.className = 'btn btn-sm btn-outline-secondary py-0 px-2 chip-servicio';
+                });
+                btn.className = 'btn btn-sm btn-primary py-0 px-2 chip-servicio';
+            };
+            chipsContainer.appendChild(btn);
+        });
+    }
+
+    if (empresaSelect) {
+        empresaSelect.addEventListener('change', function() {
+            updateServiciosChips(true);
+        });
+    }
+
+    if (tipoServicioInput) {
+        tipoServicioInput.addEventListener('input', function() {
+            const cur = tipoServicioInput.value.trim().toLowerCase();
+            document.querySelectorAll('.chip-servicio').forEach(b => {
+                if (b.textContent.trim().toLowerCase() === cur) {
+                    b.className = 'btn btn-sm btn-primary py-0 px-2 chip-servicio';
+                } else {
+                    b.className = 'btn btn-sm btn-outline-secondary py-0 px-2 chip-servicio';
+                }
+            });
+        });
+    }
+
+    // Inicializar al cargar
+    updateServiciosChips(false);
 });
 </script>
 {% endblock %}

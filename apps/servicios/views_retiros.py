@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import datetime
 from decimal import Decimal
 import openpyxl
@@ -14,7 +15,10 @@ from django.db.models import Q, Sum
 from django.core.paginator import Paginator
 from django.utils import timezone
 
-from .models import TicketRetiro, DetalleMaterialTicket, CatalogoMaterialRetiro
+from .models import (
+    TicketRetiro, DetalleMaterialTicket, CatalogoMaterialRetiro,
+    FotoRegistroRSD, FotoRegistroEscombros, FotoRegistroReciclables,
+)
 from .forms import TicketRetiroForm, DetalleMaterialTicketForm
 from apps.empresas.models import Empresa
 
@@ -65,12 +69,30 @@ def retiros_lista(request):
         tickets = tickets.filter(fecha__lte=hasta_f)
 
     # Listas para opciones de filtros
+    empresa_seleccionada_obj = None
     if getattr(request.user, 'rol', '') == 'empresa' and getattr(request.user, 'empresa', None):
         empresas_list = [request.user.empresa]
+        empresa_seleccionada_obj = request.user.empresa
     else:
         empresas_list = Empresa.objects.filter(activa=True).order_by('nombre')
+        if empresa_id:
+            empresa_seleccionada_obj = Empresa.objects.filter(id=empresa_id).first()
 
-    servicios_list = TicketRetiro.objects.values_list('tipo_servicio', flat=True).exclude(tipo_servicio__isnull=True).exclude(tipo_servicio='').distinct().order_by('tipo_servicio')
+    # Si hay una empresa seleccionada, listar sus servicios predeterminados + los registrados
+    if empresa_seleccionada_obj:
+        servs_base = list(empresa_seleccionada_obj.get_servicios_predeterminados_list())
+        servs_db = list(TicketRetiro.objects.filter(empresa=empresa_seleccionada_obj).values_list('tipo_servicio', flat=True).exclude(tipo_servicio__isnull=True).exclude(tipo_servicio='').distinct())
+        servicios_list = sorted(list(set(servs_base + servs_db)))
+    else:
+        servicios_db = list(TicketRetiro.objects.values_list('tipo_servicio', flat=True).exclude(tipo_servicio__isnull=True).exclude(tipo_servicio='').distinct())
+        servicios_list = sorted(list(set(servicios_db + Empresa.SERVICIOS_ESTANDAR)))
+
+    # Mapa de servicios por empresa para actualización dinámica en JS
+    empresas_servicios_map = {
+        str(emp.id): emp.get_servicios_predeterminados_list()
+        for emp in empresas_list
+    }
+
     residuos_list = TicketRetiro.objects.values_list('tipo_residuo', flat=True).exclude(tipo_residuo__isnull=True).exclude(tipo_residuo='').distinct().order_by('tipo_residuo')
 
     total_tickets = tickets.count()
@@ -114,6 +136,7 @@ def retiros_lista(request):
         'empresas_list': empresas_list,
         'servicios_list': servicios_list,
         'residuos_list': residuos_list,
+        'empresas_servicios_json': json.dumps(empresas_servicios_map),
         'filtros': {
             'q': q,
             'empresa': empresa_id,
@@ -191,22 +214,28 @@ def retiro_crear(request):
                     )
 
             messages.success(request, f"✅ Ticket N° {ticket.numero_ticket} registrado exitosamente.")
-            return redirect('retiro-detalle', pk=ticket.pk)
         else:
             messages.error(request, "⚠️ Por favor corrige los errores en el formulario.")
     else:
+        servicios_default = empresa_default.get_servicios_predeterminados_list() if empresa_default else Empresa.SERVICIOS_ESTANDAR
         form = TicketRetiroForm(initial={
             'fecha': timezone.now().date(),
             'empresa': empresa_default,
             'tipo_residuo': 'Reciclaje',
-            'tipo_servicio': 'Áreas Productivas'
+            'tipo_servicio': servicios_default[0] if servicios_default else 'Áreas Productivas'
         })
+
+    empresas_servicios_map = {
+        str(emp.id): emp.get_servicios_predeterminados_list()
+        for emp in empresas_disponibles
+    }
 
     return render(request, 'servicios/retiro_form.html', {
         'form': form,
         'materiales_catalogo': materiales_catalogo,
         'empresas': empresas_disponibles,
         'empresas_disponibles': empresas_disponibles,
+        'empresas_servicios_json': json.dumps(empresas_servicios_map),
         'modo_edicion': False,
         'detalles_existentes': [],
     })
@@ -284,6 +313,11 @@ def retiro_editar(request, pk):
 
     detalles_existentes = ticket.detalles.select_related('material').all()
 
+    empresas_servicios_map = {
+        str(emp.id): emp.get_servicios_predeterminados_list()
+        for emp in empresas_disponibles
+    }
+
     return render(request, 'servicios/retiro_form.html', {
         'form': form,
         'ticket': ticket,
@@ -291,6 +325,7 @@ def retiro_editar(request, pk):
         'materiales_catalogo': materiales_catalogo,
         'empresas': empresas_disponibles,
         'empresas_disponibles': empresas_disponibles,
+        'empresas_servicios_json': json.dumps(empresas_servicios_map),
         'modo_edicion': True,
     })
 
@@ -672,3 +707,162 @@ def api_materiales_retiro(request):
         'id', 'nombre', 'codigo', 'categoria', 'unidad_medida'
     )
     return JsonResponse({'materiales': list(materiales)})
+
+
+@login_required
+def galeria_fotos(request):
+    """
+    Galería consolidada de fotos y comprobantes con filtros por fecha, categoría y empresa.
+    """
+    empresa_id = request.GET.get('empresa', '').strip()
+    categoria = request.GET.get('categoria', '').strip()
+    desde = request.GET.get('desde', '').strip() or request.GET.get('fecha_desde', '').strip()
+    hasta = request.GET.get('hasta', '').strip() or request.GET.get('fecha_hasta', '').strip()
+    q = request.GET.get('q', '').strip()
+
+    # Query base de tickets con respaldo
+    tickets_qs = TicketRetiro.objects.select_related('empresa').exclude(respaldo_ticket='').exclude(respaldo_ticket__isnull=True).order_by('-fecha', '-id')
+
+    if getattr(request.user, 'rol', '') == 'empresa' and getattr(request.user, 'empresa', None):
+        tickets_qs = tickets_qs.filter(empresa=request.user.empresa)
+        empresas_list = [request.user.empresa]
+    else:
+        empresas_list = Empresa.objects.filter(activa=True).order_by('nombre')
+        if empresa_id:
+            tickets_qs = tickets_qs.filter(empresa_id=empresa_id)
+
+    if desde:
+        tickets_qs = tickets_qs.filter(fecha__gte=desde)
+    if hasta:
+        tickets_qs = tickets_qs.filter(fecha__lte=hasta)
+    if q:
+        tickets_qs = tickets_qs.filter(
+            Q(numero_ticket__icontains=q) |
+            Q(faena_area__icontains=q) |
+            Q(tipo_servicio__icontains=q) |
+            Q(observaciones__icontains=q)
+        )
+
+    fotos = []
+    categorias_encontradas = set()
+
+    for t in tickets_qs:
+        es_img = t.es_imagen_respaldo
+        cat = t.tipo_servicio or 'Comprobante Báscula'
+        categorias_encontradas.add(cat)
+
+        if categoria and cat != categoria:
+            continue
+
+        fotos.append({
+            'id': t.id,
+            'url': t.respaldo_ticket.url if t.respaldo_ticket else '',
+            'es_imagen': es_img,
+            'numero_ticket': t.numero_ticket,
+            'empresa': t.empresa.nombre,
+            'empresa_id': t.empresa_id,
+            'fecha': t.fecha,
+            'faena': t.faena_area or 'Principal',
+            'categoria': cat,
+            'tipo_residuo': t.tipo_residuo,
+            'peso_total': t.peso_total_ticket,
+            'observaciones': t.observaciones,
+            'tipo_fuente': 'Ticket Báscula',
+            'detalle_url': f"/retiros/{t.id}/",
+        })
+
+    # Evidencias fotográficas de módulos si existen
+    try:
+        # Fotos RSD
+        fotos_rsd_qs = FotoRegistroRSD.objects.select_related('registro__servicio__empresa').order_by('-fecha_subida')
+        if getattr(request.user, 'rol', '') == 'empresa' and getattr(request.user, 'empresa', None):
+            fotos_rsd_qs = fotos_rsd_qs.filter(registro__servicio__empresa=request.user.empresa)
+        elif empresa_id:
+            fotos_rsd_qs = fotos_rsd_qs.filter(registro__servicio__empresa_id=empresa_id)
+        if desde:
+            fotos_rsd_qs = fotos_rsd_qs.filter(registro__servicio__fecha_solicitud__date__gte=desde)
+        if hasta:
+            fotos_rsd_qs = fotos_rsd_qs.filter(registro__servicio__fecha_solicitud__date__lte=hasta)
+
+        cat_rsd = 'Residuos Domiciliarios (RSD)'
+        categorias_encontradas.add(cat_rsd)
+        if not categoria or categoria == cat_rsd:
+            for f in fotos_rsd_qs[:50]:
+                srv = f.registro.servicio
+                fotos.append({
+                    'id': f"rsd_{f.id}",
+                    'url': f.foto.url,
+                    'es_imagen': True,
+                    'numero_ticket': f"SRV #{srv.pk}",
+                    'empresa': srv.empresa.nombre,
+                    'empresa_id': srv.empresa_id,
+                    'fecha': srv.fecha_solicitud.date(),
+                    'faena': srv.direccion,
+                    'categoria': cat_rsd,
+                    'tipo_residuo': 'RSD / Basura',
+                    'peso_total': f.registro.cantidad_kg,
+                    'observaciones': f.registro.observaciones,
+                    'tipo_fuente': 'Registro RSD',
+                    'detalle_url': f"/servicios/{srv.pk}/",
+                })
+    except Exception:
+        pass
+
+    try:
+        # Fotos Reciclables
+        fotos_rec_qs = FotoRegistroReciclables.objects.select_related('registro__servicio__empresa').order_by('-fecha_subida')
+        if getattr(request.user, 'rol', '') == 'empresa' and getattr(request.user, 'empresa', None):
+            fotos_rec_qs = fotos_rec_qs.filter(registro__servicio__empresa=request.user.empresa)
+        elif empresa_id:
+            fotos_rec_qs = fotos_rec_qs.filter(registro__servicio__empresa_id=empresa_id)
+        if desde:
+            fotos_rec_qs = fotos_rec_qs.filter(registro__servicio__fecha_solicitud__date__gte=desde)
+        if hasta:
+            fotos_rec_qs = fotos_rec_qs.filter(registro__servicio__fecha_solicitud__date__lte=hasta)
+
+        cat_rec = 'Puntos Verdes / Reciclables'
+        categorias_encontradas.add(cat_rec)
+        if not categoria or categoria == cat_rec:
+            for f in fotos_rec_qs[:50]:
+                srv = f.registro.servicio
+                fotos.append({
+                    'id': f"rec_{f.id}",
+                    'url': f.foto.url,
+                    'es_imagen': True,
+                    'numero_ticket': f"SRV #{srv.pk}",
+                    'empresa': srv.empresa.nombre,
+                    'empresa_id': srv.empresa_id,
+                    'fecha': srv.fecha_solicitud.date(),
+                    'faena': srv.direccion,
+                    'categoria': cat_rec,
+                    'tipo_residuo': f.registro.get_material_display() if hasattr(f.registro, 'get_material_display') else 'Reciclable',
+                    'peso_total': f.registro.cantidad_kg,
+                    'observaciones': f.registro.observaciones,
+                    'tipo_fuente': 'Registro Reciclaje',
+                    'detalle_url': f"/servicios/{srv.pk}/",
+                })
+    except Exception:
+        pass
+
+    # Ordenar fotos cronológicamente descendente
+    fotos.sort(key=lambda x: str(x['fecha']), reverse=True)
+
+    paginator = Paginator(fotos, 32)
+    page_number = request.GET.get('page')
+    page_obj = paginator.get_page(page_number)
+
+    context = {
+        'page_obj': page_obj,
+        'fotos': page_obj,
+        'total_fotos': len(fotos),
+        'empresas': empresas_list,
+        'categorias': sorted(list(categorias_encontradas)),
+        'filtros': {
+            'empresa': empresa_id,
+            'categoria': categoria,
+            'desde': desde,
+            'hasta': hasta,
+            'q': q,
+        }
+    }
+    return render(request, 'servicios/galeria.html', context)

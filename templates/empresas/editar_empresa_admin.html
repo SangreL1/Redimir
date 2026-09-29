@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Añadir Empresa — Redimir{% endblock %}
+{% block title %}Editar Empresa — {{ empresa.nombre }} — Redimir{% endblock %}
 {% block nav_empresas %}active{% endblock %}
 
 {% block content %}
@@ -7,8 +7,8 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
-        <h1 class="page-title"><i class="fas fa-plus-circle" style="color:var(--primary);margin-right:.5rem;"></i>Añadir Empresa</h1>
-        <p class="page-subtitle">Registra una nueva empresa cliente directamente desde el panel de administración</p>
+        <h1 class="page-title"><i class="fas fa-edit" style="color:var(--primary);margin-right:.5rem;"></i>Editar Empresa</h1>
+        <p class="page-subtitle">Modifica los datos, contactos y servicios predeterminados de <strong>{{ empresa.nombre }}</strong></p>
     </div>
     <a href="{% url 'empresa-list' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius:10px;font-weight:600;">
         <i class="fas fa-arrow-left"></i> Volver a Empresas
@@ -45,64 +45,69 @@
         <div class="col-12 col-md-6">
             <label class="form-label">Razón Social <span class="required-mark">*</span></label>
             <input type="text" name="nombre" class="form-control" placeholder="Ej: Constructora Alfa SPA"
-                   value="{{ form_data.nombre|default:'' }}" required>
+                   value="{{ empresa.nombre }}" required>
         </div>
         <div class="col-12 col-md-6">
             <label class="form-label">RUT Empresa <span class="required-mark">*</span></label>
             <input type="text" name="rut_empresa" class="form-control" placeholder="Ej: 76.123.456-7"
-                   value="{{ form_data.rut_empresa|default:'' }}" required>
+                   value="{{ empresa.rut }}" required>
         </div>
         <div class="col-12 col-md-6">
             <label class="form-label">Email Principal de Contacto <span class="required-mark">*</span></label>
             <input type="email" name="email_contacto" class="form-control" placeholder="contacto@empresa.cl"
-                   value="{{ form_data.email_contacto|default:'' }}" required>
-            <div class="form-text">Email general de la empresa (para acceso al sistema).</div>
+                   value="{{ empresa.email_contacto }}" required>
+            <div class="form-text">Email general de la empresa.</div>
         </div>
         <div class="col-12 col-md-6">
             <label class="form-label">Teléfono</label>
             <input type="text" name="telefono" class="form-control" placeholder="+56 9 1234 5678"
-                   value="{{ form_data.telefono|default:'' }}">
+                   value="{{ empresa.telefono }}">
         </div>
         <div class="col-12 col-md-8">
             <label class="form-label">Dirección</label>
             <input type="text" name="direccion" class="form-control" placeholder="Av. Principal 1234, Calama"
-                   value="{{ form_data.direccion|default:'' }}">
+                   value="{{ empresa.direccion }}">
         </div>
         <div class="col-12 col-md-4">
             <label class="form-label">Rubro</label>
             <select name="rubro" class="form-select" id="rubro-select" onchange="toggleOtroRubroInput(this)">
                 {% for val, label in rubros %}
-                <option value="{{ val }}" {% if form_data.rubro == val or not form_data.rubro and val == 'otro' %}selected{% endif %}>{{ label }}</option>
+                <option value="{{ val }}" {% if empresa.rubro == val %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
-            <div class="mt-2" id="div-otro-rubro" style="display: {% if form_data.rubro == 'otro' or not form_data.rubro %}block{% else %}none{% endif %};">
+            <div class="mt-2" id="div-otro-rubro" style="display: {% if empresa.rubro == 'otro' %}block{% else %}none{% endif %};">
                 <input type="text" name="rubro_otro" class="form-control form-control-sm bg-white text-dark border"
-                       placeholder="¿De qué otro rubro se trata? (Ej: Metalurgia, Textil, etc.)"
-                       value="{{ form_data.rubro_otro|default:'' }}">
+                       placeholder="¿De qué otro rubro se trata?"
+                       value="{{ empresa.rubro_otro|default:'' }}">
             </div>
         </div>
         <div class="col-12 col-md-6">
             <label class="form-label">Nombre del Contacto Principal</label>
             <input type="text" name="nombre_contacto" class="form-control" placeholder="Juan Pérez"
-                   value="{{ form_data.nombre_contacto|default:'' }}">
+                   value="{{ empresa.nombre_contacto }}">
         </div>
         <div class="col-12 col-md-6">
             <label class="form-label">Cargo del Contacto Principal</label>
             <input type="text" name="cargo_contacto" class="form-control" placeholder="Jefe de Operaciones"
-                   value="{{ form_data.cargo_contacto|default:'' }}">
+                   value="{{ empresa.cargo_contacto }}">
         </div>
         <div class="col-12 col-md-6">
-            <label class="form-label">Estado inicial</label>
+            <label class="form-label">Estado</label>
             <select name="estado" class="form-select" id="estado-select">
                 {% for val, label in estados %}
-                <option value="{{ val }}" {% if form_data.estado == val or val == 'aprobada' %}selected{% endif %}>{{ label }}</option>
+                <option value="{{ val }}" {% if empresa.estado == val %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
-            <div class="form-text">Si seleccionas "Aprobada", la empresa quedará activa de inmediato.</div>
         </div>
         <div class="col-12 col-md-6">
-            <label class="form-label">Logo (opcional)</label>
+            <label class="form-label">Logo</label>
             <input type="file" name="logo" class="form-control" accept="image/*">
+            {% if empresa.logo %}
+            <div class="mt-2 small text-muted d-flex align-items-center gap-2">
+                <img src="{{ empresa.logo.url }}" style="height:28px;border-radius:4px;">
+                <span>Logo actual guardado</span>
+            </div>
+            {% endif %}
         </div>
     </div>
 </div>
@@ -116,7 +121,7 @@
             </div>
             <div>
                 <h2 style="font-size:1rem;font-weight:700;margin:0;color:#000;">Servicios Predeterminados para este Cliente</h2>
-                <p style="font-size:.78rem;color:var(--text-muted);margin:0;">Marca las casillas de servicios que Redimir realiza a esta empresa. Quedarán predeterminadas al registrar tickets y para filtrarlos.</p>
+                <p style="font-size:.78rem;color:var(--text-muted);margin:0;">Casillas de servicios habilitados para esta empresa. Se usarán al registrar retiros y para filtrarlos.</p>
             </div>
         </div>
         <div class="d-flex gap-2">
@@ -135,7 +140,7 @@
         <div class="col-12 col-sm-6 col-md-4">
             <label class="d-flex align-items-center gap-2 p-2 border rounded-3 bg-white" style="cursor:pointer; transition:background .15s;">
                 <input type="checkbox" name="servicios_predeterminados" value="{{ s }}" class="form-check-input mt-0 servicio-chk"
-                       style="accent-color:#006BB8; width:18px; height:18px;" checked>
+                       style="accent-color:#006BB8; width:18px; height:18px;" {% if s in servicios_actuales %}checked{% endif %}>
                 <span class="fw-semibold text-dark" style="font-size:.85rem;">{{ s }}</span>
             </label>
         </div>
@@ -146,7 +151,14 @@
     <div class="mt-3 pt-3 border-top">
         <label class="form-label fw-bold small text-muted text-uppercase mb-2">Servicios Adicionales o Personalizados</label>
         <div id="servicios-custom-list" class="d-flex flex-wrap gap-2 mb-2">
-            <!-- Chips de servicios custom -->
+            {% for sc in servicios_custom %}
+            <div class="badge bg-white text-dark border p-2 d-flex align-items-center gap-2 shadow-sm" style="font-size:0.85rem;">
+                <i class="fas fa-check-circle text-primary"></i>
+                <span>{{ sc }}</span>
+                <input type="hidden" name="servicios_custom" value="{{ sc }}">
+                <button type="button" class="btn-close btn-close-sm" style="font-size:0.65rem;" onclick="this.parentElement.remove()" title="Quitar"></button>
+            </div>
+            {% endfor %}
         </div>
 
         <div class="input-group input-group-sm" style="max-width:420px;">
@@ -178,71 +190,58 @@
         </button>
     </div>
 
-    <!-- Leyenda de tipos -->
-    <div class="d-flex flex-wrap gap-2 my-3">
-        <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:20px;background:#E8F5E9;color:#2E7D32;border:1px solid #A5D6A7;">
-            <i class="fas fa-certificate me-1"></i>Certificados
-        </span>
-        <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:20px;background:#EAF4FF;color:var(--secondary-dark);border:1px solid #90CAF9;">
-            <i class="fas fa-file-invoice-dollar me-1"></i>Estados de Pago
-        </span>
-        <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:20px;background:#F3E5F5;color:#7B1FA2;border:1px solid #CE93D8;">
-            <i class="fas fa-chart-bar me-1"></i>Reportes
-        </span>
-        <span style="font-size:.72rem;font-weight:700;padding:.2rem .65rem;border-radius:20px;background:var(--primary-light);color:var(--primary-dark);border:1px solid #C5E1A5;">
-            <i class="fas fa-bell me-1"></i>Notificaciones
-        </span>
-    </div>
-
     <!-- Contenedor dinámico de filas de contacto -->
     <div id="contactos-container">
-        <!-- Las filas se añaden aquí dinámicamente -->
+        {% for c in contactos %}
+        <div class="contacto-row mb-3 p-3" style="background:#F8FAFC;border:1.5px solid #E1E4E7;border-radius:12px;position:relative;">
+            <button type="button" class="btn-remove-contacto" title="Eliminar contacto"
+                    style="position:absolute;top:.6rem;right:.75rem;background:transparent;border:none;color:var(--danger);font-size:1rem;cursor:pointer;line-height:1;">
+                <i class="fas fa-times-circle"></i>
+            </button>
+            <div class="row g-2 align-items-start">
+                <div class="col-12 col-md-4">
+                    <label class="form-label" style="font-size:.8rem;">Nombre Completo <span class="required-mark">*</span></label>
+                    <input type="text" name="contacto_nombre_{{ forloop.counter0 }}" class="form-control form-control-sm"
+                           value="{{ c.nombre }}" placeholder="María González">
+                </div>
+                <div class="col-12 col-md-3">
+                    <label class="form-label" style="font-size:.8rem;">Cargo / Área</label>
+                    <input type="text" name="contacto_cargo_{{ forloop.counter0 }}" class="form-control form-control-sm"
+                           value="{{ c.cargo }}" placeholder="Gerente de Finanzas">
+                </div>
+                <div class="col-12 col-md-5">
+                    <label class="form-label" style="font-size:.8rem;">Correo Electrónico <span class="required-mark">*</span></label>
+                    <input type="email" name="contacto_email_{{ forloop.counter0 }}" class="form-control form-control-sm"
+                           value="{{ c.email }}" placeholder="maria.gonzalez@empresa.cl">
+                </div>
+                <div class="col-12 mt-1">
+                    <input type="hidden" name="contacto_idx" value="{{ forloop.counter0 }}">
+                    <div class="d-flex flex-wrap gap-3" style="font-size:.8rem;">
+                        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;">
+                            <input type="checkbox" name="contacto_cert_{{ forloop.counter0 }}" value="1" {% if c.recibe_certificados %}checked{% endif %} style="accent-color:#2E7D32;">
+                            <span style="color:#2E7D32;"><i class="fas fa-certificate me-1"></i>Certificados</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;">
+                            <input type="checkbox" name="contacto_edp_{{ forloop.counter0 }}" value="1" {% if c.recibe_estados_pago %}checked{% endif %} style="accent-color:var(--secondary);">
+                            <span style="color:var(--secondary);"><i class="fas fa-file-invoice-dollar me-1"></i>Estados de Pago</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;">
+                            <input type="checkbox" name="contacto_rep_{{ forloop.counter0 }}" value="1" {% if c.recibe_reportes %}checked{% endif %} style="accent-color:#7B1FA2;">
+                            <span style="color:#7B1FA2;"><i class="fas fa-chart-bar me-1"></i>Reportes</span>
+                        </label>
+                        <label style="display:flex;align-items:center;gap:.4rem;cursor:pointer;font-weight:600;">
+                            <input type="checkbox" name="contacto_notif_{{ forloop.counter0 }}" value="1" {% if c.recibe_notificaciones %}checked{% endif %} style="accent-color:var(--primary-dark);">
+                            <span style="color:var(--primary-dark);"><i class="fas fa-bell me-1"></i>Notificaciones</span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
     </div>
 
-    <p id="contactos-empty-hint" style="font-size:.83rem;color:var(--text-muted);text-align:center;padding:1.5rem;border:2px dashed var(--border);border-radius:10px;margin:0;">
+    <p id="contactos-empty-hint" style="font-size:.83rem;color:var(--text-muted);text-align:center;padding:1.5rem;border:2px dashed var(--border);border-radius:10px;margin:0; {% if contactos %}display:none;{% endif %}">
         <i class="fas fa-user-plus me-2"></i>Haz clic en <strong>Añadir Contacto</strong> para registrar correos adicionales segmentados por tipo de documento.
-    </p>
-</div>
-
-<!-- ══ USUARIO DE ACCESO (OPCIONAL) ════════════════════════════════════════ -->
-<div class="card-redimir mb-4" style="border-top:4px solid var(--secondary);">
-    <div class="d-flex align-items-center justify-content-between gap-2 mb-3">
-        <div class="d-flex align-items-center gap-2">
-            <div style="width:36px;height:36px;border-radius:10px;background:var(--secondary-light);display:flex;align-items:center;justify-content:center;">
-                <i class="fas fa-user-shield" style="color:var(--secondary);"></i>
-            </div>
-            <h2 style="font-size:1rem;font-weight:700;margin:0;color:#000;">Crear Usuario de Acceso <span style="font-size:.8rem;font-weight:500;color:var(--text-muted);">(opcional)</span></h2>
-        </div>
-        <div class="form-check form-switch mb-0">
-            <input class="form-check-input" type="checkbox" id="crear-usuario-toggle" name="crear_usuario" value="1"
-                   {% if form_data.crear_usuario == '1' %}checked{% endif %}>
-            <label class="form-check-label" for="crear-usuario-toggle" style="font-size:.85rem;font-weight:600;color:#000;">Crear ahora</label>
-        </div>
-    </div>
-
-    <div id="usuario-fields" style="{% if form_data.crear_usuario != '1' %}display:none;{% endif %}">
-        <div class="row g-3">
-            <div class="col-12 col-md-6">
-                <label class="form-label">RUT del Usuario <span class="required-mark">*</span></label>
-                <input type="text" name="rut_usuario" class="form-control" placeholder="12.345.678-9"
-                       value="{{ form_data.rut_usuario|default:'' }}">
-                <div class="form-text">Con este RUT iniciará sesión en el sistema.</div>
-            </div>
-            <div class="col-12 col-md-6"></div>
-            <div class="col-12 col-md-6">
-                <label class="form-label">Contraseña <span class="required-mark">*</span></label>
-                <input type="password" name="password" class="form-control" placeholder="Mínimo 6 caracteres"
-                       autocomplete="new-password">
-            </div>
-            <div class="col-12 col-md-6">
-                <label class="form-label">Confirmar Contraseña <span class="required-mark">*</span></label>
-                <input type="password" name="password2" class="form-control" placeholder="Repite la contraseña"
-                       autocomplete="new-password">
-            </div>
-        </div>
-    </div>
-    <p class="mb-0 mt-1" id="usuario-hint" style="font-size:.83rem;color:var(--text-muted);{% if form_data.crear_usuario == '1' %}display:none;{% endif %}">
-        <i class="fas fa-info-circle me-1"></i>Activa esta opción para generar las credenciales de acceso del representante de la empresa.
     </p>
 </div>
 
@@ -252,34 +251,21 @@
         Cancelar
     </a>
     <button type="submit" class="btn-primary-redimir btn d-flex align-items-center gap-2" id="btn-submit-empresa">
-        <i class="fas fa-save"></i> Guardar Empresa
+        <i class="fas fa-save"></i> Guardar Cambios
     </button>
 </div>
 
 </form>
 </div>
 
-<!-- ══ TEMPLATE OCULTO PARA FILA DE CONTACTO ════════════════════════════════ -->
-<!-- NO use <template> con inputs: se generan dinámicamente con JS para manejar índices -->
-
 <script>
-// Toggle usuario de acceso
-const toggle = document.getElementById('crear-usuario-toggle');
-const fields = document.getElementById('usuario-fields');
-const hint   = document.getElementById('usuario-hint');
-toggle.addEventListener('change', () => {
-    fields.style.display = toggle.checked ? '' : 'none';
-    hint.style.display   = toggle.checked ? 'none' : '';
-});
-
-// ── Contactos dinámicos con índices únicos ────────────────────────────────
 const container = document.getElementById('contactos-container');
 const emptyHint = document.getElementById('contactos-empty-hint');
 const btnAdd    = document.getElementById('btn-add-contacto');
-let rowCount = 0;
+let rowCount = {{ contactos.count|default:0 }};
 
 function updateEmptyHint() {
-    emptyHint.style.display = container.children.length === 0 ? '' : 'none';
+    if (emptyHint) emptyHint.style.display = container.children.length === 0 ? '' : 'none';
 }
 
 function buildContactoRow(idx) {
@@ -307,7 +293,6 @@ function buildContactoRow(idx) {
                 <input type="email" name="contacto_email_${idx}" class="form-control form-control-sm"
                        placeholder="maria.gonzalez@empresa.cl">
             </div>
-            <!-- Checkboxes de tipos -->
             <div class="col-12 mt-1">
                 <input type="hidden" name="contacto_idx" value="${idx}">
                 <div class="d-flex flex-wrap gap-3" style="font-size:.8rem;">
@@ -338,11 +323,20 @@ function buildContactoRow(idx) {
     return div;
 }
 
-btnAdd.addEventListener('click', () => {
-    const row = buildContactoRow(rowCount++);
-    container.appendChild(row);
-    updateEmptyHint();
-    row.querySelector('input[type="text"]').focus();
+if (btnAdd) {
+    btnAdd.addEventListener('click', () => {
+        const row = buildContactoRow(rowCount++);
+        container.appendChild(row);
+        updateEmptyHint();
+        row.querySelector('input[type="text"]').focus();
+    });
+}
+
+document.querySelectorAll('.btn-remove-contacto').forEach(btn => {
+    btn.addEventListener('click', function() {
+        this.closest('.contacto-row').remove();
+        updateEmptyHint();
+    });
 });
 
 function toggleOtroRubroInput(select) {
@@ -356,8 +350,6 @@ function toggleOtroRubroInput(select) {
     }
 }
 
-updateEmptyHint();
-
 // ── Servicios Predeterminados ─────────────────────────────────────────────
 function marcarTodosServicios(marcar) {
     document.querySelectorAll('.servicio-chk').forEach(chk => {
@@ -370,7 +362,6 @@ function agregarServicioCustom() {
     const valor = input.value.trim();
     if (!valor) return;
 
-    // Verificar si ya existe en los checkboxes
     let yaExiste = false;
     document.querySelectorAll('input[name="servicios_predeterminados"], input[name="servicios_custom"]').forEach(el => {
         if (el.value.toLowerCase() === valor.toLowerCase()) yaExiste = true;
@@ -398,4 +389,3 @@ function agregarServicioCustom() {
 }
 </script>
 {% endblock %}
-

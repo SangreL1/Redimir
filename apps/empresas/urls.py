@@ -1,20 +1,22 @@
 from django.urls import path
 from .views import (
-    EmpresaListView, EmpresaDeleteView, EmpresaCrearAdminView,
+    EmpresaListView, EmpresaDeleteView, EmpresaCrearAdminView, EmpresaEditarAdminView,
     EmpresaPortalView, EmpresaSolicitudCrearView, EmpresaSolicitudListView, EmpresaGuiaReciclajeView,
     SolicitudListView, SolicitudCrearView,
     SolicitudAceptarView, SolicitudCompletarView, SolicitudCancelarView,
     EstadoDePagoListView, EstadoDePagoCrearView,
     EstadoDePagoDetalleView, EstadoDePagoEditarView, EstadoDePagoAnularView, EstadoDePagoEliminarView,
     EstadoDePagoEnviarEmailView, descargar_edp_pdf,
-    TarifaEmpresaGestionView, APITarifasEmpresaView,
+    TarifaEmpresaGestionView, APITarifasEmpresaView, api_empresa_servicios,
 )
 
 urlpatterns = [
     # Admin: empresa management
     path('empresas/', EmpresaListView.as_view(), name='empresa-list'),
     path('empresas/crear/', EmpresaCrearAdminView.as_view(), name='empresa-crear'),
+    path('empresas/<int:pk>/editar/', EmpresaEditarAdminView.as_view(), name='empresa-editar'),
     path('empresas/<int:pk>/eliminar/', EmpresaDeleteView.as_view(), name='empresa-delete'),
+    path('api/empresas/<int:pk>/servicios/', api_empresa_servicios, name='api-empresa-servicios'),
 
     # Empresa portal (rol='empresa')
     path('empresa/dashboard/', EmpresaPortalView.as_view(), name='empresa-portal'),

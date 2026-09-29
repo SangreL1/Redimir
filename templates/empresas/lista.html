@@ -61,19 +61,24 @@
                     </td>
                     <td style="font-size:.77rem;color:var(--text-muted);">{{ emp.fecha_registro|date:"d/m/Y" }}</td>
                     <td>
-                        {% if not emp.lotes.exists %}
-                        <form method="post" action="/empresas/{{ emp.pk }}/eliminar/"
-                              onsubmit="return confirm('¿Eliminar empresa {{ emp.nombre }}? Esta acción no se puede deshacer.')">
-                            {% csrf_token %}
-                            <button type="submit" class="btn-danger-soft btn btn-sm">
-                                <i class="fas fa-trash-alt"></i>
-                            </button>
-                        </form>
-                        {% else %}
-                        <span class="badge-pill badge-slate" title="No se puede eliminar: tiene recolecciones">
-                            <i class="fas fa-lock me-1"></i>{{ emp.lotes.count }} rec.
-                        </span>
-                        {% endif %}
+                        <div class="d-flex align-items-center gap-1">
+                            <a href="{% url 'empresa-editar' emp.pk %}" class="btn btn-sm btn-outline-primary" title="Editar datos y servicios predeterminados" style="padding:0.25rem 0.5rem; border-radius:6px;">
+                                <i class="fas fa-edit"></i>
+                            </a>
+                            {% if not emp.lotes.exists %}
+                            <form method="post" action="/empresas/{{ emp.pk }}/eliminar/"
+                                  onsubmit="return confirm('¿Eliminar empresa {{ emp.nombre }}? Esta acción no se puede deshacer.')" class="d-inline m-0">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-danger-soft btn btn-sm" title="Eliminar empresa" style="padding:0.25rem 0.5rem; border-radius:6px;">
+                                    <i class="fas fa-trash-alt"></i>
+                                </button>
+                            </form>
+                            {% else %}
+                            <span class="badge-pill badge-slate" title="No se puede eliminar: tiene recolecciones" style="font-size:0.75rem;">
+                                <i class="fas fa-lock me-1"></i>{{ emp.lotes.count }}
+                            </span>
+                            {% endif %}
+                        </div>
                     </td>
                 </tr>
                 {% empty %}

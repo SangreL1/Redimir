@@ -33,6 +33,28 @@ class Empresa(models.Model):
     rubro_otro = models.CharField(max_length=100, blank=True, null=True, verbose_name='Especificar otro rubro')
     giro = models.CharField(max_length=150, blank=True, verbose_name='Giro Comercial')
 
+    SERVICIOS_ESTANDAR = [
+        'Áreas Productivas',
+        'Bodega APD',
+        'Puntos Verdes',
+        'Retiro Doméstico',
+        'Recepción de Ramplas',
+        'Escombros / RESCON',
+        'Reciclaje General',
+        'Patio de Chatarra',
+        'Bodega de Residuos',
+    ]
+    servicios_predeterminados = models.JSONField(
+        default=list, blank=True,
+        verbose_name='Servicios Predeterminados',
+        help_text="Lista de casillas con servicios predeterminados que Redimir realiza a esta empresa."
+    )
+
+    def get_servicios_predeterminados_list(self):
+        if isinstance(self.servicios_predeterminados, list) and len(self.servicios_predeterminados) > 0:
+            return self.servicios_predeterminados
+        return list(self.SERVICIOS_ESTANDAR)
+
     @property
     def nombre_razon_social(self):
         return self.nombre

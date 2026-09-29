@@ -8,7 +8,7 @@ from .views_retiros import (
     retiros_lista, retiro_crear, retiro_detalle,
     retiro_editar, retiro_eliminar,
     retiros_informe, exportar_retiros_excel,
-    api_materiales_retiro
+    api_materiales_retiro, galeria_fotos
 )
 
 urlpatterns = [
@@ -34,5 +34,7 @@ urlpatterns = [
     path('retiros/<int:pk>/eliminar/',    retiro_eliminar,        name='retiro-eliminar'),
     path('retiros/informe/',              retiros_informe,        name='retiros-informe'),
     path('retiros/informe/excel/',        exportar_retiros_excel, name='retiros-informe-excel'),
+    path('retiros/galeria/',              galeria_fotos,          name='retiros-galeria'),
+    path('galeria/',                      galeria_fotos,          name='galeria-fotos'),
     path('api/retiros/materiales/',       api_materiales_retiro,  name='retiros-api-materiales'),
 ]

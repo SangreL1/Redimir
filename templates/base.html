@@ -775,15 +775,16 @@
         <a href="/recolecciones/" class="sidebar-item"><i class="fas fa-history"></i>Historial</a>
 
         {% else %}
-        <span class="sidebar-section">Servicios</span>
-        <a href="/servicios/crear/" class="sidebar-item"><i class="fas fa-truck"></i>Crear Servicio</a>
-        <a href="/servicios/" class="sidebar-item"><i class="fas fa-clipboard-list"></i>Todos los Servicios</a>
+        <span class="sidebar-section">Operaciones y Retiros</span>
+        <a href="/retiros/nuevo/" class="sidebar-item"><i class="fas fa-plus-circle" style="color:#95BF3C;"></i>Registrar Retiro</a>
         <a href="/retiros/" class="sidebar-item"><i class="fas fa-ticket-alt"></i>Tickets y Retiros</a>
+        <a href="/galeria/" class="sidebar-item"><i class="fas fa-images" style="color:#17a2b8;"></i>Galería de Fotos</a>
         <a href="/retiros/informe/" class="sidebar-item"><i class="fas fa-table"></i>Informe Consolidado</a>
         <a href="/solicitudes/" class="sidebar-item"><i class="fas fa-inbox"></i>Solicitudes Web</a>
         <a href="/validaciones/" class="sidebar-item" style="color:var(--accent-dark);">
             <i class="fas fa-exclamation-circle"></i>Validaciones Pend.
         </a>
+        <a href="/servicios/" class="sidebar-item" style="opacity:0.75;"><i class="fas fa-history"></i>Historial Legacy</a>
         <span class="sidebar-section">Administración</span>
         <a href="/empresas/" class="sidebar-item"><i class="fas fa-building"></i>Empresas</a>
         <a href="/gestion/trabajadores/" class="sidebar-item"><i class="fas fa-users"></i>Directorio</a>
@@ -831,37 +832,40 @@
         <a href="/empresa/solicitudes/" class="sidebar-item {% block nav_empresa_solicitudes %}{% endblock %}">
             <i class="fas fa-inbox"></i>Mis Solicitudes
         </a>
+        <a href="/galeria/" class="sidebar-item {% block nav_galeria %}{% endblock %}">
+            <i class="fas fa-images" style="color:#17a2b8;"></i>Mis Fotos y Comprobantes
+        </a>
 
         {% elif user.rol == 'recolector' or user.rol == 'operador' %}
         <span class="sidebar-section">Mis Retiros</span>
+        <a href="/retiros/nuevo/" class="sidebar-item {% block nav_crear %}{% endblock %}">
+            <i class="fas fa-plus-circle" style="color:#95BF3C;"></i>Registrar Retiro
+        </a>
+        <a href="/retiros/" class="sidebar-item {% block nav_retiros_operador %}{% endblock %}">
+            <i class="fas fa-ticket-alt"></i>Mis Tickets y Báscula
+        </a>
+        <a href="/galeria/" class="sidebar-item {% block nav_galeria_op %}{% endblock %}">
+            <i class="fas fa-images" style="color:#17a2b8;"></i>Galería Comprobantes
+        </a>
         <a href="/solicitudes/" class="sidebar-item {% block nav_solicitudes_operador %}{% endblock %}">
-            <i class="fas fa-clipboard-list"></i>Mis Retiros de Hoy
+            <i class="fas fa-clipboard-list"></i>Solicitudes Asignadas
             {% if solicitudes_activas_count and solicitudes_activas_count > 0 %}
             <span class="badge-estado badge-pendiente ms-auto">{{ solicitudes_activas_count }}</span>{% endif %}
         </a>
-        <a href="/recolecciones/crear/" class="sidebar-item {% block nav_crear %}{% endblock %}">
-            <i class="fas fa-plus-circle"></i>Registrar Retiro
-        </a>
-        <a href="/recolecciones/" class="sidebar-item {% block nav_historial %}{% endblock %}">
-            <i class="fas fa-history"></i>Historial
-        </a>
 
         {% else %}
-        <span class="sidebar-section">Servicios</span>
-        <a href="/servicios/crear/" class="sidebar-item {% block nav_crear_sol %}{% endblock %}">
-            <i class="fas fa-truck"></i>Crear Servicio
-        </a>
-        <a href="/servicios/" class="sidebar-item {% block nav_servicios %}{% endblock %}">
-            <i class="fas fa-clipboard-list"></i>Todos los Servicios
+        <span class="sidebar-section">Operaciones y Retiros</span>
+        <a href="/retiros/nuevo/" class="sidebar-item">
+            <i class="fas fa-plus-circle" style="color:#95BF3C;"></i>Registrar Retiro
         </a>
         <a href="/retiros/" class="sidebar-item {% block nav_retiros %}{% endblock %}">
             <i class="fas fa-ticket-alt"></i>Tickets y Retiros
         </a>
+        <a href="/galeria/" class="sidebar-item {% block nav_galeria_admin %}{% endblock %}">
+            <i class="fas fa-images" style="color:#17a2b8;"></i>Galería de Fotos
+        </a>
         <a href="/retiros/informe/" class="sidebar-item {% block nav_retiros_informe %}{% endblock %}">
             <i class="fas fa-table"></i>Informe Consolidado
-        </a>
-        <a href="/recolecciones/" class="sidebar-item {% block nav_lotes %}{% endblock %}">
-            <i class="fas fa-boxes"></i>Lotes de Recolección
         </a>
         <a href="/solicitudes/" class="sidebar-item {% block nav_solicitudes %}{% endblock %}">
             <i class="fas fa-inbox"></i>Solicitudes Web
@@ -871,6 +875,9 @@
             Validaciones
             {% if validaciones_count and validaciones_count > 0 %}
             <span class="badge-estado badge-pendiente ms-auto">{{ validaciones_count }}</span>{% endif %}
+        </a>
+        <a href="/servicios/" class="sidebar-item {% block nav_servicios %}{% endblock %}" style="opacity:0.75;">
+            <i class="fas fa-history"></i>Historial Legacy
         </a>
 
         <span class="sidebar-section">Administración</span>

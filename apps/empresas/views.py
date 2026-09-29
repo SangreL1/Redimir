@@ -2,6 +2,7 @@ from django.contrib.auth.decorators import login_required
 from django.utils.decorators import method_decorator
 from django.views import View
 from django.shortcuts import render, redirect, get_object_or_404
+from django.http import JsonResponse, HttpResponse
 from django.contrib import messages
 from django.utils import timezone
 from django.db.models import Sum, Count
@@ -1098,7 +1099,11 @@ class EmpresaCrearAdminView(View):
         if not _es_admin(request.user):
             messages.error(request, 'No tienes permiso.')
             return redirect('dashboard')
-        return render(request, self.template_name, {'rubros': Empresa.RUBROS, 'estados': Empresa.ESTADOS})
+        return render(request, self.template_name, {
+            'rubros': Empresa.RUBROS,
+            'estados': Empresa.ESTADOS,
+            'servicios_estandar': Empresa.SERVICIOS_ESTANDAR,
+        })
 
     def post(self, request):
         if not _es_admin(request.user):
@@ -1153,6 +1158,14 @@ class EmpresaCrearAdminView(View):
                 'rubros': Empresa.RUBROS, 'estados': Empresa.ESTADOS,
             })
 
+        # Servicios predeterminados (casillas seleccionadas y personalizados)
+        servicios_sel = request.POST.getlist('servicios_predeterminados')
+        servicios_cust = [s.strip() for s in request.POST.getlist('servicios_custom') if s.strip()]
+        todos_servicios = []
+        for s in (servicios_sel + servicios_cust):
+            if s and s not in todos_servicios:
+                todos_servicios.append(s)
+
         empresa = Empresa.objects.create(
             nombre=nombre, rut=rut_empresa,
             email_contacto=email_contacto, telefono=telefono,
@@ -1162,6 +1175,7 @@ class EmpresaCrearAdminView(View):
             cargo_contacto=cargo_contacto,
             logo=logo if logo else None,
             estado=estado_val,
+            servicios_predeterminados=todos_servicios,
         )
 
         if estado_val == 'aprobada':
@@ -1205,11 +1219,134 @@ class EmpresaCrearAdminView(View):
             accion='creacion',
             modelo='Empresa',
             registro_id=empresa.pk,
-            detalles=f"Empresa '{nombre}' creada directamente por admin (estado: {estado_val}, contactos: {tot_contactos}).",
+            detalles=f"Empresa '{nombre}' creada directamente por admin (estado: {estado_val}, contactos: {tot_contactos}, servicios: {len(todos_servicios)}).",
             ip=request.META.get('REMOTE_ADDR')
         )
 
         messages.success(request, f'Empresa "{nombre}" creada exitosamente.')
         return redirect('empresa-list')
+
+
+@method_decorator(login_required, name='dispatch')
+class EmpresaEditarAdminView(View):
+    """Edición completa de empresa, contactos y casillas de servicios predeterminados."""
+    template_name = 'empresas/editar_empresa_admin.html'
+
+    def get(self, request, pk):
+        if not _es_admin(request.user):
+            messages.error(request, 'No tienes permiso.')
+            return redirect('dashboard')
+        empresa = get_object_or_404(Empresa, pk=pk)
+        servicios_actuales = empresa.get_servicios_predeterminados_list()
+        servicios_estandar = Empresa.SERVICIOS_ESTANDAR
+
+        # Servicios custom que tiene la empresa y no están en estándar
+        servicios_custom = [s for s in servicios_actuales if s not in servicios_estandar]
+
+        return render(request, self.template_name, {
+            'empresa': empresa,
+            'rubros': Empresa.RUBROS,
+            'estados': Empresa.ESTADOS,
+            'servicios_estandar': servicios_estandar,
+            'servicios_actuales': servicios_actuales,
+            'servicios_custom': servicios_custom,
+            'contactos': empresa.contactos.all(),
+        })
+
+    def post(self, request, pk):
+        if not _es_admin(request.user):
+            messages.error(request, 'No tienes permiso.')
+            return redirect('dashboard')
+
+        empresa = get_object_or_404(Empresa, pk=pk)
+
+        nombre          = request.POST.get('nombre', '').strip()
+        rut_empresa     = request.POST.get('rut_empresa', '').strip().upper()
+        email_contacto  = request.POST.get('email_contacto', '').strip()
+        telefono        = request.POST.get('telefono', '').strip()
+        direccion       = request.POST.get('direccion', '').strip()
+        rubro           = request.POST.get('rubro', 'otro')
+        rubro_otro      = request.POST.get('rubro_otro', '').strip()
+        nombre_contacto = request.POST.get('nombre_contacto', '').strip()
+        cargo_contacto  = request.POST.get('cargo_contacto', '').strip()
+        logo            = request.FILES.get('logo')
+        estado_val      = request.POST.get('estado', empresa.estado)
+
+        errores = []
+        if not nombre:        errores.append('El nombre de la empresa es obligatorio.')
+        if not rut_empresa:   errores.append('El RUT de la empresa es obligatorio.')
+        if not email_contacto: errores.append('El email de contacto es obligatorio.')
+        if Empresa.objects.filter(rut=rut_empresa).exclude(pk=empresa.pk).exists():
+            errores.append('Ya existe otra empresa registrada con ese RUT.')
+
+        if errores:
+            return render(request, self.template_name, {
+                'empresa': empresa,
+                'errores': errores,
+                'rubros': Empresa.RUBROS,
+                'estados': Empresa.ESTADOS,
+                'servicios_estandar': Empresa.SERVICIOS_ESTANDAR,
+                'servicios_actuales': empresa.get_servicios_predeterminados_list(),
+                'contactos': empresa.contactos.all(),
+            })
+
+        empresa.nombre = nombre
+        empresa.rut = rut_empresa
+        empresa.email_contacto = email_contacto
+        empresa.telefono = telefono
+        empresa.direccion = direccion
+        empresa.rubro = rubro
+        empresa.rubro_otro = rubro_otro if rubro == 'otro' else None
+        empresa.nombre_contacto = nombre_contacto
+        empresa.cargo_contacto = cargo_contacto
+        empresa.estado = estado_val
+        if logo:
+            empresa.logo = logo
+
+        # Servicios predeterminados actualizados
+        servicios_sel = request.POST.getlist('servicios_predeterminados')
+        servicios_cust = [s.strip() for s in request.POST.getlist('servicios_custom') if s.strip()]
+        todos_servicios = []
+        for s in (servicios_sel + servicios_cust):
+            if s and s not in todos_servicios:
+                todos_servicios.append(s)
+
+        empresa.servicios_predeterminados = todos_servicios
+        empresa.save()
+
+        # Actualizar contactos
+        indices = request.POST.getlist('contacto_idx')
+        from .models import ContactoEmpresa
+        # Conservar o recrear contactos
+        empresa.contactos.all().delete()
+        for idx in indices:
+            cn = request.POST.get(f'contacto_nombre_{idx}', '').strip()
+            ce = request.POST.get(f'contacto_email_{idx}', '').strip()
+            if not cn or not ce:
+                continue
+            ContactoEmpresa.objects.create(
+                empresa=empresa,
+                nombre=cn,
+                cargo=request.POST.get(f'contacto_cargo_{idx}', '').strip(),
+                email=ce,
+                recibe_certificados=  bool(request.POST.get(f'contacto_cert_{idx}')),
+                recibe_estados_pago=  bool(request.POST.get(f'contacto_edp_{idx}')),
+                recibe_reportes=      bool(request.POST.get(f'contacto_rep_{idx}')),
+                recibe_notificaciones=bool(request.POST.get(f'contacto_notif_{idx}', '1')),
+            )
+
+        messages.success(request, f'Empresa "{empresa.nombre}" actualizada correctamente.')
+        return redirect('empresa-list')
+
+
+@login_required
+def api_empresa_servicios(request, pk):
+    """Devuelve la lista de servicios predeterminados de una empresa para selectores dinámicos."""
+    empresa = get_object_or_404(Empresa, pk=pk)
+    return JsonResponse({
+        'empresa_id': empresa.id,
+        'empresa_nombre': empresa.nombre,
+        'servicios': empresa.get_servicios_predeterminados_list()
+    })
 
 

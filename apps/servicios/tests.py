@@ -98,3 +98,32 @@ class RedimirPlataformaTestCase(TestCase):
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, cert.codigo_certificado)
         self.assertContains(response, 'SHA-256')
+
+    def test_servicios_predeterminados_empresa_y_api(self):
+        """Verificar configuración de casillas de servicios y endpoint API."""
+        self.empresa.servicios_predeterminados = ['Áreas Productivas', 'Bodega APD', 'Sector Chancado']
+        self.empresa.save()
+
+        client = Client()
+        client.force_login(self.admin)
+
+        response = client.get(f'/api/empresas/{self.empresa.pk}/servicios/')
+        self.assertEqual(response.status_code, 200)
+        data = response.json()
+        self.assertEqual(data['servicios'], ['Áreas Productivas', 'Bodega APD', 'Sector Chancado'])
+
+    def test_galeria_fotos_acceso(self):
+        """Verificar acceso a la Galería de Fotos y Comprobantes."""
+        client = Client()
+        client.force_login(self.admin)
+        response = client.get('/galeria/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'Galería de Evidencias')
+
+    def test_retiro_form_carga_servicios_predeterminados(self):
+        """Verificar que el formulario de creación de retiro incluya el mapa de servicios."""
+        client = Client()
+        client.force_login(self.admin)
+        response = client.get('/retiros/nuevo/')
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'serviciosChipsContainer')
