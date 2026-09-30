@@ -104,7 +104,7 @@
                         {% for mat in materiales %}
                         <th class="text-end" style="background-color: #2c3e50;">
                             {{ mat.nombre }}
-                            <div style="font-size:0.68rem; font-weight:normal; opacity:0.8;">({{ mat.get_unidad_medida_display }})</div>
+                            <div style="font-size:0.68rem; font-weight:normal; opacity:0.85;">(kg{% if mat.peso_unitario_kg > 0 %} · {{ mat.peso_unitario_kg|floatformat:0 }}k/u{% endif %})</div>
                         </th>
                         {% endfor %}
                         <th class="text-end bg-success bg-opacity-75">Total Kilos</th>
@@ -127,12 +127,19 @@
                         <td>{{ f.ticket.tipo_residuo|default:"-" }}</td>
                         <td class="text-end fw-bold bg-primary bg-opacity-10">{{ f.ticket.peso_total_ticket|floatformat:0 }}</td>
                         
-                        <!-- Columnas de Materiales -->
+                        <!-- Columnas de Materiales (Kilogramos y Unidades) -->
                         {% for col in f.materiales_cols %}
                         <td class="text-end">
-                            {% if col.valor > 0 %}
-                                <span class="fw-semibold {% if col.unidad == 'un' %}text-primary{% else %}text-dark{% endif %}">
-                                    {{ col.valor|floatformat:0 }}
+                            {% if col.valor_kg > 0 %}
+                                <span class="fw-semibold text-dark">
+                                    {{ col.valor_kg|floatformat:0 }}
+                                </span>
+                                {% if col.valor_un > 0 %}
+                                    <div class="text-muted" style="font-size:0.68rem;">({{ col.valor_un|floatformat:0 }} un)</div>
+                                {% endif %}
+                            {% elif col.valor_un > 0 %}
+                                <span class="fw-semibold text-primary">
+                                    {{ col.valor_un|floatformat:0 }} un
                                 </span>
                             {% else %}
                                 <span class="text-muted opacity-25">-</span>
@@ -181,7 +188,7 @@
                         {% for tot_mat in totales_fila.materiales %}
                         <td class="text-end">
                             {% if tot_mat.valor > 0 %}
-                                {{ tot_mat.valor|floatformat:0 }}
+                                {{ tot_mat.valor|floatformat:0 }} kg
                             {% else %}
                                 -
                             {% endif %}

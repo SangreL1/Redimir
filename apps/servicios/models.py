@@ -316,6 +316,11 @@ class CatalogoMaterialRetiro(models.Model):
     codigo = models.CharField(max_length=50, blank=True, null=True, verbose_name="Código / Abreviación")
     categoria = models.CharField(max_length=50, choices=CATEGORIAS, default='Reciclaje', verbose_name="Categoría")
     unidad_medida = models.CharField(max_length=20, choices=UNIDADES_MEDIDA, default='kg', verbose_name="Unidad de Medida")
+    peso_unitario_kg = models.DecimalField(
+        max_digits=8, decimal_places=2, default=0.00,
+        verbose_name="Factor conversión a kg (kg por unidad)",
+        help_text="Ej: 20 kg por palet, 5.5 kg por carrete de madera, 10 kg por tambor, 1 kg por bidón 20L"
+    )
     orden = models.IntegerField(default=0, verbose_name="Orden de visualización")
     activo = models.BooleanField(default=True, verbose_name="Activo")
 

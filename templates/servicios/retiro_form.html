@@ -141,8 +141,8 @@
                                                 <select name="material_id[]" class="form-select form-select-sm material-select" required>
                                                     <option value="">-- Seleccionar Material --</option>
                                                     {% for m in materiales_catalogo %}
-                                                    <option value="{{ m.id }}" data-unidad="{{ m.unidad_medida }}" {% if det.material_id == m.id %}selected{% endif %}>
-                                                        {{ m.nombre }} ({{ m.get_categoria_display }})
+                                                    <option value="{{ m.id }}" data-unidad="{{ m.unidad_medida }}" data-factor="{{ m.peso_unitario_kg|stringformat:'.2f' }}" {% if det.material_id == m.id %}selected{% endif %}>
+                                                        {{ m.nombre }} ({{ m.get_categoria_display }}){% if m.peso_unitario_kg > 0 %} [{{ m.peso_unitario_kg|floatformat:0 }} kg/un]{% endif %}
                                                     </option>
                                                     {% endfor %}
                                                 </select>
@@ -194,7 +194,7 @@
             <select name="material_id[]" class="form-select form-select-sm material-select" required>
                 <option value="">-- Seleccionar Material --</option>
                 {% for m in materiales_catalogo %}
-                <option value="{{ m.id }}" data-unidad="{{ m.unidad_medida }}">{{ m.nombre }} ({{ m.get_categoria_display }})</option>
+                <option value="{{ m.id }}" data-unidad="{{ m.unidad_medida }}" data-factor="{{ m.peso_unitario_kg|stringformat:'.2f' }}">{{ m.nombre }} ({{ m.get_categoria_display }}){% if m.peso_unitario_kg > 0 %} [{{ m.peso_unitario_kg|floatformat:0 }} kg/un]{% endif %}</option>
                 {% endfor %}
             </select>
         </td>
@@ -293,9 +293,39 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // Auto-transformación de Unidades a Kilogramos en tiempo real
+        function autoCalcularPesoFila(row) {
+            const matSelect = row.querySelector('.material-select');
+            const cantInput = row.querySelector('.cant-input');
+            const pesoInput = row.querySelector('.peso-input');
+            if (!matSelect || !cantInput || !pesoInput) return;
+
+            const selectedOpt = matSelect.selectedOptions[0];
+            const factor = selectedOpt ? parseFloat(selectedOpt.dataset.factor || '0') : 0;
+            const cant = parseFloat(cantInput.value || '0');
+
+            if (factor > 0 && cant > 0) {
+                // Calcular automáticamente peso en kg
+                pesoInput.value = (cant * factor).toFixed(2);
+                pesoInput.classList.add('border-success');
+                setTimeout(() => pesoInput.classList.remove('border-success'), 1200);
+            }
+            calculateTotals();
+        }
+
         tableBody.addEventListener('input', function(e) {
             if (e.target && e.target.classList.contains('peso-input')) {
                 calculateTotals();
+            } else if (e.target && e.target.classList.contains('cant-input')) {
+                const row = e.target.closest('.material-row');
+                if (row) autoCalcularPesoFila(row);
+            }
+        });
+
+        tableBody.addEventListener('change', function(e) {
+            if (e.target && e.target.classList.contains('material-select')) {
+                const row = e.target.closest('.material-row');
+                if (row) autoCalcularPesoFila(row);
             }
         });
     }

@@ -215,38 +215,41 @@ def generar_pdf_certificado(certificado, request=None):
         dir_completa = cliente_direccion or "Calama, Región de Antofagasta"
 
     # Formatear desglose de residuos
+    # REQUERIMIENTO REDIMIR: En certificados NO se reflejan ni escombros ni basura (RSD)
+    # Debe hacerse un desglose exclusivo de los residuos valorizables/reciclados en Kilogramos
     desglose = certificado.desglose_por_tipo or {}
     residuos_lines = []
-    # Tipos de residuos que se cuentan como retiros, no en Kg
-    TIPOS_RETIRO = ('escombros', 'rescon', 'otros residuos')
+    PALABRAS_EXCLUIR_CERT = ('escombro', 'rescon', 'rsd', 'basura', 'doméstic', 'domestic')
+    total_kg_val = 0.0
+
     if desglose:
         for tipo, cant in desglose.items():
+            if any(p in str(tipo).lower() for p in PALABRAS_EXCLUIR_CERT):
+                continue
             if isinstance(cant, (int, float)):
-                cant_fmt = f"{cant:g}".replace('.', ',')
-                tipo_lower = tipo.lower()
-                if any(t in tipo_lower for t in TIPOS_RETIRO) or 'm3' in tipo_lower:
-                    residuos_lines.append(f"{tipo}: {cant_fmt} Retiros")
-                else:
-                    residuos_lines.append(f"{tipo}: {cant_fmt} Kg.")
+                cant_f = float(cant)
+                if cant_f <= 0:
+                    continue
+                total_kg_val += cant_f
+                cant_fmt = f"{cant_f:,.2f}".rstrip('0').rstrip('.').replace(',', 'X').replace('.', ',').replace('X', '.')
+                residuos_lines.append(f"{tipo}: {cant_fmt} Kg.")
             else:
                 residuos_lines.append(f"{tipo}: {cant}")
-    else:
+    
+    if not residuos_lines:
         total_rec = float(certificado.total_reciclables_kg or 0)
-        total_rsd = float(certificado.total_rsd_kg or 0)
         if total_rec > 0:
-            residuos_lines.append(f"Materiales Reciclables: {total_rec:g}".replace('.', ',') + " Kg.")
-        if total_rsd > 0:
-            residuos_lines.append(f"Residuos Sólidos Domésticos: {total_rsd:g}".replace('.', ',') + " Kg.")
+            total_kg_val = total_rec
+            cant_fmt = f"{total_rec:,.2f}".rstrip('0').rstrip('.').replace(',', 'X').replace('.', ',').replace('X', '.')
+            residuos_lines.append(f"Materiales Reciclables: {cant_fmt} Kg.")
 
-    residuos_html = "<br/>".join(residuos_lines) if residuos_lines else "Residuos no peligrosos varios"
+    residuos_html = "<br/>".join(residuos_lines) if residuos_lines else "Residuos valorizables y reciclables"
 
-    total_kg_val = float(certificado.total_reciclables_kg or 0) + float(certificado.total_rsd_kg or 0)
-    if total_kg_val > 0 and certificado.total_escombros > 0:
-        total_kg_str = f"{total_kg_val:g} Kg. + {certificado.total_escombros} Retiro(s) Escombros".replace('.', ',')
-    elif total_kg_val > 0:
-        total_kg_str = f"{total_kg_val:g}".replace('.', ',') + " Kg."
-    else:
-        total_kg_str = f"{certificado.total_escombros} Retiro(s)"
+    if total_kg_val == 0:
+        total_kg_val = float(certificado.total_reciclables_kg or 0)
+
+    total_kg_fmt = f"{total_kg_val:,.2f}".rstrip('0').rstrip('.').replace(',', 'X').replace('.', ',').replace('X', '.')
+    total_kg_str = f"{total_kg_fmt} Kg."
 
     # Destino oficial fijo del certificado Redimir
     destino_str = "Recinort, Recipet y Redimir."
@@ -478,7 +481,7 @@ def api_verificar_retiros_empresa(request):
 
     import calendar
     from django.db.models import Q
-    from apps.servicios.models import Servicio
+    from apps.servicios.models import Servicio, TicketRetiro
     from apps.empresas.models import SolicitudRecoleccion, EstadoDePago
 
     MESES_NOMBRE_DICT = {
@@ -488,6 +491,13 @@ def api_verificar_retiros_empresa(request):
     }
 
     fechas_map = {}
+
+    # 1. Tickets de Retiro (tabla operacional principal de Redimir)
+    tickets_all = TicketRetiro.objects.filter(empresa=empresa)
+    for t in tickets_all:
+        if t.fecha:
+            k = (t.fecha.year, t.fecha.month)
+            fechas_map[k] = fechas_map.get(k, 0) + 1
 
     servicios_all = Servicio.objects.filter(empresa=empresa).exclude(estado='cancelado')
     for s in servicios_all:
@@ -554,7 +564,12 @@ def api_verificar_retiros_empresa(request):
             ).first()
             edp_items = (edp_mes.total_servicios or edp_mes.detalles.count()) if edp_mes else 0
 
-            total_mes = max(servs_mes + sols_mes, edp_items)
+            tickets_mes = TicketRetiro.objects.filter(
+                empresa=empresa,
+                fecha__range=[p_ini, p_fin]
+            ).count()
+
+            total_mes = max(servs_mes + sols_mes + tickets_mes, edp_items)
 
             cert_existente = Certificado.objects.filter(
                 empresa=empresa,
@@ -642,9 +657,19 @@ class GeneradorPageView(View):
                 empresa = Empresa.objects.get(id=empresa_id)
 
                 from django.db.models import Q
+                from apps.servicios.models import TicketRetiro
                 from apps.empresas.models import SolicitudRecoleccion, EstadoDePago
 
-                # 1. Servicios (ampliado a estados retirados o validados)
+                # PALABRAS A EXCLUIR ESTRICTAMENTE: ni escombros ni basura en certificados
+                PALABRAS_EXCLUIR = ['escombro', 'rescon', 'rsd', 'basura', 'doméstic', 'domestic']
+
+                # 1. Tickets de Retiro (fuente principal de pesajes operacionales Redimir)
+                tickets = TicketRetiro.objects.filter(
+                    empresa=empresa,
+                    fecha__range=[inicio, fin]
+                ).prefetch_related('detalles__material')
+
+                # 2. Servicios
                 servicios = Servicio.objects.filter(
                     empresa=empresa,
                     estado__in=['validado', 'documento_emitido', 'cerrado', 'retirado', 'pendiente_validacion']
@@ -655,7 +680,7 @@ class GeneradorPageView(View):
                     Q(fecha_validacion__date__range=[inicio, fin])
                 ).distinct()
 
-                # 2. Solicitudes de Recolección (modelo legado / complementario)
+                # 3. Solicitudes de Recolección
                 solicitudes = SolicitudRecoleccion.objects.filter(
                     empresa=empresa,
                     estado__in=['pendiente', 'asignada', 'completada']
@@ -664,16 +689,16 @@ class GeneradorPageView(View):
                     Q(fecha_creacion__date__range=[inicio, fin])
                 ).distinct()
 
-                # 3. Estado de Pago del período si no hay servicios ni solicitudes directas
+                # 4. Estado de Pago si aplica
                 edp = None
-                if not servicios.exists() and not solicitudes.exists():
+                if not tickets.exists() and not servicios.exists() and not solicitudes.exists():
                     edp = EstadoDePago.objects.filter(
                         empresa=empresa,
                         periodo_inicio__lte=fin,
                         periodo_fin__gte=inicio
                     ).first()
 
-                if not servicios.exists() and not solicitudes.exists() and not (edp and edp.detalles.exists()):
+                if not tickets.exists() and not servicios.exists() and not solicitudes.exists() and not (edp and edp.detalles.exists()):
                     mes_nombre_txt = next((nom for num, nom in MESES_NOMBRE if num == mes_sel), f"Mes {mes_sel}")
                     error = f"No hay retiros registrados para {empresa.nombre} en {mes_nombre_txt} {anio_sel} ({inicio} al {fin})."
                 else:
@@ -681,97 +706,65 @@ class GeneradorPageView(View):
                     escombros_total = 0
                     reciclables_kg = 0
                     desglose = {}
+                    servicios_para_enlazar = []
 
-                    # Procesar Servicios
-                    for s in servicios:
-                        reg = s.get_registro()
-                        if s.modulo == 'rsd' and reg:
-                            cant = float(reg.cantidad_kg) if reg.cantidad_kg else 0.0
-                            rsd_kg += reg.cantidad_kg or 0
-                            desglose['RSD / Basura General'] = round(desglose.get('RSD / Basura General', 0.0) + cant, 2)
-                        elif s.modulo == 'escombros' and reg:
-                            escombros_total += 1
-                            cant = float(reg.cantidad) if reg.cantidad else 0.0
-                            key = f"Escombros ({reg.get_unidad_display() if hasattr(reg, 'get_unidad_display') else 'm3'})"
-                            desglose[key] = round(desglose.get(key, 0.0) + cant, 2)
-                        elif s.modulo == 'reciclables' and reg:
-                            cant = float(reg.cantidad_kg) if reg.cantidad_kg else 0.0
-                            reciclables_kg += reg.cantidad_kg or 0
-                            key = f"Reciclables - {reg.get_material_display() if hasattr(reg, 'get_material_display') else 'General'}"
-                            desglose[key] = round(desglose.get(key, 0.0) + cant, 2)
-                        else:
-                            cant = float(s.cantidad_estimada or 1.0)
-                            if s.modulo == 'rsd':
-                                rsd_kg += s.cantidad_estimada or 0
-                                desglose['RSD / Basura General'] = round(desglose.get('RSD / Basura General', 0.0) + cant, 2)
-                            elif s.modulo == 'escombros':
-                                escombros_total += 1
-                                desglose['Escombros / RESCON'] = round(desglose.get('Escombros / RESCON', 0.0) + cant, 2)
-                            else:
-                                reciclables_kg += s.cantidad_estimada or 0
-                                desglose[f"Reciclables — {s.get_modulo_display()}"] = round(desglose.get(f"Reciclables — {s.get_modulo_display()}", 0.0) + cant, 2)
-
-                    # Procesar Solicitudes de Recolección
-                    MAPA_MODULO_SOL = {
-                        'rsd':         ('rsd',         'RSD / Basura General'),
-                        'escombros':   ('escombros',   'Escombros / RESCON'),
-                        'reciclables': ('reciclables', 'Reciclables - General'),
-                        'otros':       ('reciclables', 'Otros Residuos'),
-                    }
-                    MAPA_MATERIAL_SOL = {
-                        'carton':    'Reciclables - Cartón/Papel',
-                        'pet':       'Reciclables - Botellas PET',
-                        'vidrio':    'Reciclables - Vidrio',
-                        'latas':     'Reciclables - Latas',
-                        'film':      'Reciclables - Film LDPE',
-                        'plastico':  'Reciclables - Plástico',
-                        'escombros': 'Escombros / RESCON',
-                        'rsd':       'RSD / Basura General',
-                        'mixto':     'Reciclables - Mixto',
-                        'pallets':   'Reciclables - Pallets',
-                        'otros':     'Otros Residuos',
-                    }
-                    for sol in solicitudes:
-                        label_sol = MAPA_MATERIAL_SOL.get(
-                            sol.tipo_material,
-                            MAPA_MODULO_SOL.get(sol.modulo, ('reciclables', 'Reciclables - General'))[1]
-                        )
-                        modulo_sol = MAPA_MODULO_SOL.get(sol.modulo, ('reciclables', ''))[0]
-                        cant_sol = float(sol.cantidad_estimada) if sol.cantidad_estimada else 0.0
-                        if modulo_sol == 'rsd':
-                            rsd_kg += sol.cantidad_estimada or 0
-                        elif modulo_sol == 'escombros':
-                            escombros_total += 1
-                        else:
-                            reciclables_kg += sol.cantidad_estimada or 0
-                        if sol.unidad_medida in ('kg', 'Kg', 'KG'):
-                            desglose[label_sol] = round(desglose.get(label_sol, 0.0) + cant_sol, 2)
-                        else:
-                            prev = desglose.get(label_sol, 0.0)
-                            desglose[label_sol] = round(prev + (cant_sol if cant_sol > 0 else 1.0), 2)
-
-                    # Procesar EDP si no hubo servicios ni solicitudes
-                    servicios_para_enlazar = list(servicios)
-                    if not servicios.exists() and not solicitudes.exists() and edp:
-                        for d in edp.detalles.all():
-                            cant = float(d.cantidad or 0)
-                            desc_l = (d.descripcion or '').lower()
-                            mod_l = (d.modulo or '').lower()
-                            if 'rsd' in mod_l or 'basura' in desc_l:
-                                rsd_kg += cant
-                                desglose['RSD / Basura General'] = round(desglose.get('RSD / Basura General', 0.0) + cant, 2)
-                            elif 'escombro' in mod_l or 'escombro' in desc_l or 'rescon' in desc_l:
-                                escombros_total += int(cant if cant >= 1 else 1)
-                                key = f"Escombros ({d.unidad_medida or 'm3'})"
-                                desglose[key] = round(desglose.get(key, 0.0) + cant, 2)
-                            else:
-                                reciclables_kg += cant
-                                desglose[d.descripcion] = round(desglose.get(d.descripcion, 0.0) + cant, 2)
-                            if d.servicio:
-                                servicios_para_enlazar.append(d.servicio)
-                        total_registros = edp.total_servicios or edp.detalles.count()
+                    if tickets.exists():
+                        # Procesar directamente desde Tickets de Retiro
+                        for t in tickets:
+                            if t.servicio:
+                                servicios_para_enlazar.append(t.servicio)
+                            for det in t.detalles.all():
+                                mat_nom = det.material.nombre
+                                mat_cat = getattr(det.material, 'categoria', '')
+                                if any(p in f"{mat_nom} {mat_cat}".lower() for p in PALABRAS_EXCLUIR):
+                                    continue
+                                peso = float(det.peso_kg or 0.0)
+                                if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
+                                    peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
+                                if peso > 0:
+                                    desglose[mat_nom] = round(desglose.get(mat_nom, 0.0) + peso, 2)
+                        
+                        reciclables_kg = sum(desglose.values())
+                        total_registros = tickets.count()
                     else:
-                        total_registros = servicios.count() + solicitudes.count()
+                        # Fallback a Servicios (excluyendo escombros y basura)
+                        for s in servicios:
+                            reg = s.get_registro()
+                            if s.modulo in ('rsd', 'escombros'):
+                                continue
+                            if s.modulo == 'reciclables' and reg:
+                                cant = float(reg.cantidad_kg) if reg.cantidad_kg else 0.0
+                                key = reg.get_material_display() if hasattr(reg, 'get_material_display') else 'Materiales Reciclables'
+                                if not any(p in key.lower() for p in PALABRAS_EXCLUIR) and cant > 0:
+                                    reciclables_kg += cant
+                                    desglose[key] = round(desglose.get(key, 0.0) + cant, 2)
+
+                        # Solicitudes
+                        for sol in solicitudes:
+                            if sol.modulo in ('rsd', 'escombros') or any(p in sol.tipo_material.lower() for p in PALABRAS_EXCLUIR):
+                                continue
+                            cant_sol = float(sol.cantidad_estimada or 0.0)
+                            if cant_sol > 0:
+                                label_sol = sol.tipo_material.title()
+                                reciclables_kg += cant_sol
+                                desglose[label_sol] = round(desglose.get(label_sol, 0.0) + cant_sol, 2)
+
+                        # EDP
+                        if not servicios.exists() and not solicitudes.exists() and edp:
+                            for d in edp.detalles.all():
+                                desc_l = (d.descripcion or '').lower()
+                                mod_l = (d.modulo or '').lower()
+                                if any(p in f"{desc_l} {mod_l}" for p in PALABRAS_EXCLUIR):
+                                    continue
+                                cant = float(d.cantidad or 0)
+                                if cant > 0:
+                                    reciclables_kg += cant
+                                    desglose[d.descripcion] = round(desglose.get(d.descripcion, 0.0) + cant, 2)
+                                if d.servicio:
+                                    servicios_para_enlazar.append(d.servicio)
+                            total_registros = edp.total_servicios or edp.detalles.count()
+                        else:
+                            total_registros = servicios.count() + solicitudes.count()
 
                     certificado = Certificado.objects.create(
                         empresa=empresa,
@@ -1267,7 +1260,41 @@ def api_datos_empresa_mes(request):
     # Acumulador por clave de material
     materiales_kg = {k: 0.0 for k, _ in MATERIALES_CERT}
 
-    # 1. Servicios validados
+    # 0. Tickets de Retiro (fuente principal de pesajes operacionales)
+    from apps.servicios.models import TicketRetiro
+    tickets_mes = TicketRetiro.objects.filter(
+        empresa=empresa,
+        fecha__range=[p_ini, p_fin]
+    ).prefetch_related('detalles__material')
+
+    for t in tickets_mes:
+        for det in t.detalles.all():
+            m_nom = (det.material.nombre or '').lower()
+            peso = float(det.peso_kg or 0.0)
+            if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
+                peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
+            
+            eco_key = None
+            if 'cart' in m_nom: eco_key = 'carton'
+            elif 'papel' in m_nom: eco_key = 'papel'
+            elif 'pet' in m_nom or 'botella' in m_nom: eco_key = 'plastico'
+            elif 'film' in m_nom: eco_key = 'film'
+            elif 'aluminio' in m_nom or 'lata' in m_nom: eco_key = 'aluminio'
+            elif 'zuncho' in m_nom or 'suncho' in m_nom: eco_key = 'sunchos'
+            elif 'palet' in m_nom or 'pallet' in m_nom: eco_key = 'pallets'
+            elif 'carrete' in m_nom: eco_key = 'carretes'
+            elif 'vidrio' in m_nom: eco_key = 'vidrio'
+            elif 'tambor' in m_nom:
+                eco_key = 'aluminio' if 'metal' in m_nom else 'plastico'
+            elif 'bidon' in m_nom:
+                eco_key = 'plastico'
+            elif 'pellon' in m_nom or 'pellón' in m_nom:
+                eco_key = 'pellon'
+
+            if eco_key and peso > 0 and eco_key in materiales_kg:
+                materiales_kg[eco_key] += peso
+
+    # 1. Servicios validados (complementario)
     servicios = Servicio.objects.filter(
         empresa=empresa,
         modulo='reciclables',

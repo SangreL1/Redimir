@@ -223,9 +223,7 @@ class Command(BaseCommand):
     def import_enaex_actualizado(self, file_path, empresa, materiales_map, media_respaldos):
         self.stdout.write(f"Importando Enaex Actualizado desde {os.path.basename(file_path)}...")
         wb = openpyxl.load_workbook(file_path, data_only=True)
-        sheets = [s for s in wb.sheetnames if s in ("2025", "2026", "Sheet1")]
-        if not sheets:
-            sheets = wb.sheetnames[:2]
+        sheets = wb.sheetnames
 
         total_enaex = 0
         for sheet_name in sheets:
@@ -241,62 +239,91 @@ class Command(BaseCommand):
             header_row = 1
             for r in range(1, 4):
                 vals = [str(cell.value).upper() for cell in ws[r] if cell.value is not None]
-                if any("TICKET" in v for v in vals):
+                if any("TICKET" in v or "FOLIO" in v for v in vals):
                     header_row = r
                     break
 
-            header = [str(cell.value).strip().upper() if cell.value is not None else "" for cell in ws[header_row]]
-            col_map = {}
-            for idx, name in enumerate(header):
-                if "FECHA" in name: col_map["FECHA"] = idx
-                elif "TICKET" in name: col_map["TICKET"] = idx
-                elif "FAENA" in name: col_map["FAENA"] = idx
-                elif "RESIDUO" in name: col_map["RESIDUO"] = idx
-                elif "CANTIDAD" in name or "KILO" in name: col_map["PESO"] = idx
-                elif "CARTÓN" in name or "CARTON" in name: col_map["CARTON"] = idx
-                elif "FILM" in name: col_map["FILM"] = idx
-                elif "ZUNCHO" in name: col_map["ZUNCHO"] = idx
-                elif "PET" in name: col_map["PET"] = idx
-                elif "PP" in name: col_map["PP"] = idx
-                elif "BARRAS" in name: col_map["BARRAS"] = idx
-                elif "DESCARGA" in name: col_map["DESCARGA"] = idx
-                elif "OBSERVACI" in name: col_map["OBS"] = idx
+            header = [str(cell.value).strip() if cell.value is not None else "" for cell in ws[header_row]]
+            h_lower = [h.lower() for h in header]
+
+            col_ticket = next((i for i, h in enumerate(h_lower) if 'ticket' in h or 'folio' in h or h == ''), 0)
+            col_fecha = next((i for i, h in enumerate(h_lower) if 'fecha' in h), 1)
+            col_servicio = next((i for i, h in enumerate(h_lower) if 'servicio' in h), 2)
+            col_residuo = next((i for i, h in enumerate(h_lower) if 'residuo' in h), 3)
+            col_peso = next((i for i, h in enumerate(h_lower) if 'peso total' in h or 'total (kg)' in h), 4)
+
+            # Mapeo exhaustivo de materiales
+            mat_mappings = []
+            def _find_mat(m_name):
+                return materiales_map.get(m_name) or CatalogoMaterialRetiro.objects.filter(nombre__iexact=m_name).first()
+
+            # Columnas directas de peso
+            for key_term, m_name in [
+                ('cart', 'Cartón'), ('papel', 'Papel'), ('pet', 'Botellas Plásticas / PET'),
+                ('botella', 'Botellas Plásticas / PET'), ('film', 'Film'), ('aluminio', 'Latas de Aluminio'),
+                ('lata', 'Latas de Aluminio'), ('suncho', 'Zuncho'), ('zuncho', 'Zuncho'),
+                ('chatarra', 'Chatarra / Metales'), ('vidrio', 'Vidrio'), ('pp', 'PP (Polipropileno)'),
+                ('barra', 'Barras de Perforación'), ('descarga', 'Descarga y Acopio')
+            ]:
+                idx = next((i for i, h in enumerate(h_lower) if key_term in h and 'cant' not in h), None)
+                if idx is not None:
+                    m_obj = _find_mat(m_name)
+                    if m_obj:
+                        mat_mappings.append(('peso', idx, None, m_obj))
+
+            # Columnas combo (peso y/o cantidad con conversión)
+            combos = [
+                ('Pallets', 'peso palet', 'cantidad palet', 'mal'),
+                ('Pallets en Mal Estado', 'peso palet', 'cantidad palet', None),
+                ('Pallets Plásticos', 'pallet pl', 'pallet pl', None),
+                ('Carretes de Madera', 'carrete.*madera', 'carrete.*madera', None),
+                ('Carretes Plásticos', 'carrete.*pl', 'carrete.*pl', 'apd'),
+                ('Carretes Plásticos APD', 'carrete.*apd', 'carrete.*apd', None),
+                ('Tambores', 'peso.*tambor', 'tambores', '50'),
+                ('Tambores 50 Litros', '50.*litro', '50.*litro', None),
+                ('Tambor Metálico', 'metal', 'metal', None),
+                ('Bidones 20 Litros', '20.*litro', '20.*litro', None),
+                ('Bidones 25 Litros', '25.*litro', '25.*litro', None),
+            ]
+            for m_name, p_term, c_term, neg in combos:
+                m_obj = _find_mat(m_name)
+                if not m_obj: continue
+                p_idx = next((i for i, h in enumerate(h_lower) if re.search(p_term, h) and 'peso' in h and (not neg or neg not in h)), None)
+                c_idx = next((i for i, h in enumerate(h_lower) if (re.search(c_term, h) or h == c_term) and 'peso' not in h and (not neg or neg not in h)), None)
+                if p_idx is not None or c_idx is not None:
+                    mat_mappings.append(('combo', p_idx, c_idx, m_obj))
 
             for row_idx in range(header_row + 1, ws.max_row + 1):
-                row = [cell.value for cell in ws[row_idx]]
-                if not any(row):
+                num_t = ws.cell(row=row_idx, column=col_ticket + 1).value
+                if not num_t or str(num_t).strip() == "" or str(num_t).strip() == "None":
                     continue
+                try:
+                    num_ticket = str(int(float(num_t)))
+                except Exception:
+                    num_ticket = str(num_t).strip()
 
-                if "TICKET" not in col_map:
-                    continue
-                num_ticket = row[col_map["TICKET"]]
-                if not num_ticket or str(num_ticket).strip() == "" or str(num_ticket).strip() == "None":
-                    continue
-                num_ticket = str(num_ticket).strip()
-
-                fecha = self.parse_date(row[col_map.get("FECHA", 0)])
-                faena = str(row[col_map.get("FAENA", 2)] or "Faena Enaex").strip()
-                residuo = str(row[col_map.get("RESIDUO", 3)] or "Reciclables").strip()
-                peso_ticket = self.parse_float(row[col_map.get("PESO", 4)])
-                obs = str(row[col_map.get("OBS", 13)] or "").strip() if "OBS" in col_map else ""
+                fecha = self.parse_date(ws.cell(row=row_idx, column=col_fecha + 1).value)
+                faena = str(ws.cell(row=row_idx, column=col_servicio + 1).value or "Faena Enaex").strip()
+                residuo = str(ws.cell(row=row_idx, column=col_residuo + 1).value or "Reciclaje").strip()
+                peso_ticket = self.parse_float(ws.cell(row=row_idx, column=col_peso + 1).value)
 
                 ticket, created = TicketRetiro.objects.get_or_create(
                     empresa=empresa,
                     numero_ticket=num_ticket,
                     defaults={
                         "fecha": fecha,
-                        "faena_area": faena,
-                        "tipo_servicio": "Retiro Residuos Industriales",
+                        "faena_area": "Faena Enaex",
+                        "tipo_servicio": faena,
                         "tipo_residuo": residuo,
                         "peso_total_ticket": peso_ticket,
-                        "observaciones": obs,
                     }
                 )
                 if not created:
                     ticket.fecha = fecha
-                    ticket.faena_area = faena
-                    ticket.peso_total_ticket = peso_ticket
-                    if obs: ticket.observaciones = obs
+                    ticket.tipo_servicio = faena
+                    ticket.tipo_residuo = residuo
+                    if peso_ticket > 0:
+                        ticket.peso_total_ticket = peso_ticket
                     ticket.save()
 
                 if row_idx in images_by_row and not ticket.respaldo_ticket:
@@ -307,34 +334,35 @@ class Command(BaseCommand):
                         fname = f"ticket_enaex_{num_ticket}.{ext}"
                         ticket.respaldo_ticket.save(fname, ContentFile(img_data), save=True)
                     except Exception as e:
-                        self.stdout.write(self.style.WARNING(f"Foto ticket Enaex {num_ticket}: {e}"))
+                        pass
 
-                mat_enaex_cols = [
-                    ("CARTON", "Cartón"),
-                    ("FILM", "Film"),
-                    ("ZUNCHO", "Zuncho"),
-                    ("PET", "Botellas Plásticas / PET"),
-                    ("PP", "PP (Polipropileno)"),
-                    ("BARRAS", "Barras de Perforación"),
-                    ("DESCARGA", "Descarga y Acopio"),
-                ]
+                for m_type, p_idx, c_idx, mat_obj in mat_mappings:
+                    peso_val = Decimal('0.00')
+                    cant_val = Decimal('0.00')
+                    if m_type == 'peso' and p_idx is not None:
+                        peso_val = self.parse_float(ws.cell(row=row_idx, column=p_idx + 1).value)
+                    elif m_type == 'combo':
+                        if p_idx is not None:
+                            peso_val = self.parse_float(ws.cell(row=row_idx, column=p_idx + 1).value)
+                        if c_idx is not None:
+                            cant_val = self.parse_float(ws.cell(row=row_idx, column=c_idx + 1).value)
+                        if peso_val == 0 and cant_val > 0 and mat_obj.peso_unitario_kg > 0:
+                            peso_val = cant_val * mat_obj.peso_unitario_kg
 
-                for col_key, mat_name in mat_enaex_cols:
-                    if col_key in col_map:
-                        val = self.parse_float(row[col_map[col_key]])
-                        if val > 0 and mat_name in materiales_map:
-                            mat_obj = materiales_map[mat_name]
-                            det, _ = DetalleMaterialTicket.objects.get_or_create(
-                                ticket=ticket,
-                                material=mat_obj,
-                                defaults={"peso_kg": val}
-                            )
-                            det.peso_kg = val
-                            det.save()
+                    if peso_val > 0 or cant_val > 0:
+                        det, _ = DetalleMaterialTicket.objects.get_or_create(
+                            ticket=ticket,
+                            material=mat_obj,
+                            defaults={"peso_kg": peso_val, "cantidad_unidades": cant_val if cant_val > 0 else None}
+                        )
+                        det.peso_kg = peso_val
+                        if cant_val > 0:
+                            det.cantidad_unidades = cant_val
+                        det.save()
 
                 total_enaex += 1
 
-        self.stdout.write(self.style.SUCCESS(f"[OK] Enaex Actualizado: {total_enaex} tickets procesados."))
+        self.stdout.write(self.style.SUCCESS(f"[OK] Enaex Actualizado: {total_enaex} tickets procesados con desglose completo y conversión."))
 
     def import_enaex_basura_mensual(self, file_path, empresa, materiales_map, media_respaldos):
         self.stdout.write(f"Importando Enaex Basura Mensual desde {os.path.basename(file_path)}...")

@@ -204,6 +204,10 @@ def retiro_crear(request):
 
                 obs_val = observaciones_items[i].strip() if i < len(observaciones_items) else ''
 
+                # Conversión automática de unidades a kg si no se ingresó peso
+                if (peso_val == 0 or not peso_val) and cant_val and cant_val > 0 and getattr(mat_obj, 'peso_unitario_kg', 0) > 0:
+                    peso_val = round(cant_val * mat_obj.peso_unitario_kg, 2)
+
                 if (peso_val and peso_val > 0) or (cant_val and cant_val > 0):
                     DetalleMaterialTicket.objects.create(
                         ticket=ticket,
@@ -294,6 +298,10 @@ def retiro_editar(request, pk):
                         cant_val = None
 
                 obs_val = observaciones_items[i].strip() if i < len(observaciones_items) else ''
+
+                # Conversión automática de unidades a kg si no se ingresó peso
+                if (peso_val == 0 or not peso_val) and cant_val and cant_val > 0 and getattr(mat_obj, 'peso_unitario_kg', 0) > 0:
+                    peso_val = round(cant_val * mat_obj.peso_unitario_kg, 2)
 
                 if (peso_val and peso_val > 0) or (cant_val and cant_val > 0):
                     DetalleMaterialTicket.objects.create(
@@ -437,24 +445,30 @@ def retiros_informe(request):
         for mat in materiales:
             det = det_map.get(mat.id)
             if det:
-                if mat.unidad_medida == 'un':
-                    val = det.cantidad_unidades or Decimal('0.00')
-                    total_unidades_general += val
-                else:
-                    val = det.peso_kg or Decimal('0.00')
-                    total_desglose_general += val
-                    total_desglose_ticket += val
-                
-                totales_por_mat[mat.id] += val
+                val_kg = det.peso_kg or Decimal('0.00')
+                val_un = det.cantidad_unidades or Decimal('0.00')
+                # Si el peso en kg es 0 pero hay unidades y factor, convertir a kg
+                if val_kg == 0 and val_un > 0 and getattr(mat, 'peso_unitario_kg', 0) > 0:
+                    val_kg = round(val_un * mat.peso_unitario_kg, 2)
+
+                total_unidades_general += val_un
+                total_desglose_general += val_kg
+                total_desglose_ticket += val_kg
+                totales_por_mat[mat.id] += val_kg
+
                 mat_cols.append({
                     'material': mat,
-                    'valor': val,
+                    'valor': val_kg,
+                    'valor_kg': val_kg,
+                    'valor_un': val_un,
                     'unidad': mat.unidad_medida,
                 })
             else:
                 mat_cols.append({
                     'material': mat,
                     'valor': Decimal('0.00'),
+                    'valor_kg': Decimal('0.00'),
+                    'valor_un': Decimal('0.00'),
                     'unidad': mat.unidad_medida,
                 })
 
@@ -628,8 +642,12 @@ def exportar_retiros_excel(request):
             det = det_map.get(mat.id)
             val = None
             if det:
-                if metric == 'peso' and det.peso_kg and det.peso_kg > 0:
-                    val = float(det.peso_kg)
+                if metric == 'peso':
+                    val_kg = det.peso_kg
+                    if (not val_kg or val_kg == 0) and det.cantidad_unidades and getattr(mat, 'peso_unitario_kg', 0) > 0:
+                        val_kg = det.cantidad_unidades * mat.peso_unitario_kg
+                    if val_kg and val_kg > 0:
+                        val = float(val_kg)
                 elif metric == 'cantidad' and det.cantidad_unidades and det.cantidad_unidades > 0:
                     val = float(det.cantidad_unidades)
             
