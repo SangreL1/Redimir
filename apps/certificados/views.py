@@ -1326,6 +1326,46 @@ def api_datos_empresa_mes(request):
         if eco_key and kg and eco_key in materiales_kg:
             materiales_kg[eco_key] += kg
 
+    # 3. Estado de Pago Interno (EDP) del mes (si no hubo en tickets ni servicios)
+    if sum(materiales_kg.values()) == 0:
+        from apps.empresas.models import EstadoDePago
+        edps_mes = EstadoDePago.objects.filter(
+            empresa=empresa,
+            periodo_inicio__lte=p_fin,
+            periodo_fin__gte=p_ini
+        ).exclude(estado='anulado')
+
+        for edp in edps_mes:
+            for d in edp.detalles.all():
+                desc_l = (d.descripcion or '').lower()
+                mod_l = (d.modulo or '').lower()
+                # Excluir escombros y basura
+                if any(p in f"{desc_l} {mod_l}" for p in ['escombro', 'rescon', 'rsd', 'basura', 'domestico']):
+                    continue
+                
+                kg = float(d.cantidad or 0.0)
+                eco_key = None
+                if 'cart' in desc_l: eco_key = 'carton'
+                elif 'papel' in desc_l: eco_key = 'papel'
+                elif 'pet' in desc_l or 'botella' in desc_l or 'plast' in desc_l: eco_key = 'plastico'
+                elif 'film' in desc_l: eco_key = 'film'
+                elif 'aluminio' in desc_l or 'lata' in desc_l: eco_key = 'aluminio'
+                elif 'zuncho' in desc_l or 'suncho' in desc_l: eco_key = 'sunchos'
+                elif 'palet' in desc_l or 'pallet' in desc_l: eco_key = 'pallets'
+                elif 'carrete' in desc_l: eco_key = 'carretes'
+                elif 'vidrio' in desc_l: eco_key = 'vidrio'
+                elif 'tambor' in desc_l:
+                    eco_key = 'aluminio' if 'metal' in desc_l else 'plastico'
+                elif 'bidon' in desc_l:
+                    eco_key = 'plastico'
+                elif 'pellon' in desc_l or 'pellón' in desc_l:
+                    eco_key = 'pellon'
+                elif 'recicl' in desc_l or 'recicl' in mod_l or 'mixto' in desc_l:
+                    eco_key = 'carton'
+
+                if eco_key and kg > 0 and eco_key in materiales_kg:
+                    materiales_kg[eco_key] += kg
+
     # Calcular beneficios
     beneficios = calcular_eco_beneficios(materiales_kg)
     total_kg   = sum(materiales_kg.values())
@@ -1384,6 +1424,62 @@ class EcoEquivalenciaGeneradorView(View):
                 total_kg = sum(materiales_kg.values())
 
                 p_ini = f"{year}-{month:02d}-01"
+                last_day = calendar.monthrange(year, month)[1]
+                p_fin = f"{year}-{month:02d}-{last_day:02d}"
+
+                if total_kg == 0:
+                    # Auto-cargar desde Tickets de Retiro o EDP si venía vacío
+                    from apps.servicios.models import TicketRetiro
+                    from apps.empresas.models import EstadoDePago
+
+                    tickets_mes = TicketRetiro.objects.filter(empresa=empresa, fecha__range=[p_ini, p_fin]).prefetch_related('detalles__material')
+                    for t in tickets_mes:
+                        for det in t.detalles.all():
+                            m_nom = (det.material.nombre or '').lower()
+                            peso = float(det.peso_kg or 0.0)
+                            if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
+                                peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
+                            eco_key = None
+                            if 'cart' in m_nom: eco_key = 'carton'
+                            elif 'papel' in m_nom: eco_key = 'papel'
+                            elif 'pet' in m_nom or 'botella' in m_nom: eco_key = 'plastico'
+                            elif 'film' in m_nom: eco_key = 'film'
+                            elif 'aluminio' in m_nom or 'lata' in m_nom: eco_key = 'aluminio'
+                            elif 'zuncho' in m_nom or 'suncho' in m_nom: eco_key = 'sunchos'
+                            elif 'palet' in m_nom or 'pallet' in m_nom: eco_key = 'pallets'
+                            elif 'carrete' in m_nom: eco_key = 'carretes'
+                            elif 'vidrio' in m_nom: eco_key = 'vidrio'
+                            elif 'tambor' in m_nom: eco_key = 'aluminio' if 'metal' in m_nom else 'plastico'
+                            elif 'bidon' in m_nom: eco_key = 'plastico'
+                            elif 'pellon' in m_nom: eco_key = 'pellon'
+                            if eco_key and peso > 0 and eco_key in materiales_kg:
+                                materiales_kg[eco_key] += peso
+
+                    if sum(materiales_kg.values()) == 0:
+                        edps_mes = EstadoDePago.objects.filter(empresa=empresa, periodo_inicio__lte=p_fin, periodo_fin__gte=p_ini).exclude(estado='anulado')
+                        for edp in edps_mes:
+                            for d in edp.detalles.all():
+                                desc_l = (d.descripcion or '').lower()
+                                mod_l = (d.modulo or '').lower()
+                                if any(p in f"{desc_l} {mod_l}" for p in ['escombro', 'rescon', 'rsd', 'basura', 'domestico']):
+                                    continue
+                                kg = float(d.cantidad or 0.0)
+                                eco_key = None
+                                if 'cart' in desc_l: eco_key = 'carton'
+                                elif 'papel' in desc_l: eco_key = 'papel'
+                                elif 'pet' in desc_l or 'botella' in desc_l: eco_key = 'plastico'
+                                elif 'film' in desc_l: eco_key = 'film'
+                                elif 'aluminio' in desc_l or 'lata' in desc_l: eco_key = 'aluminio'
+                                elif 'zuncho' in desc_l or 'suncho' in desc_l: eco_key = 'sunchos'
+                                elif 'palet' in desc_l or 'pallet' in desc_l: eco_key = 'pallets'
+                                elif 'carrete' in desc_l: eco_key = 'carretes'
+                                elif 'vidrio' in desc_l: eco_key = 'vidrio'
+                                elif 'tambor' in desc_l: eco_key = 'aluminio' if 'metal' in desc_l else 'plastico'
+                                elif 'recicl' in desc_l or 'mixto' in desc_l: eco_key = 'carton'
+                                if eco_key and kg > 0 and eco_key in materiales_kg:
+                                    materiales_kg[eco_key] += kg
+
+                    total_kg = sum(materiales_kg.values())
                 last_day = calendar.monthrange(year, month)[1]
                 p_fin = f"{year}-{month:02d}-{last_day:02d}"
 

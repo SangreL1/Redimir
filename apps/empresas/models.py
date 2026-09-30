@@ -521,6 +521,70 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
         if fecha_obj not in grupos[key]['fecha_objs']:
             grupos[key]['fecha_objs'].append(fecha_obj)
 
+    # 4. Procesar Tickets de Retiro de Pesaje dentro del rango del mes [p_inicio, p_fin]
+    from apps.servicios.models import TicketRetiro
+    tickets_qs = TicketRetiro.objects.filter(
+        empresa=empresa,
+        fecha__range=[p_inicio, p_fin]
+    ).prefetch_related('detalles__material').distinct()
+
+    for ticket in tickets_qs:
+        fecha_obj = ticket.fecha or today
+        if ticket.detalles.exists():
+            for det in ticket.detalles.all():
+                m_nom = det.material.nombre
+                m_cat = getattr(det.material, 'categoria', 'Reciclaje')
+                desc_base = f"Retiro — {m_nom}"
+                peso = det.peso_kg or Decimal('0.00')
+                if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
+                    peso = det.cantidad_unidades * det.material.peso_unitario_kg
+                cant = peso if peso > 0 else (det.cantidad_unidades or Decimal('1'))
+                unid = 'kg' if peso > 0 else 'un'
+
+                tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa, tipo_material__icontains=m_nom).first()
+                if not tarifa_custom:
+                    tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa, modulo='reciclables').first()
+                if not tarifa_custom:
+                    tarifa_custom = TarifaEmpresa.objects.filter(empresa=empresa).first()
+
+                tarifa = tarifa_custom.precio_unitario if tarifa_custom else Decimal('0')
+
+                key = (desc_base, tarifa, unid)
+                if key not in grupos:
+                    grupos[key] = {
+                        'modulo': m_cat,
+                        'descripcion': desc_base,
+                        'tarifa': tarifa,
+                        'unidad': unid,
+                        'cantidad': Decimal('0'),
+                        'fecha_objs': [],
+                        'servicio_obj': ticket.servicio,
+                        'fecha_obj': fecha_obj,
+                    }
+                grupos[key]['cantidad'] += cant
+                if fecha_obj not in grupos[key]['fecha_objs']:
+                    grupos[key]['fecha_objs'].append(fecha_obj)
+        else:
+            desc_base = f"Ticket N° {ticket.numero_ticket} — {ticket.tipo_servicio or 'Retiro General'}"
+            cant = ticket.peso_total_ticket if (ticket.peso_total_ticket and ticket.peso_total_ticket > 0) else Decimal('1')
+            unid = 'kg' if (ticket.peso_total_ticket and ticket.peso_total_ticket > 0) else 'servicio'
+            tarifa = Decimal('0')
+            key = (desc_base, tarifa, unid)
+            if key not in grupos:
+                grupos[key] = {
+                    'modulo': ticket.tipo_residuo or 'General',
+                    'descripcion': desc_base,
+                    'tarifa': tarifa,
+                    'unidad': unid,
+                    'cantidad': Decimal('0'),
+                    'fecha_objs': [],
+                    'servicio_obj': ticket.servicio,
+                    'fecha_obj': fecha_obj,
+                }
+            grupos[key]['cantidad'] += cant
+            if fecha_obj not in grupos[key]['fecha_objs']:
+                grupos[key]['fecha_objs'].append(fecha_obj)
+
     total_calculado = Decimal('0')
     count_servicios = 0
 
