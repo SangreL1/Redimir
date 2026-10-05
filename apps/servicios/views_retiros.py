@@ -2,10 +2,13 @@ import os
 import re
 import json
 import datetime
+import io
 from decimal import Decimal
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
 from openpyxl.utils import get_column_letter
+from openpyxl.drawing.image import Image as OpenpyxlImage
+from PIL import Image as PILImage, ImageOps
 
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required
@@ -581,19 +584,6 @@ def exportar_retiros_excel(request):
         bottom=Side(style='double', color='000000')
     )
 
-    ws.merge_cells('A1:G1')
-    ws['A1'] = "REDIMIR SPA — INFORME CONSOLIDADO DE RETIRO DE RESIDUOS"
-    ws['A1'].font = font_title
-
-    subtitulo_info = f"Empresa / Cliente: {empresa_nombre} | Faena: {faena or 'TODAS'} | Período: {desde or 'Inicio'} al {hasta or 'Cierre'}"
-    ws.merge_cells('A2:G2')
-    ws['A2'] = subtitulo_info
-    ws['A2'].font = font_sub
-
-    ws.row_dimensions[1].height = 24
-    ws.row_dimensions[2].height = 18
-    ws.row_dimensions[4].height = 26
-
     headers = ['N° FOLIO / TICKET', 'FECHA', 'EMPRESA / CLIENTE', 'TIPO SERVICIO', 'TIPO RESIDUO', 'PESO TOTAL BÁSCULA (kg)']
     
     col_mapping = []
@@ -611,31 +601,48 @@ def exportar_retiros_excel(request):
             col_mapping.append((mat, 'peso'))
 
     headers.append('OBSERVACIONES')
+    headers.append('COMPROBANTE / RESPALDO')
+
+    last_col_letter = get_column_letter(len(headers))
+    ws.merge_cells(f'A1:{last_col_letter}1')
+    ws['A1'] = "REDIMIR SPA — INFORME CONSOLIDADO DE RETIRO DE RESIDUOS"
+    ws['A1'].font = font_title
+
+    subtitulo_info = f"Empresa / Cliente: {empresa_nombre} | Faena: {faena or 'TODAS'} | Período: {desde or 'Inicio'} al {hasta or 'Cierre'}"
+    ws.merge_cells(f'A2:{last_col_letter}2')
+    ws['A2'] = subtitulo_info
+    ws['A2'].font = font_sub
+
+    ws.row_dimensions[1].height = 24
+    ws.row_dimensions[2].height = 18
+    ws.row_dimensions[4].height = 26
 
     start_row = 4
     for c_idx, h_text in enumerate(headers, 1):
         cell = ws.cell(start_row, c_idx, h_text)
         cell.font = font_header
         cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=True)
-        if c_idx <= 6:
+        if c_idx <= 6 or c_idx > 6 + len(col_mapping):
             cell.fill = fill_header_main
         else:
             cell.fill = fill_header_mat
         cell.border = thin_border
 
     curr_row = start_row + 1
+    image_buffers = []
+
     for t in tickets:
         det_map = {d.material_id: d for d in t.detalles.all()}
         
-        ws.cell(curr_row, 1, t.numero_ticket).alignment = Alignment(horizontal="center")
-        ws.cell(curr_row, 2, t.fecha.strftime('%d/%m/%Y')).alignment = Alignment(horizontal="center")
-        ws.cell(curr_row, 3, t.empresa.nombre)
-        ws.cell(curr_row, 4, t.tipo_servicio or '')
-        ws.cell(curr_row, 5, t.tipo_residuo or '')
+        ws.cell(curr_row, 1, t.numero_ticket).alignment = Alignment(horizontal="center", vertical="center")
+        ws.cell(curr_row, 2, t.fecha.strftime('%d/%m/%Y')).alignment = Alignment(horizontal="center", vertical="center")
+        ws.cell(curr_row, 3, t.empresa.nombre).alignment = Alignment(vertical="center")
+        ws.cell(curr_row, 4, t.tipo_servicio or '').alignment = Alignment(vertical="center")
+        ws.cell(curr_row, 5, t.tipo_residuo or '').alignment = Alignment(vertical="center")
         
         c_peso = ws.cell(curr_row, 6, float(t.peso_total_ticket or 0))
         c_peso.number_format = '#,##0.0'
-        c_peso.alignment = Alignment(horizontal="right")
+        c_peso.alignment = Alignment(horizontal="right", vertical="center")
 
         c_idx = 7
         for mat, metric in col_mapping:
@@ -654,14 +661,84 @@ def exportar_retiros_excel(request):
             cell_m = ws.cell(curr_row, c_idx, val if val is not None else "")
             if val is not None:
                 cell_m.number_format = '#,##0.0' if metric == 'peso' else '#,##0'
-                cell_m.alignment = Alignment(horizontal="right")
+                cell_m.alignment = Alignment(horizontal="right", vertical="center")
             c_idx += 1
 
-        ws.cell(curr_row, c_idx, t.observaciones or "")
+        c_obs = c_idx
+        ws.cell(curr_row, c_obs, t.observaciones or "").alignment = Alignment(vertical="center", wrap_text=True)
+
+        c_img = c_obs + 1
+        cell_img = ws.cell(curr_row, c_img)
+        cell_img.alignment = Alignment(horizontal="center", vertical="center")
+
+        row_height = 24
+        if t.respaldo_ticket:
+            file_path = None
+            try:
+                file_path = t.respaldo_ticket.path
+            except Exception:
+                pass
+
+            file_url = ""
+            try:
+                file_url = request.build_absolute_uri(t.respaldo_ticket.url)
+            except Exception:
+                file_url = getattr(t.respaldo_ticket, 'url', '')
+
+            tiene_imagen = False
+            if file_path and os.path.exists(file_path) and t.es_imagen_respaldo:
+                try:
+                    with PILImage.open(file_path) as pil_img:
+                        pil_img = ImageOps.exif_transpose(pil_img)
+                        orig_w, orig_h = pil_img.size
+                        aspect = (orig_w / orig_h) if orig_h > 0 else 1.0
+
+                        target_h = 52
+                        target_w = int(target_h * aspect)
+                        if target_w > 90:
+                            target_w = 90
+                            target_h = int(target_w / aspect) if aspect > 0 else 52
+
+                        pil_img.thumbnail((target_w * 2, target_h * 2), PILImage.Resampling.LANCZOS)
+                        buf = io.BytesIO()
+                        if pil_img.mode in ('RGBA', 'LA'):
+                            pil_img.save(buf, format='PNG')
+                        else:
+                            pil_img.convert('RGB').save(buf, format='JPEG', quality=85)
+                        buf.seek(0)
+                        image_buffers.append(buf)
+
+                    img_obj = OpenpyxlImage(buf)
+                    img_obj.width = target_w
+                    img_obj.height = target_h
+
+                    col_letter = get_column_letter(c_img)
+                    ws.add_image(img_obj, f"{col_letter}{curr_row}")
+                    row_height = 58
+                    tiene_imagen = True
+
+                    if file_url:
+                        cell_img.hyperlink = file_url
+                except Exception:
+                    tiene_imagen = False
+
+            if not tiene_imagen:
+                if t.es_imagen_respaldo:
+                    cell_img.value = "Ver Foto"
+                elif t.respaldo_ticket.name.lower().endswith('.pdf'):
+                    cell_img.value = "Ver PDF"
+                else:
+                    cell_img.value = "Ver Respaldo"
+                if file_url:
+                    cell_img.hyperlink = file_url
+                    cell_img.font = Font(name="Calibri", size=9, color="0000FF", underline="single")
+
+        ws.row_dimensions[curr_row].height = row_height
 
         for c in range(1, len(headers) + 1):
             cell = ws.cell(curr_row, c)
-            cell.font = font_data
+            if not cell.font or cell.font.color is None or cell.font.color.rgb != '0000FF':
+                cell.font = font_data
             cell.border = thin_border
 
         curr_row += 1
@@ -674,23 +751,31 @@ def exportar_retiros_excel(request):
     cell_tot_lbl.fill = fill_total
 
     col_letter_bascula = get_column_letter(6)
-    cell_tot_bascula = ws.cell(total_row, 6, f"=SUM({col_letter_bascula}{start_row + 1}:{col_letter_bascula}{total_row - 1})")
+    if tickets:
+        cell_tot_bascula = ws.cell(total_row, 6, f"=SUM({col_letter_bascula}{start_row + 1}:{col_letter_bascula}{total_row - 1})")
+    else:
+        cell_tot_bascula = ws.cell(total_row, 6, 0.0)
     cell_tot_bascula.font = font_total
     cell_tot_bascula.fill = fill_total
     cell_tot_bascula.number_format = '#,##0.0'
     cell_tot_bascula.border = total_border
 
-    for c_idx in range(7, len(headers)):
+    last_mat_col = 6 + len(col_mapping)
+    for c_idx in range(7, last_mat_col + 1):
         c_letter = get_column_letter(c_idx)
-        cell_tot = ws.cell(total_row, c_idx, f"=SUM({c_letter}{start_row + 1}:{c_letter}{total_row - 1})")
+        if tickets:
+            cell_tot = ws.cell(total_row, c_idx, f"=SUM({c_letter}{start_row + 1}:{c_letter}{total_row - 1})")
+        else:
+            cell_tot = ws.cell(total_row, c_idx, 0.0)
         cell_tot.font = font_total
         cell_tot.fill = fill_total
         cell_tot.number_format = '#,##0.0'
         cell_tot.border = total_border
 
-    cell_empty = ws.cell(total_row, len(headers), "")
-    cell_empty.fill = fill_total
-    cell_empty.border = total_border
+    for c_idx in range(last_mat_col + 1, len(headers) + 1):
+        cell_empty = ws.cell(total_row, c_idx, "")
+        cell_empty.fill = fill_total
+        cell_empty.border = total_border
 
     for c in range(1, 6):
         ws.cell(total_row, c).border = total_border
@@ -706,6 +791,9 @@ def exportar_retiros_excel(request):
                 continue
             max_len = max(max_len, len(val_str))
         ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
+
+    col_img_letter = get_column_letter(len(headers))
+    ws.column_dimensions[col_img_letter].width = 24
 
     filename_empresa = re.sub(r'[^a-zA-Z0-9_-]', '_', empresa_nombre)
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M')
