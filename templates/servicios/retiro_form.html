@@ -139,13 +139,23 @@
                                         <tr class="material-row">
                                             <td>
                                                 <select name="material_id[]" class="form-select form-select-sm material-select" required>
-                                                    <option value="">-- Seleccionar Material --</option>
-                                                    {% for m in materiales_catalogo %}
-                                                    <option value="{{ m.id }}" data-unidad="{{ m.unidad_medida }}" data-factor="{{ m.peso_unitario_kg|stringformat:'.2f' }}" {% if det.material_id == m.id %}selected{% endif %}>
-                                                        {{ m.nombre }} ({{ m.get_categoria_display }}){% if m.peso_unitario_kg > 0 %} [{{ m.peso_unitario_kg|floatformat:0 }} kg/un]{% endif %}
-                                                    </option>
+                                                    <option value="">-- Seleccionar Material Habitual --</option>
+                                                    {% regroup materiales_catalogo by get_categoria_display as categorias_list %}
+                                                    {% for cat in categorias_list %}
+                                                    <optgroup label="{{ cat.grouper }}">
+                                                        {% for m in cat.list %}
+                                                        <option value="{{ m.id }}" 
+                                                                data-unidad="{{ m.unidad_medida }}" 
+                                                                data-factor="{{ m.peso_unitario_kg|stringformat:'.2f' }}"
+                                                                data-nombre="{{ m.nombre }}"
+                                                                {% if det.material_id == m.id %}selected{% endif %}>
+                                                            {{ m.nombre }}{% if m.peso_unitario_kg > 0 %} [{{ m.peso_unitario_kg|floatformat:0 }} kg/un]{% endif %}
+                                                        </option>
+                                                        {% endfor %}
+                                                    </optgroup>
                                                     {% endfor %}
                                                 </select>
+                                                <div class="conversion-hint mt-1" style="font-size:0.75rem;"></div>
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm">
@@ -192,11 +202,22 @@
     <tr class="material-row">
         <td>
             <select name="material_id[]" class="form-select form-select-sm material-select" required>
-                <option value="">-- Seleccionar Material --</option>
-                {% for m in materiales_catalogo %}
-                <option value="{{ m.id }}" data-unidad="{{ m.unidad_medida }}" data-factor="{{ m.peso_unitario_kg|stringformat:'.2f' }}">{{ m.nombre }} ({{ m.get_categoria_display }}){% if m.peso_unitario_kg > 0 %} [{{ m.peso_unitario_kg|floatformat:0 }} kg/un]{% endif %}</option>
+                <option value="">-- Seleccionar Material Habitual --</option>
+                {% regroup materiales_catalogo by get_categoria_display as categorias_list %}
+                {% for cat in categorias_list %}
+                <optgroup label="{{ cat.grouper }}">
+                    {% for m in cat.list %}
+                    <option value="{{ m.id }}" 
+                            data-unidad="{{ m.unidad_medida }}" 
+                            data-factor="{{ m.peso_unitario_kg|stringformat:'.2f' }}"
+                            data-nombre="{{ m.nombre }}">
+                        {{ m.nombre }}{% if m.peso_unitario_kg > 0 %} [{{ m.peso_unitario_kg|floatformat:0 }} kg/un]{% endif %}
+                    </option>
+                    {% endfor %}
+                </optgroup>
                 {% endfor %}
             </select>
+            <div class="conversion-hint mt-1" style="font-size:0.75rem;"></div>
         </td>
         <td>
             <div class="input-group input-group-sm">
@@ -293,39 +314,88 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
-        // Auto-transformación de Unidades a Kilogramos en tiempo real
-        function autoCalcularPesoFila(row) {
+        // Transformación inteligente y bidireccional de Unidades a Kilogramos en tiempo real
+        function autoCalcularFila(row, origin) {
             const matSelect = row.querySelector('.material-select');
             const cantInput = row.querySelector('.cant-input');
             const pesoInput = row.querySelector('.peso-input');
+            const hintDiv = row.querySelector('.conversion-hint');
             if (!matSelect || !cantInput || !pesoInput) return;
 
             const selectedOpt = matSelect.selectedOptions[0];
             const factor = selectedOpt ? parseFloat(selectedOpt.dataset.factor || '0') : 0;
             const cant = parseFloat(cantInput.value || '0');
+            const peso = parseFloat(pesoInput.value || '0');
 
-            if (factor > 0 && cant > 0) {
-                // Calcular automáticamente peso en kg
-                pesoInput.value = (cant * factor).toFixed(2);
-                pesoInput.classList.add('border-success');
-                setTimeout(() => pesoInput.classList.remove('border-success'), 1200);
+            if (factor > 0) {
+                if (origin === 'unidades') {
+                    if (cant > 0) {
+                        const nuevoPeso = (cant * factor).toFixed(2);
+                        pesoInput.value = nuevoPeso;
+                        pesoInput.classList.add('border-success');
+                        setTimeout(() => pesoInput.classList.remove('border-success'), 1200);
+                        if (hintDiv) {
+                            hintDiv.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-check-circle me-1"></i>${cant} un × ${factor} kg = <strong>${nuevoPeso} kg</strong></span>`;
+                        }
+                    } else if (hintDiv) {
+                        hintDiv.innerHTML = `<span class="badge bg-light text-primary border"><i class="fas fa-balance-scale me-1"></i>Factor: ${factor} kg/un</span>`;
+                    }
+                } else if (origin === 'kilos') {
+                    if (peso > 0 && cant === 0) {
+                        const cantCalc = Math.round(peso / factor);
+                        if (cantCalc > 0) {
+                            cantInput.value = cantCalc;
+                            if (hintDiv) {
+                                hintDiv.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-check-circle me-1"></i>${peso} kg ÷ ${factor} = <strong>${cantCalc} un</strong></span>`;
+                            }
+                        }
+                    }
+                } else {
+                    // origin === 'material' o carga inicial
+                    if (cant > 0) {
+                        const nuevoPeso = (cant * factor).toFixed(2);
+                        pesoInput.value = nuevoPeso;
+                        if (hintDiv) {
+                            hintDiv.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-check-circle me-1"></i>${cant} un × ${factor} kg = <strong>${nuevoPeso} kg</strong></span>`;
+                        }
+                    } else if (peso > 0 && cant === 0) {
+                        const cantCalc = Math.round(peso / factor);
+                        if (cantCalc > 0) {
+                            cantInput.value = cantCalc;
+                            if (hintDiv) {
+                                hintDiv.innerHTML = `<span class="badge bg-success-subtle text-success border border-success-subtle"><i class="fas fa-check-circle me-1"></i>${peso} kg ÷ ${factor} = <strong>${cantCalc} un</strong></span>`;
+                            }
+                        }
+                    } else if (hintDiv) {
+                        hintDiv.innerHTML = `<span class="badge bg-light text-primary border"><i class="fas fa-balance-scale me-1"></i>Factor: ${factor} kg/un</span>`;
+                    }
+                }
+            } else {
+                if (hintDiv) {
+                    if (selectedOpt && selectedOpt.value) {
+                        hintDiv.innerHTML = `<span class="text-muted small"><i class="fas fa-weight-hanging me-1"></i>Pesaje directo en kg</span>`;
+                    } else {
+                        hintDiv.innerHTML = '';
+                    }
+                }
             }
             calculateTotals();
         }
 
         tableBody.addEventListener('input', function(e) {
+            const row = e.target.closest('.material-row');
             if (e.target && e.target.classList.contains('peso-input')) {
-                calculateTotals();
+                if (row) autoCalcularFila(row, 'kilos');
+                else calculateTotals();
             } else if (e.target && e.target.classList.contains('cant-input')) {
-                const row = e.target.closest('.material-row');
-                if (row) autoCalcularPesoFila(row);
+                if (row) autoCalcularFila(row, 'unidades');
             }
         });
 
         tableBody.addEventListener('change', function(e) {
             if (e.target && e.target.classList.contains('material-select')) {
                 const row = e.target.closest('.material-row');
-                if (row) autoCalcularPesoFila(row);
+                if (row) autoCalcularFila(row, 'material');
             }
         });
     }
@@ -337,6 +407,13 @@ document.addEventListener('DOMContentLoaded', function() {
     // Si no hay filas cargadas (modo creación), agregar automáticamente la primera fila
     if (tableBody && tableBody.querySelectorAll('.material-row').length === 0) {
         addRow();
+    }
+
+    // Inicializar cálculos y avisos en filas existentes
+    if (tableBody) {
+        tableBody.querySelectorAll('.material-row').forEach(row => {
+            autoCalcularFila(row, 'init');
+        });
     }
 
     calculateTotals();

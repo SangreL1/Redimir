@@ -10,11 +10,9 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write(self.style.NOTICE("Iniciando migración de Lotes hacia Tickets de Retiro..."))
 
-        # Asegurar catálogo básico
-        material_escombros, _ = CatalogoMaterialRetiro.objects.get_or_create(
-            nombre='Escombros / RESCON',
-            defaults={'categoria': 'Otro', 'unidad_medida': 'kg', 'orden': 20}
-        )
+        # Asegurar catálogo completo de residuos habituales
+        from apps.servicios.views_retiros import asegurar_catalogo_residuos
+        asegurar_catalogo_residuos()
         material_domesticos = CatalogoMaterialRetiro.objects.filter(nombre__icontains='Doméstic').first()
         if not material_domesticos:
             material_domesticos = CatalogoMaterialRetiro.objects.filter(categoria='Domestico').first()

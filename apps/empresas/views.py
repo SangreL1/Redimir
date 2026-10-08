@@ -742,6 +742,10 @@ class EstadoDePagoCrearView(View):
                     if tarifa_custom.unidad_medida:
                         unid = tarifa_custom.unidad_medida
 
+                # Si la tarifa es por servicio, la cantidad es 1 retiro/servicio completado
+                if unid in ['servicio', 'retiro', 'viaje']:
+                    cant = Decimal('1')
+
                 fecha_obj = s.fecha_retiro_real.date() if s.fecha_retiro_real else (s.fecha_solicitud.date() if s.fecha_solicitud else timezone.now().date())
                 key = (desc_base, tarifa, unid)
                 if key not in grupos:

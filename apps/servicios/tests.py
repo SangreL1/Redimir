@@ -127,3 +127,58 @@ class RedimirPlataformaTestCase(TestCase):
         response = client.get('/retiros/nuevo/')
         self.assertEqual(response.status_code, 200)
         self.assertContains(response, 'serviciosChipsContainer')
+
+    def test_edp_calculo_retiros_tarifa_servicio(self):
+        """
+        Verificar que una empresa con tarifa fija por retiro ($65.000/servicio)
+        y 7 tickets ingresados (con detalles de materiales que suman 170 kg)
+        genere un EDP con exactamente 7 retiros y $455.000 neto, NO 170 retiros ni $11.050.000.
+        """
+        import datetime
+        from apps.empresas.models import TarifaEmpresa, actualizar_o_crear_edp_empresa
+        from apps.servicios.models import CatalogoMaterialRetiro, TicketRetiro, DetalleMaterialTicket
+
+        # 1. Tarifa configurada para la empresa: $65.000 por servicio
+        TarifaEmpresa.objects.create(
+            empresa=self.empresa,
+            modulo='reciclables',
+            tipo_material='servicio',
+            precio_unitario=Decimal('65000'),
+            unidad_medida='servicio'
+        )
+
+        mat = CatalogoMaterialRetiro.objects.create(
+            nombre="Cartón Test",
+            categoria="Reciclaje",
+            unidad_medida="kg"
+        )
+
+        # 2. Crear 7 tickets de retiro en el mes que suman 170 kg en total
+        p_inicio = datetime.date(2026, 9, 1)
+        p_fin = datetime.date(2026, 9, 30)
+
+        pesos = [20, 25, 30, 20, 25, 25, 25]  # suma: 170 kg
+        for i, peso in enumerate(pesos, start=1):
+            t = TicketRetiro.objects.create(
+                empresa=self.empresa,
+                numero_ticket=f"TCK-2026-00{i}",
+                fecha=datetime.date(2026, 9, i * 3),
+                tipo_servicio="Áreas Productivas",
+                tipo_residuo="Reciclaje",
+                peso_total_ticket=Decimal(str(peso))
+            )
+            DetalleMaterialTicket.objects.create(
+                ticket=t,
+                material=mat,
+                peso_kg=Decimal(str(peso))
+            )
+
+        # 3. Generar / actualizar EDP
+        edp = actualizar_o_crear_edp_empresa(self.empresa, periodo_inicio=p_inicio, periodo_fin=p_fin)
+
+        # 4. Aserciones críticas
+        self.assertEqual(edp.total_servicios, 7, f"Se esperaban 7 retiros pero dio {edp.total_servicios}")
+        self.assertEqual(edp.subtotal_neto, Decimal('455000'), f"Se esperaba subtotal neto $455.000 pero dio ${edp.subtotal_neto}")
+        self.assertEqual(edp.iva, Decimal('86450'), f"Se esperaba IVA $86.450 pero dio ${edp.iva}")
+        self.assertEqual(edp.total_bruto, Decimal('541450'), f"Se esperaba total bruto $541.450 pero dio ${edp.total_bruto}")
+
