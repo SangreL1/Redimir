@@ -74,9 +74,12 @@ class RecoleccionPageView(View):
         if not empresa_id:
             errores.append('Selecciona una empresa.')
 
-        # Debe subir al menos 1 foto en cualquiera de los 3 apartados
-        if not (foto_ticket or fotos_residuos or foto_camion):
-            errores.append('Debes subir al menos una foto de evidencia (Ticket, Residuos o Camión).')
+        # El Ticket de Pesaje es obligatorio
+        if not foto_ticket:
+            errores.append('La foto del Ticket de Pesaje es obligatoria.')
+        elif not (fotos_residuos or foto_camion):
+            # Opcional si subió ticket, pero se recomienda al menos otra evidencia
+            pass
 
         if errores:
             empresas = Empresa.objects.filter(estado='aprobada', activa=True)

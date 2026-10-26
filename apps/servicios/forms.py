@@ -30,9 +30,15 @@ class TicketRetiroForm(forms.ModelForm):
             'tipo_servicio': 'Tipo de Servicio',
             'tipo_residuo': 'Clasificación General del Residuo',
             'peso_total_ticket': 'Peso Total Báscula (kg) *',
-            'respaldo_ticket': 'Comprobante de Pesaje (Foto / PDF)',
+            'respaldo_ticket': 'Comprobante de Pesaje (Foto / PDF) *',
             'observaciones': 'Observaciones',
         }
+
+    def clean_respaldo_ticket(self):
+        respaldo = self.cleaned_data.get('respaldo_ticket')
+        if not respaldo and not (self.instance and self.instance.pk and self.instance.respaldo_ticket):
+            raise forms.ValidationError('El comprobante o fotografía del Ticket de Pesaje es obligatorio.')
+        return respaldo
 
 
 class DetalleMaterialTicketForm(forms.ModelForm):

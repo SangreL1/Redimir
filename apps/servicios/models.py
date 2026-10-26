@@ -424,6 +424,11 @@ class DetalleMaterialTicket(models.Model):
         CatalogoMaterialRetiro, on_delete=models.PROTECT,
         related_name='detalles', verbose_name="Material"
     )
+    descripcion_otro = models.CharField(
+        max_length=255, blank=True, default='',
+        verbose_name="Descripción personalizada / Otro material",
+        help_text="Especificación del material cuando se selecciona 'Otro' o no está en el catálogo habitual."
+    )
     peso_kg = models.DecimalField(
         max_digits=10, decimal_places=2, default=0.00,
         verbose_name="Peso (kg)"
@@ -435,8 +440,14 @@ class DetalleMaterialTicket(models.Model):
     )
     observaciones = models.CharField(max_length=255, blank=True, verbose_name="Observaciones / Detalle")
 
+    @property
+    def nombre_material(self):
+        if self.descripcion_otro and self.descripcion_otro.strip():
+            return self.descripcion_otro.strip()
+        return self.material.nombre if self.material else "Otro Material"
+
     def __str__(self):
-        return f"{self.material.nombre}: {self.peso_kg} kg — Ticket {self.ticket.numero_ticket}"
+        return f"{self.nombre_material}: {self.peso_kg} kg — Ticket {self.ticket.numero_ticket}"
 
     class Meta:
         db_table = 'detalles_material_ticket'

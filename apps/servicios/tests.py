@@ -182,3 +182,102 @@ class RedimirPlataformaTestCase(TestCase):
         self.assertEqual(edp.iva, Decimal('86450'), f"Se esperaba IVA $86.450 pero dio ${edp.iva}")
         self.assertEqual(edp.total_bruto, Decimal('541450'), f"Se esperaba total bruto $541.450 pero dio ${edp.total_bruto}")
 
+    def test_material_otro_se_refleja_en_certificado_y_no_en_edp(self):
+        """
+        Verifica que al agregar un material tipo 'Otro' con descripción personalizada:
+        - Su nombre_material sea la descripción ingresada.
+        - Se excluya de la EDP comercial cuando la tarifa es por material/kg.
+        - Se refleje en el certificado de reciclables con su nombre y peso.
+        """
+        import datetime
+        from apps.empresas.models import TarifaEmpresa, actualizar_o_crear_edp_empresa
+        from apps.servicios.models import CatalogoMaterialRetiro, TicketRetiro, DetalleMaterialTicket
+        from apps.certificados.models import Certificado
+
+        # Tarifa por kg para materiales
+        TarifaEmpresa.objects.create(
+            empresa=self.empresa,
+            modulo='reciclables',
+            tipo_material='kg',
+            precio_unitario=Decimal('100'),
+            unidad_medida='kg'
+        )
+
+        mat_cat = CatalogoMaterialRetiro.objects.create(
+            nombre="Cartón Test 2",
+            categoria="Reciclaje",
+            unidad_medida="kg"
+        )
+        mat_otro = CatalogoMaterialRetiro.objects.create(
+            nombre="Otro (Especificar)",
+            categoria="Otro",
+            unidad_medida="kg"
+        )
+
+        t = TicketRetiro.objects.create(
+            empresa=self.empresa,
+            numero_ticket="TCK-OTRO-999",
+            fecha=datetime.date(2026, 10, 10),
+            tipo_servicio="Puntos Verdes",
+            tipo_residuo="Reciclaje",
+            peso_total_ticket=Decimal('150.00')
+        )
+
+        # 1 material habitual (Cartón: 100 kg)
+        DetalleMaterialTicket.objects.create(
+            ticket=t,
+            material=mat_cat,
+            peso_kg=Decimal('100.00')
+        )
+        # 1 material personalizado "Otro" (Tubos HDPE: 50 kg)
+        det_otro = DetalleMaterialTicket.objects.create(
+            ticket=t,
+            material=mat_otro,
+            descripcion_otro="Tubos HDPE Especiales",
+            peso_kg=Decimal('50.00')
+        )
+
+        self.assertEqual(det_otro.nombre_material, "Tubos HDPE Especiales")
+
+        # Generar EDP y verificar que 'Tubos HDPE Especiales' NO aparezca en EDP
+        p_inicio = datetime.date(2026, 10, 1)
+        p_fin = datetime.date(2026, 10, 31)
+        edp = actualizar_o_crear_edp_empresa(self.empresa, periodo_inicio=p_inicio, periodo_fin=p_fin)
+
+        descripciones_edp = list(edp.detalles.values_list('descripcion', flat=True))
+        for d in descripciones_edp:
+            self.assertNotIn("Tubos HDPE", d)
+            self.assertNotIn("Otro (Especificar)", d)
+
+        # Verificar que en la lógica del certificado se incluya con su nombre
+        PALABRAS_EXCLUIR_CERT = ('escombro', 'rescon', 'rsd', 'basura', 'doméstic', 'domestic')
+        desglose = {}
+        for det in t.detalles.all():
+            m_nom = det.nombre_material
+            if not any(p in m_nom.lower() for p in PALABRAS_EXCLUIR_CERT):
+                desglose[m_nom] = float(det.peso_kg)
+
+        self.assertIn("Tubos HDPE Especiales", desglose)
+        self.assertEqual(desglose["Tubos HDPE Especiales"], 50.0)
+
+    def test_ticket_pesaje_obligatorio_en_formulario(self):
+        """
+        Verifica que el formulario TicketRetiroForm exija el archivo de comprobante de pesaje.
+        """
+        import datetime
+        from apps.servicios.forms import TicketRetiroForm
+
+        form_data = {
+            'empresa': self.empresa.id,
+            'numero_ticket': 'TCK-SIN-RESPALDO',
+            'fecha': datetime.date(2026, 10, 15),
+            'faena_area': 'Planta',
+            'tipo_servicio': 'Áreas Productivas',
+            'tipo_residuo': 'Reciclaje',
+            'peso_total_ticket': '500.00',
+        }
+        form = TicketRetiroForm(data=form_data)
+        self.assertFalse(form.is_valid())
+        self.assertIn('respaldo_ticket', form.errors)
+
+

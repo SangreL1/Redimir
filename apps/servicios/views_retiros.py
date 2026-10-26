@@ -186,6 +186,7 @@ def asegurar_catalogo_residuos():
         ("Residuos Generales / Mixto", "Otro", "kg", Decimal('0.00'), 23),
         ("Escombros / RESCON", "Otro", "kg", Decimal('0.00'), 24),
         ("Descarga y Acopio", "Otro", "kg", Decimal('0.00'), 25),
+        ("Otro (Especificar)", "Otro", "kg", Decimal('0.00'), 99),
     ]
     for nombre, cat, um, factor, orden in materiales:
         mat = CatalogoMaterialRetiro.objects.filter(nombre__iexact=nombre).first()
@@ -259,15 +260,31 @@ def retiro_crear(request):
             pesos = request.POST.getlist('peso_kg[]')
             cantidades = request.POST.getlist('cantidad_unidades[]')
             observaciones_items = request.POST.getlist('obs_detalle[]')
+            descripciones_otro = request.POST.getlist('descripcion_otro[]')
 
             for i in range(len(mat_ids)):
                 mat_id = mat_ids[i]
                 if not mat_id:
                     continue
-                try:
-                    mat_obj = CatalogoMaterialRetiro.objects.get(pk=mat_id)
-                except CatalogoMaterialRetiro.DoesNotExist:
-                    continue
+
+                desc_otro_val = descripciones_otro[i].strip() if i < len(descripciones_otro) else ''
+
+                if str(mat_id).lower() == 'otro':
+                    mat_obj = CatalogoMaterialRetiro.objects.filter(nombre__iexact="Otro (Especificar)").first()
+                    if not mat_obj:
+                        mat_obj = CatalogoMaterialRetiro.objects.create(
+                            nombre="Otro (Especificar)",
+                            categoria="Otro",
+                            unidad_medida="kg",
+                            peso_unitario_kg=Decimal('0.00'),
+                            orden=99,
+                            activo=True
+                        )
+                else:
+                    try:
+                        mat_obj = CatalogoMaterialRetiro.objects.get(pk=mat_id)
+                    except CatalogoMaterialRetiro.DoesNotExist:
+                        continue
 
                 peso_val = Decimal('0.00')
                 if i < len(pesos) and pesos[i].strip():
@@ -289,10 +306,11 @@ def retiro_crear(request):
                 if (peso_val == 0 or not peso_val) and cant_val and cant_val > 0 and getattr(mat_obj, 'peso_unitario_kg', 0) > 0:
                     peso_val = round(cant_val * mat_obj.peso_unitario_kg, 2)
 
-                if (peso_val and peso_val > 0) or (cant_val and cant_val > 0):
+                if (peso_val and peso_val > 0) or (cant_val and cant_val > 0) or desc_otro_val:
                     DetalleMaterialTicket.objects.create(
                         ticket=ticket,
                         material=mat_obj,
+                        descripcion_otro=desc_otro_val,
                         peso_kg=peso_val,
                         cantidad_unidades=cant_val,
                         observaciones=obs_val
@@ -354,15 +372,31 @@ def retiro_editar(request, pk):
             pesos = request.POST.getlist('peso_kg[]')
             cantidades = request.POST.getlist('cantidad_unidades[]')
             observaciones_items = request.POST.getlist('obs_detalle[]')
+            descripciones_otro = request.POST.getlist('descripcion_otro[]')
 
             for i in range(len(mat_ids)):
                 mat_id = mat_ids[i]
                 if not mat_id:
                     continue
-                try:
-                    mat_obj = CatalogoMaterialRetiro.objects.get(pk=mat_id)
-                except CatalogoMaterialRetiro.DoesNotExist:
-                    continue
+
+                desc_otro_val = descripciones_otro[i].strip() if i < len(descripciones_otro) else ''
+
+                if str(mat_id).lower() == 'otro':
+                    mat_obj = CatalogoMaterialRetiro.objects.filter(nombre__iexact="Otro (Especificar)").first()
+                    if not mat_obj:
+                        mat_obj = CatalogoMaterialRetiro.objects.create(
+                            nombre="Otro (Especificar)",
+                            categoria="Otro",
+                            unidad_medida="kg",
+                            peso_unitario_kg=Decimal('0.00'),
+                            orden=99,
+                            activo=True
+                        )
+                else:
+                    try:
+                        mat_obj = CatalogoMaterialRetiro.objects.get(pk=mat_id)
+                    except CatalogoMaterialRetiro.DoesNotExist:
+                        continue
 
                 peso_val = Decimal('0.00')
                 if i < len(pesos) and pesos[i].strip():
@@ -384,10 +418,11 @@ def retiro_editar(request, pk):
                 if (peso_val == 0 or not peso_val) and cant_val and cant_val > 0 and getattr(mat_obj, 'peso_unitario_kg', 0) > 0:
                     peso_val = round(cant_val * mat_obj.peso_unitario_kg, 2)
 
-                if (peso_val and peso_val > 0) or (cant_val and cant_val > 0):
+                if (peso_val and peso_val > 0) or (cant_val and cant_val > 0) or desc_otro_val:
                     DetalleMaterialTicket.objects.create(
                         ticket=ticket,
                         material=mat_obj,
+                        descripcion_otro=desc_otro_val,
                         peso_kg=peso_val,
                         cantidad_unidades=cant_val,
                         observaciones=obs_val
@@ -400,7 +435,17 @@ def retiro_editar(request, pk):
     else:
         form = TicketRetiroForm(instance=ticket)
 
-    detalles_existentes = ticket.detalles.select_related('material').all()
+    detalles_existentes = []
+    for det in ticket.detalles.select_related('material').all().order_by('id'):
+        is_custom = bool(det.descripcion_otro or (det.material and det.material.nombre == 'Otro (Especificar)'))
+        detalles_existentes.append({
+            'material_id': 'otro' if is_custom else det.material.id,
+            'es_otro': is_custom,
+            'descripcion_otro': det.descripcion_otro,
+            'peso_kg': det.peso_kg,
+            'cantidad_unidades': det.cantidad_unidades,
+            'observaciones': det.observaciones,
+        })
 
     empresas_servicios_map = {
         str(emp.id): emp.get_servicios_predeterminados_list()

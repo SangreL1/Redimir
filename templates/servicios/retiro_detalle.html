@@ -132,8 +132,12 @@
                             {% for det in detalles %}
                             <tr>
                                 <td>
-                                    <div class="fw-bold text-dark">{{ det.material.nombre }}</div>
-                                    <small class="text-muted">{{ det.material.get_categoria_display }}</small>
+                                    <div class="fw-bold text-dark">{{ det.nombre_material }}</div>
+                                    {% if det.descripcion_otro %}
+                                        <span class="badge bg-primary-subtle text-primary border" style="font-size:0.7rem;">Personalizado</span>
+                                    {% else %}
+                                        <small class="text-muted">{{ det.material.get_categoria_display }}</small>
+                                    {% endif %}
                                 </td>
                                 <td class="text-center">
                                     <span class="badge bg-light text-dark border">{{ det.material.get_unidad_medida_display }}</span>

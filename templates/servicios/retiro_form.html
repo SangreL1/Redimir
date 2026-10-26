@@ -74,13 +74,15 @@
                         </div>
 
                         <div class="mb-3">
-                            <label class="form-label fw-semibold">Voucher / Respaldo (Foto o PDF)</label>
+                            <label class="form-label fw-semibold">Voucher / Ticket de Pesaje (Foto o PDF) <span class="text-danger">*</span></label>
                             {{ form.respaldo_ticket }}
                             {% if form.respaldo_ticket.errors %}<div class="text-danger small mt-1">{{ form.respaldo_ticket.errors }}</div>{% endif %}
                             {% if ticket.respaldo_ticket %}
                             <div class="mt-2 small text-muted">
                                 Respaldo actual: <a href="{{ ticket.respaldo_ticket.url }}" target="_blank">Ver archivo</a>
                             </div>
+                            {% else %}
+                            <div class="form-text small text-danger"><i class="fas fa-info-circle me-1"></i>Comprobante o fotografía obligatoria de báscula/pesaje.</div>
                             {% endif %}
                         </div>
 
@@ -114,7 +116,7 @@
                     <div class="card-header bg-white py-3 border-bottom d-flex justify-content-between align-items-center">
                         <div>
                             <h5 class="card-title mb-0 fw-bold"><i class="fas fa-boxes text-info me-2"></i>Desglose de Materiales</h5>
-                            <small class="text-muted">Agrega los materiales que componen este retiro (Cartón, Papel, Botellas, etc.)</small>
+                            <small class="text-muted">Agrega los materiales que componen este retiro (Cartón, Papel, Botellas o personaliza en "Otro")</small>
                         </div>
                         <button type="button" class="btn btn-sm btn-outline-success" id="addMaterialRowBtn">
                             <i class="fas fa-plus me-1"></i> Agregar Material
@@ -126,7 +128,7 @@
                             <table class="table align-middle mb-0" id="materialesTable">
                                 <thead class="table-light">
                                     <tr>
-                                        <th style="min-width: 190px;">Material</th>
+                                        <th style="min-width: 220px;">Material</th>
                                         <th style="width: 140px;" class="text-end">Kilos (kg)</th>
                                         <th style="width: 130px;" class="text-end">Unidades (un)</th>
                                         <th style="min-width: 140px;">Observaciones</th>
@@ -154,8 +156,24 @@
                                                         {% endfor %}
                                                     </optgroup>
                                                     {% endfor %}
+                                                    <optgroup label="➕ Otro Material">
+                                                        <option value="otro" data-unidad="kg" data-factor="0.00" data-nombre="Otro Material" data-es-otro="true" {% if det.es_otro %}selected{% endif %}>
+                                                            ➕ Otro / Personalizado (Escribir descripción...)
+                                                        </option>
+                                                    </optgroup>
                                                 </select>
                                                 <div class="conversion-hint mt-1" style="font-size:0.75rem;"></div>
+                                                <div class="desc-otro-wrap mt-2 p-2 border rounded bg-white shadow-sm" style="display:{% if det.es_otro %}block{% else %}none{% endif %};">
+                                                    <label class="form-label fw-bold text-primary mb-1" style="font-size:0.75rem;">
+                                                        <i class="fas fa-pen me-1"></i>Descripción del Material <span class="text-danger">*</span>
+                                                    </label>
+                                                    <input type="text" name="descripcion_otro[]" value="{{ det.descripcion_otro|default:'' }}" 
+                                                           class="form-control form-control-sm desc-otro-input" 
+                                                           placeholder="Ej: Tubos HDPE, Baterías, Zuncho Plástico..." {% if det.es_otro %}required{% endif %}>
+                                                    <small class="text-muted d-block mt-1" style="font-size:0.7rem;">
+                                                        <i class="fas fa-certificate text-success me-1"></i>Se reflejará en el certificado y no en la EDP.
+                                                    </small>
+                                                </div>
                                             </td>
                                             <td>
                                                 <div class="input-group input-group-sm">
@@ -216,8 +234,24 @@
                     {% endfor %}
                 </optgroup>
                 {% endfor %}
+                <optgroup label="➕ Otro Material">
+                    <option value="otro" data-unidad="kg" data-factor="0.00" data-nombre="Otro Material" data-es-otro="true">
+                        ➕ Otro / Personalizado (Escribir descripción...)
+                    </option>
+                </optgroup>
             </select>
             <div class="conversion-hint mt-1" style="font-size:0.75rem;"></div>
+            <div class="desc-otro-wrap mt-2 p-2 border rounded bg-white shadow-sm" style="display:none;">
+                <label class="form-label fw-bold text-primary mb-1" style="font-size:0.75rem;">
+                    <i class="fas fa-pen me-1"></i>Descripción del Material <span class="text-danger">*</span>
+                </label>
+                <input type="text" name="descripcion_otro[]" value="" 
+                       class="form-control form-control-sm desc-otro-input" 
+                       placeholder="Ej: Tubos HDPE, Baterías, Zuncho Plástico...">
+                <small class="text-muted d-block mt-1" style="font-size:0.7rem;">
+                    <i class="fas fa-certificate text-success me-1"></i>Se reflejará en el certificado y no en la EDP.
+                </small>
+            </div>
         </td>
         <td>
             <div class="input-group input-group-sm">
@@ -379,6 +413,23 @@ document.addEventListener('DOMContentLoaded', function() {
                     }
                 }
             }
+
+            // Manejo de 'Otro Material' / Personalizado
+            const descWrap = row.querySelector('.desc-otro-wrap');
+            const descInput = row.querySelector('.desc-otro-input');
+            const isOtro = (matSelect.value === 'otro' || (selectedOpt && (selectedOpt.value === 'otro' || selectedOpt.dataset.esOtro === 'true' || selectedOpt.textContent.includes('Otro / Personalizado'))));
+            if (descWrap && descInput) {
+                if (isOtro) {
+                    descWrap.style.display = 'block';
+                    descInput.required = true;
+                    if (origin === 'material') descInput.focus();
+                } else {
+                    descWrap.style.display = 'none';
+                    descInput.required = false;
+                    if (origin === 'material') descInput.value = '';
+                }
+            }
+
             calculateTotals();
         }
 
@@ -402,6 +453,39 @@ document.addEventListener('DOMContentLoaded', function() {
 
     if (pesoTicketInput) {
         pesoTicketInput.addEventListener('input', calculateTotals);
+    }
+
+    // Validación al enviar el formulario
+    const ticketForm = document.getElementById('ticketForm');
+    if (ticketForm) {
+        ticketForm.addEventListener('submit', function(e) {
+            // 1. Validar ticket de pesaje obligatorio
+            const respaldoInput = document.getElementById('id_respaldo_ticket');
+            const tieneRespaldoPrevio = {% if ticket and ticket.respaldo_ticket %}true{% else %}false{% endif %};
+            if (!tieneRespaldoPrevio && respaldoInput && respaldoInput.files.length === 0) {
+                e.preventDefault();
+                alert('⚠️ El comprobante o fotografía del Ticket de Pesaje es obligatorio.');
+                respaldoInput.focus();
+                return false;
+            }
+
+            // 2. Validar que filas con 'Otro' tengan descripción
+            const rows = ticketForm.querySelectorAll('.material-row');
+            for (let r of rows) {
+                const sel = r.querySelector('.material-select');
+                const opt = sel ? sel.selectedOptions[0] : null;
+                const isOtro = sel && (sel.value === 'otro' || (opt && (opt.value === 'otro' || opt.dataset.esOtro === 'true')));
+                if (isOtro) {
+                    const descInp = r.querySelector('.desc-otro-input');
+                    if (!descInp || !descInp.value.trim()) {
+                        e.preventDefault();
+                        alert('⚠️ Por favor completa la descripción o nombre del material en las filas seleccionadas como "Otro".');
+                        if (descInp) descInp.focus();
+                        return false;
+                    }
+                }
+            }
+        });
     }
 
     // Si no hay filas cargadas (modo creación), agregar automáticamente la primera fila

@@ -124,10 +124,10 @@
             <!-- 6.1 Foto del Ticket de Pesaje -->
             <div class="mb-3 p-3" style="background:#FFF; border:1px solid #E2E8F0; border-radius:12px;">
                 <label class="form-label-dark fw-bold mb-1">
-                    <i class="fas fa-receipt me-1 text-primary"></i> 1. Foto del Ticket de Pesaje
+                    <i class="fas fa-receipt me-1 text-primary"></i> 1. Foto del Ticket de Pesaje <span class="text-danger">*</span>
                 </label>
-                <input type="file" name="foto_ticket" accept="image/*" capture="environment" class="form-control form-control-sm">
-                <small class="text-muted d-block mt-1" style="font-size:.75rem;">Captura la foto del ticket emitido en báscula o pesaje.</small>
+                <input type="file" name="foto_ticket" accept="image/*" capture="environment" class="form-control form-control-sm" required>
+                <small class="text-muted d-block mt-1" style="font-size:.75rem;">Captura la foto obligatoria del ticket emitido en báscula o pesaje.</small>
             </div>
 
             <!-- 6.2 Foto de los Residuos -->

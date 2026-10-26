@@ -577,7 +577,10 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
             # Tarifa configurada específicamente por kg u otra unidad física
             if ticket.detalles.exists():
                 for det in ticket.detalles.all():
-                    m_nom = det.material.nombre
+                    # REQUERIMIENTO: Materiales tipo "Otro" (con descripción personalizada) NO se reflejan en la EDP
+                    if det.descripcion_otro or (det.material and det.material.nombre == 'Otro (Especificar)'):
+                        continue
+                    m_nom = det.nombre_material
                     m_cat = getattr(det.material, 'categoria', mod_label)
                     desc_base = f"Retiro — {m_nom}"
                     peso = det.peso_kg or Decimal('0.00')

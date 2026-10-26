@@ -714,7 +714,7 @@ class GeneradorPageView(View):
                             if t.servicio:
                                 servicios_para_enlazar.append(t.servicio)
                             for det in t.detalles.all():
-                                mat_nom = det.material.nombre
+                                mat_nom = det.nombre_material
                                 mat_cat = getattr(det.material, 'categoria', '')
                                 if any(p in f"{mat_nom} {mat_cat}".lower() for p in PALABRAS_EXCLUIR):
                                     continue
@@ -1269,7 +1269,7 @@ def api_datos_empresa_mes(request):
 
     for t in tickets_mes:
         for det in t.detalles.all():
-            m_nom = (det.material.nombre or '').lower()
+            m_nom = (det.nombre_material or '').lower()
             peso = float(det.peso_kg or 0.0)
             if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
                 peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
@@ -1435,7 +1435,7 @@ class EcoEquivalenciaGeneradorView(View):
                     tickets_mes = TicketRetiro.objects.filter(empresa=empresa, fecha__range=[p_ini, p_fin]).prefetch_related('detalles__material')
                     for t in tickets_mes:
                         for det in t.detalles.all():
-                            m_nom = (det.material.nombre or '').lower()
+                            m_nom = (det.nombre_material or '').lower()
                             peso = float(det.peso_kg or 0.0)
                             if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
                                 peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
