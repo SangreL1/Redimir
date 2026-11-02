@@ -13,9 +13,14 @@
                 {% if ticket %}<i class="fas fa-edit me-2 text-primary"></i>Editar Ticket #{{ ticket.numero_ticket }}{% else %}<i class="fas fa-plus-circle me-2 text-success"></i>Registrar Nuevo Ticket de Pesaje{% endif %}
             </h1>
         </div>
+        <div>
+            <button type="button" class="btn btn-primary fw-bold px-4 py-2 btnSubmitTicketTrigger btnGuardarTicketBtn" style="background-color:#006BB8; border-color:#005a9c; border-radius:8px;">
+                <i class="fas fa-save me-1"></i> Guardar Ticket
+            </button>
+        </div>
     </div>
 
-    <form method="post" enctype="multipart/form-data" id="ticketForm">
+    <form method="post" enctype="multipart/form-data" id="ticketForm" novalidate>
         {% csrf_token %}
         <div class="row g-4">
             <!-- Columna Datos Principales -->
@@ -140,7 +145,7 @@
                                         {% for det in detalles_existentes %}
                                         <tr class="material-row">
                                             <td>
-                                                <select name="material_id[]" class="form-select form-select-sm material-select" required>
+                                                <select name="material_id[]" class="form-select form-select-sm material-select">
                                                     <option value="">-- Seleccionar Material Habitual --</option>
                                                     {% regroup materiales_catalogo by get_categoria_display as categorias_list %}
                                                     {% for cat in categorias_list %}
@@ -204,9 +209,20 @@
                     </div>
                 </div>
 
+                <!-- Alerta visual destacada para errores de validación -->
+                <div id="validationErrorAlert" class="alert alert-danger shadow-sm mb-3 py-3 px-3" style="display:none; border-radius:10px; border-left:5px solid #dc3545;">
+                    <div class="d-flex align-items-center">
+                        <i class="fas fa-exclamation-circle fa-2x me-3 text-danger"></i>
+                        <div>
+                            <div class="fw-bold mb-1">Atención: Faltan datos requeridos</div>
+                            <div id="validationErrorText" style="font-size:0.9rem;"></div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="d-flex justify-content-end gap-2 mb-4">
                     <a href="{% url 'retiros-lista' %}" class="btn btn-outline-secondary px-4">Cancelar</a>
-                    <button type="submit" class="btn btn-primary px-5 fw-bold" style="background-color:#006BB8; border-color:#005a9c;">
+                    <button type="submit" id="btnGuardarTicket" class="btn btn-primary px-5 fw-bold btnSubmitTicketTrigger btnGuardarTicketBtn" style="background-color:#006BB8; border-color:#005a9c; border-radius:8px;">
                         <i class="fas fa-save me-1"></i> Guardar Ticket y Desglose
                     </button>
                 </div>
@@ -219,7 +235,7 @@
 <template id="rowTemplate">
     <tr class="material-row">
         <td>
-            <select name="material_id[]" class="form-select form-select-sm material-select" required>
+            <select name="material_id[]" class="form-select form-select-sm material-select">
                 <option value="">-- Seleccionar Material Habitual --</option>
                 {% regroup materiales_catalogo by get_categoria_display as categorias_list %}
                 {% for cat in categorias_list %}
@@ -455,38 +471,136 @@ document.addEventListener('DOMContentLoaded', function() {
         pesoTicketInput.addEventListener('input', calculateTotals);
     }
 
-    // Validación al enviar el formulario
+    // Validación visible, amigable y confiable para operadores
     const ticketForm = document.getElementById('ticketForm');
+
+    function mostrarErrorValidacion(mensaje, elemento) {
+        const errorAlert = document.getElementById('validationErrorAlert');
+        const errorText = document.getElementById('validationErrorText');
+        if (errorAlert && errorText) {
+            errorText.textContent = mensaje;
+            errorAlert.style.display = 'block';
+            errorAlert.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        } else {
+            alert('⚠️ ' + mensaje);
+        }
+        if (elemento) {
+            elemento.classList.add('is-invalid');
+            elemento.style.borderColor = '#dc3545';
+            elemento.focus();
+            elemento.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            elemento.addEventListener('input', function() {
+                elemento.classList.remove('is-invalid');
+                elemento.style.borderColor = '';
+                if (errorAlert) errorAlert.style.display = 'none';
+            }, { once: true });
+            elemento.addEventListener('change', function() {
+                elemento.classList.remove('is-invalid');
+                elemento.style.borderColor = '';
+                if (errorAlert) errorAlert.style.display = 'none';
+            }, { once: true });
+        }
+    }
+
+    function validarYEnviarTicket() {
+        const errorAlert = document.getElementById('validationErrorAlert');
+        if (errorAlert) errorAlert.style.display = 'none';
+
+        // 1. Empresa Generadora obligatoria
+        const empInput = document.getElementById('id_empresa');
+        if (!empInput || !empInput.value) {
+            mostrarErrorValidacion('Por favor selecciona la Empresa Generadora en el encabezado.', empInput);
+            return false;
+        }
+
+        // 2. N° de Ticket / Folio obligatorio
+        const ticketInput = document.getElementById('id_numero_ticket');
+        if (!ticketInput || !ticketInput.value.trim()) {
+            mostrarErrorValidacion('Por favor ingresa el N° de Ticket o Folio de Báscula.', ticketInput);
+            return false;
+        }
+
+        // 3. Fecha Retiro (si está vacía, colocar la fecha actual automáticamente)
+        const fechaInput = document.getElementById('id_fecha');
+        if (fechaInput && !fechaInput.value) {
+            fechaInput.value = new Date().toISOString().split('T')[0];
+        }
+
+        // 4. Peso Total Báscula obligatorio (> 0)
+        const pesoInput = document.getElementById('id_peso_total_ticket');
+        const pesoRaw = pesoInput ? pesoInput.value.replace(',', '.').trim() : '';
+        const pesoNum = parseFloat(pesoRaw);
+        if (!pesoInput || isNaN(pesoNum) || pesoNum <= 0) {
+            mostrarErrorValidacion('Por favor ingresa el Peso Total de Báscula (kg). Debe ser mayor a 0.', pesoInput);
+            return false;
+        }
+
+        // 5. Comprobante o fotografía obligatoria
+        const respaldoInput = document.getElementById('id_respaldo_ticket');
+        const tieneRespaldoPrevio = {% if ticket and ticket.respaldo_ticket %}true{% else %}false{% endif %};
+        if (!tieneRespaldoPrevio && (!respaldoInput || !respaldoInput.files || respaldoInput.files.length === 0)) {
+            mostrarErrorValidacion('El archivo o fotografía del Voucher/Ticket de Báscula es obligatorio.', respaldoInput);
+            return false;
+        }
+
+        // 6. Limpiar filas de desglose vacías antes de enviar
+        const rows = document.querySelectorAll('.material-row');
+        rows.forEach(r => {
+            const sel = r.querySelector('.material-select');
+            const pInput = r.querySelector('.peso-input');
+            const cInput = r.querySelector('.cant-input');
+            const selVal = sel ? sel.value : '';
+            const pVal = parseFloat(pInput ? pInput.value : 0) || 0;
+            const cVal = parseFloat(cInput ? cInput.value : 0) || 0;
+            // Si la fila no tiene material ni peso ni unidades, se descarta limpia
+            if (!selVal && pVal === 0 && cVal === 0) {
+                r.remove();
+            }
+        });
+
+        // 7. Validar si seleccionó 'Otro' que tenga descripción escrita
+        const rowsRestantes = document.querySelectorAll('.material-row');
+        for (let r of rowsRestantes) {
+            const sel = r.querySelector('.material-select');
+            const isOtro = sel && (sel.value === 'otro');
+            if (isOtro) {
+                const descInp = r.querySelector('.desc-otro-input');
+                if (!descInp || !descInp.value.trim()) {
+                    mostrarErrorValidacion('Por favor escribe el nombre/descripción del material en la fila seleccionada como "Otro".', descInp);
+                    return false;
+                }
+            }
+        }
+
+        // Estado visual de guardado en los botones
+        document.querySelectorAll('.btnGuardarTicketBtn').forEach(b => {
+            b.disabled = true;
+            b.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Guardando Ticket...';
+        });
+
+        return true;
+    }
+
     if (ticketForm) {
         ticketForm.addEventListener('submit', function(e) {
-            // 1. Validar ticket de pesaje obligatorio
-            const respaldoInput = document.getElementById('id_respaldo_ticket');
-            const tieneRespaldoPrevio = {% if ticket and ticket.respaldo_ticket %}true{% else %}false{% endif %};
-            if (!tieneRespaldoPrevio && respaldoInput && respaldoInput.files.length === 0) {
+            if (!validarYEnviarTicket()) {
                 e.preventDefault();
-                alert('⚠️ El comprobante o fotografía del Ticket de Pesaje es obligatorio.');
-                respaldoInput.focus();
                 return false;
-            }
-
-            // 2. Validar que filas con 'Otro' tengan descripción
-            const rows = ticketForm.querySelectorAll('.material-row');
-            for (let r of rows) {
-                const sel = r.querySelector('.material-select');
-                const opt = sel ? sel.selectedOptions[0] : null;
-                const isOtro = sel && (sel.value === 'otro' || (opt && (opt.value === 'otro' || opt.dataset.esOtro === 'true')));
-                if (isOtro) {
-                    const descInp = r.querySelector('.desc-otro-input');
-                    if (!descInp || !descInp.value.trim()) {
-                        e.preventDefault();
-                        alert('⚠️ Por favor completa la descripción o nombre del material en las filas seleccionadas como "Otro".');
-                        if (descInp) descInp.focus();
-                        return false;
-                    }
-                }
             }
         });
     }
+
+    // Botones de acción (arriba y abajo) disparan validación y envío
+    document.querySelectorAll('.btnSubmitTicketTrigger').forEach(btn => {
+        btn.addEventListener('click', function(e) {
+            if (btn.type !== 'submit') {
+                e.preventDefault();
+                if (validarYEnviarTicket()) {
+                    ticketForm.submit();
+                }
+            }
+        });
+    });
 
     // Si no hay filas cargadas (modo creación), agregar automáticamente la primera fila
     if (tableBody && tableBody.querySelectorAll('.material-row').length === 0) {

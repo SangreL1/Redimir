@@ -18,7 +18,7 @@ class TicketRetiroForm(forms.ModelForm):
             'faena_area': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Planta Prillex, Open Calama'}),
             'tipo_servicio': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Áreas Productivas, Bodega APD, Puntos Verdes'}),
             'tipo_residuo': forms.TextInput(attrs={'class': 'form-control', 'placeholder': 'Ej. Reciclaje, Residuos Domésticos'}),
-            'peso_total_ticket': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': '0.1'}),
+            'peso_total_ticket': forms.NumberInput(attrs={'class': 'form-control', 'placeholder': '0.00', 'step': 'any'}),
             'respaldo_ticket': forms.ClearableFileInput(attrs={'class': 'form-control', 'accept': 'image/*,.pdf'}),
             'observaciones': forms.Textarea(attrs={'class': 'form-control', 'rows': 2, 'placeholder': 'Observaciones adicionales...'}),
         }
@@ -33,6 +33,19 @@ class TicketRetiroForm(forms.ModelForm):
             'respaldo_ticket': 'Comprobante de Pesaje (Foto / PDF) *',
             'observaciones': 'Observaciones',
         }
+
+    def clean_peso_total_ticket(self):
+        val = self.cleaned_data.get('peso_total_ticket')
+        if val is None:
+            raw = self.data.get('peso_total_ticket', '')
+            if raw:
+                raw = str(raw).replace(',', '.').strip()
+                try:
+                    from decimal import Decimal
+                    return Decimal(raw)
+                except Exception:
+                    raise forms.ValidationError('Ingresa un peso válido.')
+        return val
 
     def clean_respaldo_ticket(self):
         respaldo = self.cleaned_data.get('respaldo_ticket')

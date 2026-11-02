@@ -329,6 +329,7 @@ def retiro_crear(request):
                     )
 
             messages.success(request, f"✅ Ticket N° {ticket.numero_ticket} registrado exitosamente.")
+            return redirect('retiro-detalle', pk=ticket.pk)
         else:
             messages.error(request, "⚠️ Por favor corrige los errores en el formulario.")
     else:
