@@ -10,7 +10,7 @@
         <h1 class="page-title"><i class="fas fa-clipboard-list" style="color:var(--primary);margin-right:.5rem;"></i>Solicitudes</h1>
         <p class="page-subtitle">Gestión de solicitudes de recolección</p>
     </div>
-    {% if user.rol == 'admin' or user.is_staff %}
+    {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
     <a href="/solicitudes/crear/" class="btn-green btn">
         <i class="fas fa-plus me-2"></i>Nueva Solicitud
     </a>
@@ -69,7 +69,7 @@
                                 {% endif %}
 
                                 {% if s.estado == 'asignada' and user.rol == 'recolector' and s.operador_asignado == user %}
-                                <a href="/recolecciones/crear/?empresa={{ s.empresa.pk }}&solicitud={{ s.pk }}" class="btn btn-sm" style="background:var(--primary-glow);border:1px solid var(--primary);color:var(--primary);border-radius:6px;text-decoration:none;">
+                                <a href="/retiros/nuevo/?empresa={{ s.empresa.pk }}&solicitud={{ s.pk }}" class="btn btn-sm" style="background:var(--primary-glow);border:1px solid var(--primary);color:var(--primary);border-radius:6px;text-decoration:none;">
                                     <i class="fas fa-truck-loading me-1"></i> Recolectar
                                 </a>
                                 <form method="post" action="/solicitudes/{{ s.pk }}/completar/" style="display:inline-block;margin-left:4px;">
@@ -80,7 +80,7 @@
                                 </form>
                                 {% endif %}
 
-                                {% if user.rol == 'admin' or user.is_staff %}
+                                {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
                                     {% if s.estado == 'asignada' %}
                                     <form method="post" action="/solicitudes/{{ s.pk }}/completar/">
                                         {% csrf_token %}
@@ -91,7 +91,7 @@
                                     {% endif %}
                                 {% endif %}
 
-                                {% if user.rol == 'admin' or user.is_staff or user.rol == 'empresa' and s.estado == 'pendiente' %}
+                                {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser or user.rol == 'empresa' and s.estado == 'pendiente' %}
                                     <form method="post" action="/solicitudes/{{ s.pk }}/cancelar/">
                                         {% csrf_token %}
                                         <button type="submit" class="btn-danger-soft btn btn-sm" onclick="return confirm('¿Cancelar esta solicitud?')" title="Cancelar">

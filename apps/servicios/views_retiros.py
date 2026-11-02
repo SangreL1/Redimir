@@ -27,7 +27,14 @@ from apps.empresas.models import Empresa
 
 
 def _es_admin(user):
-    return getattr(user, 'rol', '') == 'admin' or user.is_staff or user.is_superuser
+    if not user or not user.is_authenticated:
+        return False
+    return (
+        getattr(user, 'rol', '') in ('admin', 'gerencia', 'superadmin')
+        or getattr(user, 'is_staff', False)
+        or getattr(user, 'is_superuser', False)
+        or (hasattr(user, 'es_admin') and user.es_admin())
+    )
 
 
 @login_required
@@ -244,7 +251,12 @@ def retiro_crear(request):
         empresa_default = request.user.empresa
     else:
         empresas_disponibles = Empresa.objects.filter(activa=True).order_by('nombre')
-        empresa_default = empresas_disponibles.first()
+        empresa_param = request.GET.get('empresa')
+        if empresa_param:
+            emp_match = Empresa.objects.filter(pk=empresa_param, activa=True).first()
+            empresa_default = emp_match or empresas_disponibles.first()
+        else:
+            empresa_default = empresas_disponibles.first()
 
     if request.method == 'POST':
         form = TicketRetiroForm(request.POST, request.FILES)

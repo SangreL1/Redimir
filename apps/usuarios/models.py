@@ -16,7 +16,7 @@ class UsuarioManager(BaseUserManager):
     def create_superuser(self, rut, password=None, **extra_fields):
         extra_fields.setdefault('is_staff', True)
         extra_fields.setdefault('is_superuser', True)
-        extra_fields.setdefault('rol', 'admin')
+        extra_fields.setdefault('rol', 'gerencia')
         extra_fields.setdefault('estado', 'aprobado')
         return self.create_user(rut, password, **extra_fields)
 
@@ -24,8 +24,10 @@ class UsuarioManager(BaseUserManager):
 class Usuario(AbstractBaseUser, PermissionsMixin):
     ROLES = [
         ('gerencia',   'Gerencia / Superadmin'),
+        ('superadmin', 'Gerencia / Superadmin'),
         ('admin',      'Administrador Redimir'),
         ('recolector', 'Recolector / Operador'),
+        ('operador',   'Recolector / Operador'),
         ('empresa',    'Contacto de Empresa'),
     ]
     ESTADOS = [
@@ -92,15 +94,24 @@ class Usuario(AbstractBaseUser, PermissionsMixin):
     def esta_aprobado(self):
         return self.estado == 'aprobado'
 
+    def save(self, *args, **kwargs):
+        # Auto-conceder staff/superuser si el rol es de alta jerarquía
+        if self.rol in ('gerencia', 'superadmin'):
+            self.is_staff = True
+            self.is_superuser = True
+        elif self.rol == 'admin':
+            self.is_staff = True
+        super().save(*args, **kwargs)
+
     # ── helpers ──────────────────────────────────────────────
     def es_gerencia(self):
-        return self.rol == 'gerencia' or self.is_superuser
+        return self.rol in ('gerencia', 'superadmin') or self.is_superuser
 
     def es_admin(self):
-        return self.rol in ('admin', 'gerencia') or self.is_staff
+        return self.rol in ('admin', 'gerencia', 'superadmin') or self.is_staff or self.is_superuser
 
     def es_recolector(self):
-        return self.rol == 'recolector'
+        return self.rol in ('recolector', 'operador')
 
     def es_empresa(self):
         return self.rol == 'empresa'

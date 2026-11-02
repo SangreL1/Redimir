@@ -19,7 +19,7 @@
       <h1 class="page-title"><i class="fas fa-clipboard-list text-primary-redimir me-2"></i>Servicios de Retiro</h1>
       <p class="page-subtitle">{% if es_admin %}Todos los servicios registrados{% else %}Tus servicios asignados{% endif %} · {{ total }} resultado{{ total|pluralize }}</p>
     </div>
-    {% if user.rol == 'admin' or user.is_staff %}
+    {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
     <a href="/servicios/crear/" class="btn-primary-redimir d-flex align-items-center gap-2 text-decoration-none" style="padding:.6rem 1.25rem;border-radius:var(--radius-sm);">
       <i class="fas fa-plus"></i> Nuevo Servicio
     </a>
@@ -51,7 +51,7 @@
           {% endfor %}
         </select>
       </div>
-      {% if user.rol == 'admin' or user.is_staff %}
+      {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
       <div class="col-md-3">
         <label class="form-label">Empresa</label>
         <select name="empresa" class="form-select">
@@ -84,7 +84,7 @@
             <th>Empresa / Dirección</th>
             <th>Módulo</th>
             <th>Estado</th>
-            {% if user.rol == 'admin' or user.is_staff %}<th>Operador</th>{% endif %}
+            {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}<th>Operador</th>{% endif %}
             <th>Fecha Prog.</th>
             <th>Cantidad Est.</th>
             <th>Acciones</th>
@@ -124,7 +124,7 @@
               <span class="badge-estado badge-solicitado"><i class="fas fa-circle me-1"></i>{{ s.get_estado_display }}</span>
               {% endif %}
             </td>
-            {% if user.rol == 'admin' or user.is_staff %}
+            {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
             <td>
               {% if s.operador %}
               <div style="font-size:.82rem;">{{ s.operador.nombre_completo }}</div>
@@ -150,18 +150,18 @@
               <div class="d-flex gap-1">
                 <a href="/servicios/{{ s.pk }}/" class="btn btn-sm" style="background:var(--primary-light);color:var(--primary);border:1px solid #b3d6f0;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
                    title="Ver detalle"><i class="fas fa-eye"></i></a>
-                {% if user.rol == 'admin' or user.is_staff or user.pk == s.operador.pk %}
+                {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser or user.pk == s.operador.pk %}
                 <a href="/servicios/{{ s.pk }}/editar/" class="btn btn-sm" style="background:#fff3cd;color:#856404;border:1px solid #ffeeba;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
                    title="Modificar registro"><i class="fas fa-pencil-alt"></i></a>
                 {% endif %}
-                {% if s.estado in 'asignado,programado,en_ruta' and user.pk == s.operador.pk or user.rol == 'admin' or user.is_staff %}
+                {% if s.estado in 'asignado,programado,en_ruta' and user.pk == s.operador.pk or user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
                 {% if s.estado not in 'validado,cerrado,cancelado,documento_emitido' %}
                 <a href="/servicios/{{ s.pk }}/registrar/" class="btn btn-sm"
                    style="background:var(--secondary-light);color:var(--secondary-dark);border:1px solid #c5e1a5;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
                    title="Registrar retiro"><i class="fas fa-edit"></i></a>
                 {% endif %}
                 {% endif %}
-                {% if s.estado == 'pendiente_validacion' and user.rol == 'admin' or user.is_staff and s.estado == 'pendiente_validacion' %}
+                {% if s.estado == 'pendiente_validacion' and user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser and s.estado == 'pendiente_validacion' %}
                 <a href="/validaciones/" class="btn btn-sm"
                    style="background:#FFF8E1;color:#E0A800;border:1px solid #FFE082;font-weight:600;border-radius:6px;padding:.3rem .65rem;"
                    title="Validar"><i class="fas fa-check-double"></i></a>

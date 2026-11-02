@@ -11,191 +11,31 @@ from .models import Lote
 
 
 def _es_admin(user):
-    return user.rol == 'admin' or user.is_staff
+    if not user or not user.is_authenticated:
+        return False
+    return (
+        getattr(user, 'rol', '') in ('admin', 'gerencia', 'superadmin')
+        or getattr(user, 'is_staff', False)
+        or getattr(user, 'is_superuser', False)
+        or (hasattr(user, 'es_admin') and user.es_admin())
+    )
 
 
 @method_decorator(login_required, name='dispatch')
 class RecoleccionPageView(View):
-    template_name = 'recolecciones/formulario.html'
-
     def get(self, request):
-        if _es_admin(request.user):
-            empresas = Empresa.objects.filter(estado='aprobada', activa=True)
-        elif request.user.empresa and request.user.empresa.estado == 'aprobada':
-            empresas = Empresa.objects.filter(pk=request.user.empresa.pk)
-        else:
-            empresas = Empresa.objects.filter(estado='aprobada', activa=True)
-            
-        form_data = {}
-        empresa_id = request.GET.get('empresa')
+        empresa_id = request.GET.get('empresa', '')
+        solicitud_id = request.GET.get('solicitud', '')
+        query = []
         if empresa_id:
-            form_data['empresa_origen'] = empresa_id
-            
-        solicitud_id = request.GET.get('solicitud')
+            query.append(f"empresa={empresa_id}")
         if solicitud_id:
-            from apps.empresas.models import SolicitudRecoleccion
-            try:
-                s = SolicitudRecoleccion.objects.get(pk=solicitud_id)
-                desc = s.descripcion.lower()
-                # Guess tipo from description tag like [PLASTICO]
-                for tipo in ['plastico', 'metal', 'papel', 'vidrio', 'organico', 'mixto']:
-                    if tipo in desc:
-                        form_data['tipo_residuo'] = tipo
-                        break
-                form_data['observaciones_recoleccion'] = s.observaciones
-                form_data['solicitud_id'] = s.id
-            except Exception:
-                pass
-
-        return render(request, self.template_name, {
-            'empresas': empresas,
-            'form_data': form_data
-        })
+            query.append(f"solicitud={solicitud_id}")
+        qs = f"?{'&'.join(query)}" if query else ""
+        return redirect(f"/retiros/nuevo/{qs}")
 
     def post(self, request):
-        empresa_id = request.POST.get('empresa_origen')
-        tipo_residuo = request.POST.get('tipo_residuo') or 'mixto'
-        cantidad_kg_raw = request.POST.get('cantidad_kg') or '0'
-        observaciones = request.POST.get('observaciones_recoleccion', '')
-        ubicacion = request.POST.get('ubicacion_gps', '')
-        solicitud_id = request.POST.get('solicitud_id')
-
-        # Fotos por categoría
-        foto_ticket = request.FILES.get('foto_ticket')
-        fotos_residuos = request.FILES.getlist('foto_recoleccion')
-        foto_camion = request.FILES.get('foto_camion')
-
-        # Detalle de múltiples residuos
-        residuos_tipo = request.POST.getlist('residuos_tipo[]')
-        residuos_cantidad = request.POST.getlist('residuos_cantidad[]')
-        residuos_unidad = request.POST.getlist('residuos_unidad[]')
-
-        errores = []
-        if not empresa_id:
-            errores.append('Selecciona una empresa.')
-
-        # El Ticket de Pesaje es obligatorio
-        if not foto_ticket:
-            errores.append('La foto del Ticket de Pesaje es obligatoria.')
-        elif not (fotos_residuos or foto_camion):
-            # Opcional si subió ticket, pero se recomienda al menos otra evidencia
-            pass
-
-        if errores:
-            empresas = Empresa.objects.filter(estado='aprobada', activa=True)
-            return render(request, self.template_name, {
-                'empresas': empresas, 'errores': errores, 'form_data': request.POST,
-            })
-
-        try:
-            from decimal import Decimal
-            from datetime import datetime
-            from django.utils import timezone
-
-            empresa = Empresa.objects.get(id=empresa_id)
-            foto_principal = fotos_residuos[0] if fotos_residuos else (foto_ticket or foto_camion)
-            
-            total_kg = Decimal('0')
-            try:
-                total_kg = Decimal(str(cantidad_kg_raw))
-            except Exception:
-                total_kg = Decimal('0')
-
-            fecha_rec_raw = request.POST.get('fecha_recoleccion')
-            fecha_recoleccion_val = timezone.now()
-            if fecha_rec_raw:
-                try:
-                    if 'T' in fecha_rec_raw:
-                        dt = datetime.strptime(fecha_rec_raw, '%Y-%m-%dT%H:%M')
-                    else:
-                        dt = datetime.strptime(fecha_rec_raw, '%Y-%m-%d')
-                    fecha_recoleccion_val = timezone.make_aware(dt)
-                except Exception:
-                    pass
-
-            lote = Lote.objects.create(
-                empresa_origen=empresa,
-                operador=request.user,
-                tipo_residuo=tipo_residuo,
-                cantidad_kg=total_kg,
-                fecha_recoleccion=fecha_recoleccion_val,
-                foto_recoleccion=foto_principal,
-                foto_ticket=foto_ticket,
-                foto_camion=foto_camion,
-                observaciones_recoleccion=observaciones,
-                ubicacion_gps=ubicacion,
-            )
-
-            # Guardar múltiples detalles de residuos si fueron especificados
-            from .models import DetalleLoteResiduo, EvidenciaLote
-            if residuos_tipo and residuos_cantidad:
-                sum_kg = Decimal('0')
-                for t, c, u in zip(residuos_tipo, residuos_cantidad, residuos_unidad):
-                    if t and c:
-                        try:
-                            cant_val = Decimal(str(c))
-                        except Exception:
-                            cant_val = Decimal('0')
-                        unid_val = u if u else 'kg'
-                        DetalleLoteResiduo.objects.create(
-                            lote=lote,
-                            tipo_residuo=t,
-                            cantidad=cant_val,
-                            unidad=unid_val
-                        )
-                        if unid_val == 'kg':
-                            sum_kg += cant_val
-                if sum_kg > Decimal('0') and total_kg == Decimal('0'):
-                    lote.cantidad_kg = sum_kg
-                    lote.save()
-            
-            # Guardamos fotos de residuos adicionales como evidencia extra
-            if fotos_residuos:
-                for i, f in enumerate(fotos_residuos):
-                    if i > 0:
-                        EvidenciaLote.objects.create(lote=lote, foto=f)
-
-            # Si viene gestionada de una Solicitud, marcarla completada
-            if solicitud_id:
-                from apps.empresas.models import SolicitudRecoleccion
-                try:
-                    s = SolicitudRecoleccion.objects.get(pk=solicitud_id)
-                    s.estado = 'completada'
-                    s.save()
-                except Exception:
-                    pass
-
-            # Auto-generar/actualizar Estado de Pago (EDP) cobrando por SERVICIO
-            try:
-                from apps.empresas.models import actualizar_o_crear_edp_empresa
-                actualizar_o_crear_edp_empresa(empresa, usuario=request.user)
-            except Exception:
-                pass
-
-            # Notify all admins about new collection
-            admins = Usuario.objects.filter(rol='admin', is_active=True, estado='aprobado')
-            notifs = [
-                Notificacion(
-                    usuario=admin,
-                    tipo='recoleccion_confirmada',
-                    titulo='Nueva Recolección Registrada',
-                    mensaje=(
-                        f'{request.user.nombre_completo} registró retiro de '
-                        f'{lote.get_tipo_residuo_display()} en {empresa.nombre}'
-                    ),
-                    url_destino=f'/lotes/{lote.codigo_lote}/',
-                )
-                for admin in admins
-            ]
-            Notificacion.objects.bulk_create(notifs)
-
-            messages.success(request, f'Recolección {lote.codigo_lote} registrada exitosamente.')
-            return redirect('lote-detalle', codigo_lote=lote.codigo_lote)
-        except Exception as e:
-            empresas = Empresa.objects.filter(estado='aprobada', activa=True)
-            return render(request, self.template_name, {
-                'empresas': empresas, 'errores': [str(e)], 'form_data': request.POST,
-            })
+        return redirect('retiro-crear')
 
 
 @method_decorator(login_required, name='dispatch')
@@ -210,14 +50,8 @@ class LoteDetallePageView(View):
 
 @method_decorator(login_required, name='dispatch')
 class LoteListView(View):
-    template_name = 'lotes/lista.html'
-
     def get(self, request):
-        if _es_admin(request.user):
-            lotes = Lote.objects.all().select_related('empresa_origen', 'operador').order_by('-fecha_creacion')
-        else:
-            lotes = Lote.objects.filter(operador=request.user).select_related('empresa_origen').order_by('-fecha_creacion')
-        return render(request, self.template_name, {'lotes': lotes})
+        return redirect('retiros-lista')
 
 
 @method_decorator(login_required, name='dispatch')

@@ -11,7 +11,7 @@
         <p class="page-subtitle">Busca a cualquier trabajador o contacto de empresa en el sistema</p>
     </div>
     <a href="{% url 'recolector-crear' %}" class="btn-secondary-redimir btn d-flex align-items-center gap-2" id="btn-add-recolector">
-        <i class="fas fa-user-plus"></i> Añadir Recolector
+        <i class="fas fa-user-plus"></i> Registrar Operador / Recolector
     </a>
 </div>
 
@@ -26,13 +26,16 @@
         <!-- Quick Role Filter Pills -->
         <div class="d-flex gap-1 flex-wrap">
             <a href="?q={{ q }}&empresa={{ empresa_sel }}&rol=" class="btn btn-sm {% if not rol_sel %}btn-primary-redimir{% else %}btn-light{% endif %}" style="font-size:.75rem;padding:.25rem .75rem;border-radius:20px;font-weight:600;">
-                Todos
+                Operadores y Empresas
             </a>
             <a href="?q={{ q }}&empresa={{ empresa_sel }}&rol=recolector" class="btn btn-sm {% if rol_sel == 'recolector' %}btn-primary-redimir{% else %}btn-light{% endif %}" style="font-size:.75rem;padding:.25rem .75rem;border-radius:20px;font-weight:600;">
-                <i class="fas fa-truck-loading me-1"></i>Recolectores
+                <i class="fas fa-truck-loading me-1"></i>Recolectores / Operadores
             </a>
             <a href="?q={{ q }}&empresa={{ empresa_sel }}&rol=empresa" class="btn btn-sm {% if rol_sel == 'empresa' %}btn-primary-redimir{% else %}btn-light{% endif %}" style="font-size:.75rem;padding:.25rem .75rem;border-radius:20px;font-weight:600;">
                 <i class="fas fa-building me-1"></i>Empresas
+            </a>
+            <a href="?q={{ q }}&empresa={{ empresa_sel }}&rol=todos" class="btn btn-sm {% if rol_sel == 'todos' %}btn-primary-redimir{% else %}btn-light{% endif %}" style="font-size:.75rem;padding:.25rem .75rem;border-radius:20px;font-weight:600;">
+                <i class="fas fa-users-cog me-1"></i>Todos (incl. Admins)
             </a>
         </div>
     </div>
@@ -133,8 +136,8 @@
                         <i class="fas fa-building me-1 opacity-50"></i>
                         {% if t.empresa %}
                             {{ t.empresa.nombre }}
-                        {% elif t.rol == 'recolector' or t.rol == 'admin' %}
-                            <strong style="color:var(--primary);">Operaciones Redimir</strong>
+                        {% elif t.rol == 'recolector' or t.rol in 'admin,gerencia,superadmin' %}
+                            <strong style="color:var(--primary);">{% if t.rol in 'gerencia,superadmin' %}Gerencia Redimir{% else %}Operaciones Redimir{% endif %}</strong>
                         {% else %}
                             Sin Empresa asignada
                         {% endif %}

@@ -8,11 +8,16 @@
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
         <h1 class="fw-bold" style="color:var(--primary); font-size:1.6rem;">¡Hola, {{ user.nombre }}! 👋</h1>
-        <p class="text-muted mb-0 fw-bold">Modo Operador / Conductor</p>
+        <p class="text-muted mb-0 fw-bold">Modo Operador / Conductor de Terreno</p>
     </div>
-    <a href="/recolecciones/crear/" class="btn-primary-redimir" style="padding:.6rem 1.25rem;">
-        <i class="fas fa-plus-circle me-2"></i>Registrar Retiro
-    </a>
+    <div class="d-flex gap-2">
+        <a href="/retiros/nuevo/" class="btn-primary-redimir" style="padding:.6rem 1.25rem;">
+            <i class="fas fa-plus-circle me-2"></i>Registrar Retiro
+        </a>
+        <a href="/retiros/" class="btn btn-outline-secondary d-flex align-items-center" style="border-radius:10px;font-weight:600;padding:.6rem 1rem;">
+            <i class="fas fa-ticket-alt me-2 text-primary"></i>Mis Tickets
+        </a>
+    </div>
 </div>
 
 <div class="row g-3 mb-4">
@@ -24,14 +29,14 @@
     </div>
     <div class="col-6 col-md-3">
         <div class="kpi-card green text-center">
-            <div class="kpi-number" style="color:var(--secondary-dark);">{{ pendientes }}</div>
-            <div class="kpi-label">Pendientes</div>
+            <div class="kpi-number" style="color:var(--secondary-dark);">{{ total_tickets|default:pendientes }}</div>
+            <div class="kpi-label">Tickets Báscula</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
         <div class="kpi-card amber text-center">
-            <div class="kpi-number" style="color:var(--accent-dark);">{{ historial|length }}</div>
-            <div class="kpi-label">Gestionados</div>
+            <div class="kpi-number" style="color:var(--accent-dark);">{{ mis_tickets|length }}</div>
+            <div class="kpi-label">Retiros Recientes</div>
         </div>
     </div>
     <div class="col-6 col-md-3">
@@ -59,16 +64,90 @@
                 {% else %}<span class="badge-estado badge-reciclable">♻️ Reciclables</span>{% endif %}
             </div>
         </div>
-        <a href="/servicios/{{ s.pk }}/registrar/" class="btn-success-redimir btn-sm" style="padding:.5rem 1rem;">Registrar →</a>
+        <a href="/retiros/nuevo/?empresa={{ s.empresa.pk }}" class="btn-success-redimir btn-sm" style="padding:.5rem 1rem;">Registrar Ticket →</a>
     </div>
     {% endfor %}
 </div>
 {% endif %}
 
+<!-- Sección Nuevo Sistema de Retiros y Tickets de Báscula -->
+<div class="card-redimir mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+        <h5 class="fw-bold mb-0" style="color:var(--dark-navy,#1a2b49);">
+            <i class="fas fa-ticket-alt me-2 text-primary"></i>Tickets de Retiro y Pesaje (Nuevo Sistema)
+        </h5>
+        <a href="/retiros/" class="btn btn-sm btn-outline-primary" style="border-radius:8px;font-weight:600;">
+            <i class="fas fa-list me-1"></i>Ver todos los tickets
+        </a>
+    </div>
+
+    {% if mis_tickets %}
+    <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead style="background:var(--gray-bg);font-size:0.82rem;text-transform:uppercase;letter-spacing:0.5px;">
+                <tr>
+                    <th>N° Ticket</th>
+                    <th>Empresa</th>
+                    <th>Fecha</th>
+                    <th>Servicio / Faena</th>
+                    <th class="text-end">Peso Báscula</th>
+                    <th class="text-center">Comprobante</th>
+                    <th class="text-center">Acción</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for t in mis_tickets %}
+                <tr>
+                    <td>
+                        <strong class="text-primary">#{{ t.numero_ticket }}</strong>
+                    </td>
+                    <td>
+                        <div class="fw-bold text-dark" style="font-size:0.9rem;">{{ t.empresa.nombre }}</div>
+                        <div class="small text-muted">{{ t.faena_area|default:'Planta Principal' }}</div>
+                    </td>
+                    <td style="font-size:0.85rem;">{{ t.fecha|date:"d/m/Y" }}</td>
+                    <td style="font-size:0.85rem;">
+                        <span class="badge bg-light text-dark border">{{ t.tipo_servicio|default:'Retiro' }}</span>
+                    </td>
+                    <td class="text-end">
+                        <strong style="color:var(--secondary-dark);">{{ t.peso_total_ticket }} kg</strong>
+                    </td>
+                    <td class="text-center">
+                        {% if t.respaldo_ticket %}
+                        <a href="{{ t.respaldo_ticket.url }}" target="_blank" class="btn btn-sm btn-outline-info" style="padding:2px 8px;font-size:0.75rem;" title="Ver respaldo adjunto">
+                            <i class="fas fa-paperclip"></i> Ver
+                        </a>
+                        {% else %}
+                        <span class="text-muted small">—</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <a href="/retiros/{{ t.pk }}/" class="btn btn-sm btn-outline-secondary" style="padding:2px 8px;font-size:0.75rem;">
+                            <i class="fas fa-eye me-1"></i>Detalle
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="text-center py-4 text-muted">
+        <i class="fas fa-truck-loading fa-2x mb-2 text-muted"></i>
+        <p class="mb-2">Aún no has registrado tickets de retiro en el nuevo sistema.</p>
+        <a href="/retiros/nuevo/" class="btn-primary-redimir btn-sm text-decoration-none">
+            <i class="fas fa-plus-circle me-1"></i>Registrar mi primer retiro
+        </a>
+    </div>
+    {% endif %}
+</div>
+
+{% if historial %}
+<!-- Historial Legacy / Servicios previstos -->
 <div class="card-redimir">
     <div class="d-flex justify-content-between align-items-center mb-3">
-        <h5 class="fw-bold mb-0">📋 Últimos Retiros Completados</h5>
-        <a href="/servicios/" class="btn btn-sm btn-outline-secondary">Ver todos</a>
+        <h6 class="fw-bold mb-0 text-muted">📋 Historial de Servicios Asignados</h6>
+        <a href="/servicios/" class="btn btn-sm btn-outline-secondary">Ver historial general</a>
     </div>
 
     {% for s in historial %}
@@ -97,13 +176,9 @@
             {% endwith %}
         </div>
     </div>
-    {% empty %}
-    <div class="text-center py-4 text-muted">
-        Aún no tienes retiros completados.<br>
-        Las validaciones de tus retiros aparecerán aquí.
-    </div>
     {% endfor %}
 </div>
+{% endif %}
 
 </div>
 {% endblock %}

@@ -89,7 +89,7 @@
     <h5 class="section-title mb-3"><span style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;margin-right:.5rem;">2</span>Datos del servicio</h5>
 
     <div class="row g-3">
-      {% if user.rol == 'admin' or user.is_staff %}
+      {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
       <div class="col-12 col-md-6">
         <label class="form-label">Empresa cliente <span class="required-mark">*</span></label>
         <select name="empresa" class="form-select" required>
@@ -147,7 +147,7 @@
     <hr class="my-4" style="border-color:var(--gray-bg);">
 
     <!-- PASO 3: PROGRAMACIÓN Y ASIGNACIÓN (solo admin) -->
-    {% if user.rol == 'admin' or user.is_staff %}
+    {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
     <h5 class="section-title mb-3"><span style="background:var(--primary);color:#fff;border-radius:50%;width:24px;height:24px;display:inline-flex;align-items:center;justify-content:center;font-size:.75rem;margin-right:.5rem;">3</span>Programación y asignación <small class="text-muted fw-400 ms-2" style="font-size:.75rem;">(opcional)</small></h5>
 
     <div class="row g-3">
@@ -193,7 +193,7 @@
                 placeholder="Instrucciones especiales, notas de acceso, etc.">{{ form_data.observaciones|default:'' }}</textarea>
     </div>
 
-    {% if user.rol == 'admin' or user.is_staff %}
+    {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
     <div class="card p-3 mb-4" style="background-color: #f2f9ec; border: 1px solid #95BF3C;">
       <div class="form-check form-switch">
         <input class="form-check-input" type="checkbox" name="auto_validar" value="1" id="autoValidarCheck" checked>

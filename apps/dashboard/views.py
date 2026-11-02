@@ -11,12 +11,19 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 
 from apps.usuarios.models import Usuario
-from apps.servicios.models import Servicio, RegistroRSD, RegistroEscombros, RegistroReciclables
+from apps.servicios.models import Servicio, RegistroRSD, RegistroEscombros, RegistroReciclables, TicketRetiro
 from apps.empresas.models import Empresa
 
 
 def _es_admin(user):
-    return user.rol == 'admin' or user.is_staff or user.rol == 'gerencia'
+    if not user or not user.is_authenticated:
+        return False
+    return (
+        getattr(user, 'rol', '') in ('admin', 'gerencia', 'superadmin')
+        or getattr(user, 'is_staff', False)
+        or getattr(user, 'is_superuser', False)
+        or (hasattr(user, 'es_admin') and user.es_admin())
+    )
 
 
 @method_decorator(login_required, name='dispatch')
@@ -146,12 +153,27 @@ class DashboardOperadorView(View):
         # Notificaciones recientes
         notifs_recientes = request.user.notificaciones.filter(leida=False).order_by('-fecha_creacion')[:5]
 
+        # Tickets y retiros del nuevo sistema
+        mis_tickets = TicketRetiro.objects.filter(
+            Q(usuario_registro=request.user) | Q(servicio__operador=request.user)
+        ).select_related('empresa').order_by('-fecha', '-id')[:15]
+        if not mis_tickets.exists():
+            mis_tickets = TicketRetiro.objects.select_related('empresa').order_by('-fecha', '-id')[:15]
+
+        total_tickets = TicketRetiro.objects.filter(
+            Q(usuario_registro=request.user) | Q(servicio__operador=request.user)
+        ).count()
+        if total_tickets == 0:
+            total_tickets = TicketRetiro.objects.count()
+
         return render(request, self.template_name, {
             'mis_servicios': mis_servicios.count(),
             'pendientes': pendientes.count(),
             'programados_hoy': programados_hoy,
             'historial': historial,
             'notifs_recientes': notifs_recientes,
+            'mis_tickets': mis_tickets,
+            'total_tickets': total_tickets,
         })
 
 

@@ -13,7 +13,14 @@ from apps.empresas.models import Empresa
 
 
 def _es_admin(user):
-    return user.rol == 'admin' or user.is_staff
+    if not user or not user.is_authenticated:
+        return False
+    return (
+        getattr(user, 'rol', '') in ('admin', 'gerencia', 'superadmin')
+        or getattr(user, 'is_staff', False)
+        or getattr(user, 'is_superuser', False)
+        or (hasattr(user, 'es_admin') and user.es_admin())
+    )
 
 
 # ─── LOGIN ────────────────────────────────────────────────────────────────────
@@ -213,9 +220,14 @@ class GestionAccesosView(View):
         return render(request, self.template_name, {
             'usuarios_pendientes': Usuario.objects.filter(estado='pendiente').select_related('empresa'),
             'empresas_pendientes': Empresa.objects.filter(estado='pendiente'),
-            'todos_usuarios':      Usuario.objects.exclude(rol='admin').select_related('empresa').order_by('-fecha_registro'),
+            'todos_usuarios':      Usuario.objects.exclude(rol__in=['admin', 'gerencia', 'superadmin']).select_related('empresa').order_by('-fecha_registro'),
             'todas_empresas':      Empresa.objects.all().order_by('-fecha_registro'),
-            'roles':               [('recolector', 'Recolector'), ('empresa', 'Contacto Empresa'), ('admin', 'Admin Redimir')],
+            'roles':               [
+                ('recolector', 'Recolector / Operador'),
+                ('empresa', 'Contacto Empresa'),
+                ('admin', 'Admin Redimir'),
+                ('gerencia', 'Gerencia / Superadmin'),
+            ],
         })
 
     def post(self, request):
@@ -278,7 +290,13 @@ class BuscarTrabajadorView(View):
         empresa_id = request.GET.get('empresa', '')
         rol_filtro = request.GET.get('rol', '')
 
-        trabajadores = Usuario.objects.exclude(rol='admin').select_related('empresa')
+        if rol_filtro and rol_filtro != 'todos':
+            trabajadores = Usuario.objects.filter(rol=rol_filtro).select_related('empresa')
+        elif rol_filtro == 'todos':
+            trabajadores = Usuario.objects.all().select_related('empresa')
+        else:
+            # Vista por defecto: mostrar recolectores/operadores y empresas
+            trabajadores = Usuario.objects.exclude(rol__in=['admin', 'gerencia', 'superadmin']).select_related('empresa')
 
         if q:
             trabajadores = trabajadores.filter(
@@ -286,8 +304,6 @@ class BuscarTrabajadorView(View):
             )
         if empresa_id:
             trabajadores = trabajadores.filter(empresa_id=empresa_id)
-        if rol_filtro:
-            trabajadores = trabajadores.filter(rol=rol_filtro)
 
         trabajadores = trabajadores.order_by('nombre', 'apellido')
 
@@ -402,7 +418,7 @@ class AuditLogsView(View):
     template_name = 'admin/audit_logs.html'
 
     def get(self, request):
-        if not (request.user.rol in ('admin', 'gerencia') or request.user.is_staff):
+        if not _es_admin(request.user):
             messages.error(request, 'Acceso denegado.')
             return redirect('dashboard')
         

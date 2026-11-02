@@ -74,7 +74,7 @@
       <form method="post" class="card-redimir">
         {% csrf_token %}
 
-        {% if user.rol == 'admin' or user.is_staff %}
+        {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
         <div class="mb-3">
           <label class="form-label">Empresa (opcional)</label>
           <select name="empresa" class="form-select">
@@ -120,7 +120,7 @@
           <i class="fas fa-leaf me-2"></i>Calcular Eco-Equivalencia
         </button>
 
-        {% if user.rol == 'admin' or user.is_staff %}
+        {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
         <div class="mt-2 text-center">
           <a href="/calculadora/factores/" class="link-alt" style="font-size:.78rem; color:var(--text-muted); font-weight:600;">
             <i class="fas fa-cog me-1"></i>Configurar factores

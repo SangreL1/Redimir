@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% block title %}Añadir Recolector — Redimir{% endblock %}
+{% block title %}Registrar Operador / Personal — Redimir{% endblock %}
 {% block nav_buscar %}active{% endblock %}
 
 {% block content %}
@@ -7,7 +7,7 @@
 
 <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
     <div>
-        <h1 class="page-title"><i class="fas fa-user-plus" style="color:var(--secondary);margin-right:.5rem;"></i>Añadir Recolector / Operador</h1>
+        <h1 class="page-title"><i class="fas fa-user-plus" style="color:var(--secondary);margin-right:.5rem;"></i>Registrar Operador / Personal</h1>
         <p class="page-subtitle">Crea un nuevo usuario de operaciones directamente desde el panel de administración</p>
     </div>
     <a href="{% url 'buscar-trabajador' %}" class="btn btn-outline-secondary d-flex align-items-center gap-2" style="border-radius:10px;font-weight:600;">
@@ -85,9 +85,7 @@
             <label class="form-label">Rol en el Sistema</label>
             <select name="rol" class="form-select">
                 {% for val, label in roles %}
-                {% if val != 'admin' %}
-                <option value="{{ val }}" {% if form_data.rol == val or val == 'recolector' %}selected{% endif %}>{{ label }}</option>
-                {% endif %}
+                <option value="{{ val }}" {% if form_data.rol == val or not form_data.rol and val == 'recolector' %}selected{% endif %}>{{ label }}</option>
                 {% endfor %}
             </select>
         </div>

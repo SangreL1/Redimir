@@ -14,7 +14,14 @@ from .models import FactorEcoEquivalencia
 
 
 def _es_admin(user):
-    return user.rol in ['admin', 'gerencia'] or user.is_staff or user.is_superuser
+    if not user or not user.is_authenticated:
+        return False
+    return (
+        getattr(user, 'rol', '') in ('admin', 'gerencia', 'superadmin')
+        or getattr(user, 'is_staff', False)
+        or getattr(user, 'is_superuser', False)
+        or (hasattr(user, 'es_admin') and user.es_admin())
+    )
 
 
 @method_decorator(login_required, name='dispatch')

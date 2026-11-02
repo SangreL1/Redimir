@@ -21,7 +21,14 @@ from apps.empresas.models import Empresa
 
 
 def _es_admin(user):
-    return user.rol == 'admin' or user.is_staff
+    if not user or not user.is_authenticated:
+        return False
+    return (
+        getattr(user, 'rol', '') in ('admin', 'gerencia', 'superadmin')
+        or getattr(user, 'is_staff', False)
+        or getattr(user, 'is_superuser', False)
+        or (hasattr(user, 'es_admin') and user.es_admin())
+    )
 
 def _es_operador(user):
     return user.rol in ('recolector', 'operador')

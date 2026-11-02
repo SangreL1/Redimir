@@ -43,8 +43,8 @@
                     <strong style="font-size:.85rem;text-align:right;">
                         {% if trabajador.empresa %}
                             {{ trabajador.empresa.nombre }}
-                        {% elif trabajador.rol == 'recolector' or trabajador.rol == 'admin' %}
-                            <span style="color:var(--primary);">Operaciones Redimir</span>
+                        {% elif trabajador.rol == 'recolector' or trabajador.rol in 'admin,gerencia,superadmin' %}
+                            <span style="color:var(--primary);">{% if trabajador.rol in 'gerencia,superadmin' %}Gerencia Redimir{% else %}Operaciones Redimir{% endif %}</span>
                         {% else %}
                             Sin Empresa asignada
                         {% endif %}
