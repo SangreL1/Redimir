@@ -388,9 +388,43 @@ def descargar_certificado(request, certificado_id):
         if not (es_admin_o_staff or es_empresa_duena):
             return HttpResponseForbidden("No tiene permisos para acceder a este certificado.")
 
-        # Si no existe archivo físico en disco, generarlo dinámicamente
-        if not certificado.archivo_pdf or not os.path.exists(certificado.archivo_pdf.path):
-            generar_pdf_certificado(certificado, request=request)
+        # Si el desglose guardado esta vacio, recalcular desde los tickets del periodo
+        if not certificado.desglose_por_tipo:
+            from apps.servicios.models import TicketRetiro
+            PALABRAS_EXCLUIR = ['escombro', 'rescon', 'rsd', 'basura', 'doméstic', 'domestic']
+            tickets_cert = TicketRetiro.objects.filter(
+                empresa=certificado.empresa,
+                fecha__range=[certificado.periodo_inicio, certificado.periodo_fin]
+            ).prefetch_related('detalles__material')
+            desglose_recalc = {}
+            for t in tickets_cert:
+                for det in t.detalles.all():
+                    mat_nom = det.nombre_material
+                    mat_cat = getattr(det.material, 'categoria', '')
+                    if any(p in f"{mat_nom} {mat_cat}".lower() for p in PALABRAS_EXCLUIR):
+                        continue
+                    peso = float(det.peso_kg or 0.0)
+                    if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
+                        peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
+                    if peso > 0:
+                        desglose_recalc[mat_nom] = round(desglose_recalc.get(mat_nom, 0.0) + peso, 2)
+            # FALLBACK: usar peso_total_ticket si detalles no tienen peso
+            if not desglose_recalc:
+                for t in tickets_cert:
+                    peso_t = float(t.peso_total_ticket or 0.0)
+                    if peso_t <= 0:
+                        continue
+                    tipo = (t.tipo_residuo or 'Materiales Reciclables').strip()
+                    if any(p in tipo.lower() for p in PALABRAS_EXCLUIR):
+                        tipo = 'Materiales Reciclables'
+                    desglose_recalc[tipo] = round(desglose_recalc.get(tipo, 0.0) + peso_t, 2)
+            if desglose_recalc:
+                certificado.desglose_por_tipo = desglose_recalc
+                certificado.total_reciclables_kg = sum(desglose_recalc.values())
+                certificado.save(update_fields=['desglose_por_tipo', 'total_reciclables_kg'])
+
+        # Siempre regenerar el PDF para reflejar el peso y datos actualizados
+        generar_pdf_certificado(certificado, request=request)
 
         pdf_path = certificado.archivo_pdf.path
 
@@ -723,8 +757,22 @@ class GeneradorPageView(View):
                                     peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
                                 if peso > 0:
                                     desglose[mat_nom] = round(desglose.get(mat_nom, 0.0) + peso, 2)
-                        
+
                         reciclables_kg = sum(desglose.values())
+
+                        # --- FALLBACK: si los detalles no tienen peso ingresado,
+                        # usar el peso_total_ticket directamente del ticket ---
+                        if reciclables_kg == 0:
+                            for t in tickets:
+                                peso_t = float(t.peso_total_ticket or 0.0)
+                                if peso_t <= 0:
+                                    continue
+                                tipo = (t.tipo_residuo or 'Materiales Reciclables').strip()
+                                if any(p in tipo.lower() for p in PALABRAS_EXCLUIR):
+                                    tipo = 'Materiales Reciclables'
+                                desglose[tipo] = round(desglose.get(tipo, 0.0) + peso_t, 2)
+                            reciclables_kg = sum(desglose.values())
+
                         total_registros = tickets.count()
                     else:
                         # Fallback a Servicios (excluyendo escombros y basura)
