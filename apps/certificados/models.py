@@ -2,6 +2,11 @@ from django.db import models
 from django.utils import timezone
 
 class Certificado(models.Model):
+    TIPO_CHOICES = [
+        ('trazabilidad', 'Trazabilidad y Transporte'),
+        ('ecoequivalencia', 'Eco-Equivalencia'),
+    ]
+    tipo = models.CharField(max_length=30, choices=TIPO_CHOICES, default='trazabilidad', verbose_name='Tipo de Certificado')
     empresa = models.ForeignKey('empresas.Empresa', on_delete=models.CASCADE, related_name='certificados')
     periodo_inicio = models.DateField()
     periodo_fin = models.DateField()
@@ -37,8 +42,17 @@ class Certificado(models.Model):
         db_table = 'certificados'
         ordering = ['-fecha_generacion']
     
+    @property
+    def es_ecoequivalencia(self):
+        if self.tipo == 'ecoequivalencia':
+            return True
+        if self.archivo_pdf and 'ecoequiv' in str(self.archivo_pdf.name).lower():
+            return True
+        return False
+
     def __str__(self):
-        return f"CERT-{self.codigo_certificado}"
+        prefix = 'ECO' if self.es_ecoequivalencia else 'CERT'
+        return f"{prefix}-{self.codigo_certificado}"
     
     def save(self, *args, **kwargs):
         if not self.codigo_certificado:

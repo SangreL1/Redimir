@@ -12,9 +12,14 @@
             <p class="text-muted mb-0" style="font-size: .85rem; font-weight: 500;">Trazabilidad oficial de residuos para empresas clientes</p>
         </div>
         {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
-        <a href="{% url 'certificado-crear' %}" class="btn btn-sm btn-success-redimir">
-            <i class="fas fa-plus me-1"></i> Generar Certificado
-        </a>
+        <div class="d-flex gap-2">
+            <a href="{% url 'eco-equivalencia' %}" class="btn btn-sm" style="background-color: #95BF3C; color: #fff; font-weight: 600;">
+                <i class="fas fa-leaf me-1"></i> Eco-Equivalencia
+            </a>
+            <a href="{% url 'certificado-crear' %}" class="btn btn-sm btn-success-redimir">
+                <i class="fas fa-plus me-1"></i> Generar Trazabilidad
+            </a>
+        </div>
         {% endif %}
     </div>
 </div>
@@ -25,6 +30,7 @@
             <thead style="background-color: #E1E4E7;">
                 <tr>
                     <th style="color: #006BB8; font-weight: 600;">Folio / Código</th>
+                    <th style="color: #006BB8; font-weight: 600;">Tipo</th>
                     <th style="color: #006BB8; font-weight: 600;">Empresa Cliente</th>
                     <th style="color: #006BB8; font-weight: 600;">Período</th>
                     <th style="color: #006BB8; font-weight: 600;">Total Residuos</th>
@@ -36,6 +42,13 @@
                 {% for cert in certificados %}
                 <tr>
                     <td><strong style="color: #006BB8;">{{ cert.codigo_certificado }}</strong></td>
+                    <td>
+                        {% if cert.es_ecoequivalencia %}
+                            <span class="badge" style="background-color: #95BF3C; color: #fff; font-size: 0.75rem;"><i class="fas fa-leaf me-1"></i>Eco-Equivalencia</span>
+                        {% else %}
+                            <span class="badge" style="background-color: #006BB8; color: #fff; font-size: 0.75rem;"><i class="fas fa-truck me-1"></i>Trazabilidad</span>
+                        {% endif %}
+                    </td>
                     <td>{{ cert.empresa.nombre }}</td>
                     <td>{{ cert.periodo_inicio|date:"d/m/Y" }} → {{ cert.periodo_fin|date:"d/m/Y" }}</td>
                     <td><strong style="color: #95BF3C;">{{ cert.total_reciclables_kg|add:cert.total_rsd_kg|floatformat:1 }} kg</strong></td>
@@ -56,7 +69,7 @@
                 </tr>
                 {% empty %}
                 <tr>
-                    <td colspan="6" class="text-center text-muted py-4">
+                    <td colspan="7" class="text-center text-muted py-4">
                         <i class="fas fa-folder-open fa-2x mb-2 text-muted"></i><br>
                         No se han emitido certificados aún.
                     </td>

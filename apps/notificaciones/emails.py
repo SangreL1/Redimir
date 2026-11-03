@@ -95,15 +95,25 @@ def enviar_email_certificado(certificado, destinatario=None, request=None):
     if not email_to:
         return False, f"La empresa {empresa.nombre} no tiene un correo de contacto registrado."
 
-    # Asegurar que el PDF esté generado
-    from apps.certificados.views import generar_pdf_certificado
-    if not certificado.archivo_pdf or not os.path.exists(certificado.archivo_pdf.path):
+    # Asegurar que el PDF esté generado (distinguiendo Eco-Equivalencia de Trazabilidad)
+    es_eco = getattr(certificado, 'tipo', '') == 'ecoequivalencia' or getattr(certificado, 'es_ecoequivalencia', False)
+    if es_eco:
+        from apps.certificados.views import regenerar_pdf_eco_equivalencia
         try:
-            generar_pdf_certificado(certificado, request=request)
+            regenerar_pdf_eco_equivalencia(certificado, request=request)
             certificado.refresh_from_db()
         except Exception as e:
-            logger.error(f"Error generando PDF para certificado {certificado.codigo_certificado}: {e}")
-            return False, f"Error al generar el PDF del certificado: {e}"
+            logger.error(f"Error generando PDF eco-equivalencia {certificado.codigo_certificado}: {e}")
+            return False, f"Error al generar el PDF de eco-equivalencia: {e}"
+    else:
+        from apps.certificados.views import generar_pdf_certificado
+        if not certificado.archivo_pdf or not os.path.exists(certificado.archivo_pdf.path):
+            try:
+                generar_pdf_certificado(certificado, request=request)
+                certificado.refresh_from_db()
+            except Exception as e:
+                logger.error(f"Error generando PDF para certificado {certificado.codigo_certificado}: {e}")
+                return False, f"Error al generar el PDF del certificado: {e}"
 
     if not certificado.archivo_pdf or not os.path.exists(certificado.archivo_pdf.path):
         return False, "No se encontró el archivo PDF del certificado para adjuntar."

@@ -388,6 +388,15 @@ def descargar_certificado(request, certificado_id):
         if not (es_admin_o_staff or es_empresa_duena):
             return HttpResponseForbidden("No tiene permisos para acceder a este certificado.")
 
+        # ── DISTINCIÓN: Certificado de Eco-Equivalencia vs Trazabilidad ──
+        if getattr(certificado, 'tipo', '') == 'ecoequivalencia' or getattr(certificado, 'es_ecoequivalencia', False):
+            regenerar_pdf_eco_equivalencia(certificado, request=request)
+            pdf_path = certificado.archivo_pdf.path
+            response = FileResponse(open(pdf_path, 'rb'), content_type='application/pdf')
+            response['Content-Disposition'] = f'attachment; filename="EcoEquiv_{certificado.codigo_certificado}.pdf"'
+            return response
+
+        # ── Certificado de Trazabilidad y Transporte ──
         # Si el desglose guardado esta vacio, recalcular desde los tickets del periodo
         if not certificado.desglose_por_tipo:
             from apps.servicios.models import TicketRetiro
@@ -815,6 +824,7 @@ class GeneradorPageView(View):
                             total_registros = servicios.count() + solicitudes.count()
 
                     certificado = Certificado.objects.create(
+                        tipo='trazabilidad',
                         empresa=empresa,
                         periodo_inicio=inicio,
                         periodo_fin=fin,
@@ -1279,6 +1289,110 @@ def generar_pdf_eco_equivalencia(datos, request=None):
     buf.close()
     return pdf_bytes
 
+
+def regenerar_pdf_eco_equivalencia(certificado, request=None):
+    """
+    Regenera el PDF oficial de Eco-Equivalencia para una instancia de Certificado.
+    Reconstruye los materiales en kg desde desglose_por_tipo o tickets de retiro.
+    """
+    import calendar
+    from django.core.files.base import ContentFile
+
+    empresa = certificado.empresa
+    periodo_inicio = certificado.periodo_inicio
+    month = periodo_inicio.month
+    year = periodo_inicio.year
+
+    materiales_kg = {k: 0.0 for k, _ in MATERIALES_CERT}
+    desglose = certificado.desglose_por_tipo or {}
+
+    LABEL_TO_KEY = {lbl.lower(): k for k, lbl in MATERIALES_CERT}
+
+    # 1. Cargar desde desglose_por_tipo guardado
+    for raw_k, val in desglose.items():
+        k_str = str(raw_k).strip().lower()
+        try:
+            val_f = float(val or 0.0)
+        except (ValueError, TypeError):
+            val_f = 0.0
+        if val_f <= 0:
+            continue
+
+        target_k = None
+        if k_str in materiales_kg:
+            target_k = k_str
+        elif k_str in LABEL_TO_KEY:
+            target_k = LABEL_TO_KEY[k_str]
+        elif 'cart' in k_str: target_k = 'carton'
+        elif 'papel' in k_str: target_k = 'papel'
+        elif 'pet' in k_str or 'botella' in k_str or 'plast' in k_str: target_k = 'plastico'
+        elif 'film' in k_str: target_k = 'film'
+        elif 'aluminio' in k_str or 'lata' in k_str: target_k = 'aluminio'
+        elif 'zuncho' in k_str or 'suncho' in k_str: target_k = 'sunchos'
+        elif 'palet' in k_str or 'pallet' in k_str: target_k = 'pallets'
+        elif 'carrete' in k_str: target_k = 'carretes'
+        elif 'vidrio' in k_str: target_k = 'vidrio'
+        elif 'tambor' in k_str: target_k = 'aluminio' if 'metal' in k_str else 'plastico'
+        elif 'bidon' in k_str: target_k = 'plastico'
+        elif 'pellon' in k_str: target_k = 'pellon'
+
+        if target_k and target_k in materiales_kg:
+            materiales_kg[target_k] += val_f
+
+    # 2. Si no hay kg en desglose, auto-cargar desde Tickets de Retiro del mes
+    if sum(materiales_kg.values()) == 0:
+        p_ini = f"{year}-{month:02d}-01"
+        last_day = calendar.monthrange(year, month)[1]
+        p_fin = f"{year}-{month:02d}-{last_day:02d}"
+        from apps.servicios.models import TicketRetiro
+        tickets_mes = TicketRetiro.objects.filter(empresa=empresa, fecha__range=[p_ini, p_fin]).prefetch_related('detalles__material')
+        for t in tickets_mes:
+            for det in t.detalles.all():
+                m_nom = (det.nombre_material or '').lower()
+                peso = float(det.peso_kg or 0.0)
+                if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
+                    peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
+                eco_key = None
+                if 'cart' in m_nom: eco_key = 'carton'
+                elif 'papel' in m_nom: eco_key = 'papel'
+                elif 'pet' in m_nom or 'botella' in m_nom: eco_key = 'plastico'
+                elif 'film' in m_nom: eco_key = 'film'
+                elif 'aluminio' in m_nom or 'lata' in m_nom: eco_key = 'aluminio'
+                elif 'zuncho' in m_nom or 'suncho' in m_nom: eco_key = 'sunchos'
+                elif 'palet' in m_nom or 'pallet' in m_nom: eco_key = 'pallets'
+                elif 'carrete' in m_nom: eco_key = 'carretes'
+                elif 'vidrio' in m_nom: eco_key = 'vidrio'
+                elif 'tambor' in m_nom: eco_key = 'aluminio' if 'metal' in m_nom else 'plastico'
+                elif 'bidon' in m_nom: eco_key = 'plastico'
+                elif 'pellon' in m_nom: eco_key = 'pellon'
+                if eco_key and peso > 0 and eco_key in materiales_kg:
+                    materiales_kg[eco_key] += peso
+
+    MESES_MAP = {
+        1: 'enero', 2: 'febrero', 3: 'marzo', 4: 'abril',
+        5: 'mayo', 6: 'junio', 7: 'julio', 8: 'agosto',
+        9: 'septiembre', 10: 'octubre', 11: 'noviembre', 12: 'diciembre'
+    }
+
+    datos_pdf = {
+        'empresa': empresa,
+        'mes_nombre': MESES_MAP.get(month, 'mes'),
+        'anio': year,
+        'materiales_kg': materiales_kg,
+        'codigo': certificado.codigo_certificado,
+        'responsable_nombre': 'Leslie Plaza Vargas',
+        'responsable_cargo': 'DIRECTORA GENERAL',
+    }
+    pdf_bytes = generar_pdf_eco_equivalencia(datos_pdf, request=request)
+    pdf_hash = hashlib.sha256(pdf_bytes).hexdigest()
+    certificado.hash_sha256 = pdf_hash
+    certificado.estado = 'vigente'
+    filename = f"EcoEquiv_{certificado.codigo_certificado}.pdf"
+    certificado.archivo_pdf.save(filename, ContentFile(pdf_bytes), save=False)
+    certificado.save(update_fields=['archivo_pdf', 'hash_sha256', 'estado'])
+    return certificado.archivo_pdf.path
+
+
 @login_required
 def api_datos_empresa_mes(request):
     """
@@ -1548,6 +1662,7 @@ class EcoEquivalenciaGeneradorView(View):
                 }
 
                 certificado = Certificado.objects.create(
+                    tipo='ecoequivalencia',
                     empresa=empresa,
                     periodo_inicio=p_ini,
                     periodo_fin=p_fin,
