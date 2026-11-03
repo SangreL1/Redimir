@@ -807,6 +807,12 @@ def exportar_retiros_excel(request):
         cell_img = ws.cell(curr_row, c_img)
         cell_img.alignment = Alignment(horizontal="center", vertical="center")
 
+        # Dimensiones imagen en Excel: ancho max 160px (EMU), alto max 120px
+        IMG_MAX_W_PX = 160   # pixeles openpyxl
+        IMG_MAX_H_PX = 120
+        ROW_H_IMG = 100      # altura de fila en puntos cuando hay imagen
+        COL_W_IMG = 28       # ancho de columna comprobante (caracteres)
+
         row_height = 24
         if t.respaldo_ticket:
             file_path = None
@@ -829,18 +835,22 @@ def exportar_retiros_excel(request):
                         orig_w, orig_h = pil_img.size
                         aspect = (orig_w / orig_h) if orig_h > 0 else 1.0
 
-                        target_h = 52
-                        target_w = int(target_h * aspect)
-                        if target_w > 90:
-                            target_w = 90
-                            target_h = int(target_w / aspect) if aspect > 0 else 52
+                        # Escalar respetando el aspecto dentro de los limites maximos
+                        target_w = IMG_MAX_W_PX
+                        target_h = int(target_w / aspect) if aspect > 0 else IMG_MAX_H_PX
+                        if target_h > IMG_MAX_H_PX:
+                            target_h = IMG_MAX_H_PX
+                            target_w = int(target_h * aspect)
 
-                        pil_img.thumbnail((target_w * 2, target_h * 2), PILImage.Resampling.LANCZOS)
+                        # Renderizar a alta resolucion para calidad
+                        render_w = target_w * 3
+                        render_h = target_h * 3
+                        pil_img = pil_img.resize((render_w, render_h), PILImage.Resampling.LANCZOS)
                         buf = io.BytesIO()
                         if pil_img.mode in ('RGBA', 'LA'):
                             pil_img.save(buf, format='PNG')
                         else:
-                            pil_img.convert('RGB').save(buf, format='JPEG', quality=85)
+                            pil_img.convert('RGB').save(buf, format='JPEG', quality=90)
                         buf.seek(0)
                         image_buffers.append(buf)
 
@@ -850,15 +860,15 @@ def exportar_retiros_excel(request):
 
                     col_letter = get_column_letter(c_img)
                     ws.add_image(img_obj, f"{col_letter}{curr_row}")
-                    row_height = 58
+                    row_height = ROW_H_IMG
                     tiene_imagen = True
-
-                    if file_url:
-                        cell_img.hyperlink = file_url
+                    # NO poner hyperlink cuando hay imagen incrustada
+                    # (causa que Excel muestre imagen + link superpuestos)
                 except Exception:
                     tiene_imagen = False
 
             if not tiene_imagen:
+                # Sin imagen: poner texto clickeable con el link
                 if t.es_imagen_respaldo:
                     cell_img.value = "Ver Foto"
                 elif t.respaldo_ticket.name.lower().endswith('.pdf'):
@@ -929,7 +939,7 @@ def exportar_retiros_excel(request):
         ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
 
     col_img_letter = get_column_letter(len(headers))
-    ws.column_dimensions[col_img_letter].width = 24
+    ws.column_dimensions[col_img_letter].width = 28  # mas ancha para imagenes comprobante
 
     filename_empresa = re.sub(r'[^a-zA-Z0-9_-]', '_', empresa_nombre)
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M')
