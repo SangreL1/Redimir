@@ -807,11 +807,14 @@ def exportar_retiros_excel(request):
         cell_img = ws.cell(curr_row, c_img)
         cell_img.alignment = Alignment(horizontal="center", vertical="center")
 
-        # Dimensiones imagen en Excel: ancho max 160px (EMU), alto max 120px
-        IMG_MAX_W_PX = 160   # pixeles openpyxl
-        IMG_MAX_H_PX = 120
-        ROW_H_IMG = 100      # altura de fila en puntos cuando hay imagen
-        COL_W_IMG = 28       # ancho de columna comprobante (caracteres)
+        # ── Constantes para imagen anclada dentro de celda ──────────────────
+        # EMU = English Metric Units: 914400 EMU = 1 pulgada = 96 px
+        # 1 px = 9525 EMU  |  1 pt (fila) = 12700 EMU  |  1 char (col) ~= 66675 EMU
+        PX_TO_EMU = 9525
+        PT_TO_EMU = 12700
+        IMG_MAX_W_PX = 180   # ancho maximo imagen en pixeles
+        IMG_MAX_H_PX = 130   # alto maximo imagen en pixeles
+        MARGEN_PX = 4        # margen interior de la celda en pixeles
 
         row_height = 24
         if t.respaldo_ticket:
@@ -835,17 +838,18 @@ def exportar_retiros_excel(request):
                         orig_w, orig_h = pil_img.size
                         aspect = (orig_w / orig_h) if orig_h > 0 else 1.0
 
-                        # Escalar respetando el aspecto dentro de los limites maximos
+                        # Calcular dimensiones finales manteniendo aspecto
                         target_w = IMG_MAX_W_PX
                         target_h = int(target_w / aspect) if aspect > 0 else IMG_MAX_H_PX
                         if target_h > IMG_MAX_H_PX:
                             target_h = IMG_MAX_H_PX
                             target_w = int(target_h * aspect)
 
-                        # Renderizar a alta resolucion para calidad
-                        render_w = target_w * 3
-                        render_h = target_h * 3
-                        pil_img = pil_img.resize((render_w, render_h), PILImage.Resampling.LANCZOS)
+                        # Renderizar a 3x para nitidez
+                        pil_img = pil_img.resize(
+                            (target_w * 3, target_h * 3),
+                            PILImage.Resampling.LANCZOS
+                        )
                         buf = io.BytesIO()
                         if pil_img.mode in ('RGBA', 'LA'):
                             pil_img.save(buf, format='PNG')
@@ -858,17 +862,35 @@ def exportar_retiros_excel(request):
                     img_obj.width = target_w
                     img_obj.height = target_h
 
-                    col_letter = get_column_letter(c_img)
-                    ws.add_image(img_obj, f"{col_letter}{curr_row}")
-                    row_height = ROW_H_IMG
+                    # ── Anclar imagen DENTRO de la celda con TwoCellAnchor ──
+                    # Fila (0-indexed), col (0-indexed) en AnchorMarker
+                    from openpyxl.drawing.spreadsheet_drawing import TwoCellAnchor, AnchorMarker
+                    col0 = c_img - 1   # 0-indexed
+                    row0 = curr_row - 1
+                    margen_emu = MARGEN_PX * PX_TO_EMU
+                    img_w_emu = target_w * PX_TO_EMU
+                    img_h_emu = target_h * PX_TO_EMU
+
+                    anchor = TwoCellAnchor(editAs='oneCell')
+                    anchor._from = AnchorMarker(
+                        col=col0, colOff=margen_emu,
+                        row=row0, rowOff=margen_emu
+                    )
+                    anchor.to = AnchorMarker(
+                        col=col0, colOff=img_w_emu + margen_emu,
+                        row=row0, rowOff=img_h_emu + margen_emu
+                    )
+                    img_obj.anchor = anchor
+                    ws._images.append(img_obj)
+
+                    # Alto de fila exacto: imagen en pts (1px = 0.75pt) + margen
+                    row_height = target_h * 0.75 + MARGEN_PX * 0.75 * 2
                     tiene_imagen = True
-                    # NO poner hyperlink cuando hay imagen incrustada
-                    # (causa que Excel muestre imagen + link superpuestos)
-                except Exception:
+                except Exception as exc_img:
                     tiene_imagen = False
 
             if not tiene_imagen:
-                # Sin imagen: poner texto clickeable con el link
+                # Sin imagen: texto clickeable con link
                 if t.es_imagen_respaldo:
                     cell_img.value = "Ver Foto"
                 elif t.respaldo_ticket.name.lower().endswith('.pdf'):
@@ -939,7 +961,8 @@ def exportar_retiros_excel(request):
         ws.column_dimensions[col_letter].width = max(max_len + 4, 12)
 
     col_img_letter = get_column_letter(len(headers))
-    ws.column_dimensions[col_img_letter].width = 28  # mas ancha para imagenes comprobante
+    # Ancho col imagen: IMG_MAX_W_PX=180 px / 7.5 px-por-char + margen
+    ws.column_dimensions[col_img_letter].width = 26
 
     filename_empresa = re.sub(r'[^a-zA-Z0-9_-]', '_', empresa_nombre)
     timestamp = datetime.datetime.now().strftime('%Y%m%d_%H%M')
