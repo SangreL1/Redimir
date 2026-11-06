@@ -23,7 +23,7 @@
         {% csrf_token %}
         <div class="mb-3">
             <label class="form-label-dark">Empresa / Cliente *</label>
-            <select name="empresa_id" class="form-select" required>
+            <select name="empresa_id" id="selectEmpresaEDP" class="form-select" onchange="cargarMesesEmpresaEDP(this.value)" required>
                 <option value="">-- Seleccionar Empresa --</option>
                 {% for emp in empresas %}
                 <option value="{{ emp.pk }}">{{ emp.nombre }} ({{ emp.rut }})</option>
@@ -31,21 +31,28 @@
             </select>
         </div>
 
+        <!-- Contenedor dinámico de meses con retiros detectados -->
+        <div id="contenedorMesesEDP" class="mb-3 d-none">
+            <label class="form-label-dark small text-muted"><i class="fas fa-calendar-alt me-1 text-primary-redimir"></i>Meses con retiros registrados (Haz clic para autocompletar el período):</label>
+            <div id="pillsMesesEDP" class="d-flex flex-wrap gap-2 mt-1"></div>
+        </div>
+
         <div class="row g-3 mb-3">
             <div class="col-6">
                 <label class="form-label-dark">Período Desde *</label>
-                <input type="date" name="inicio" class="form-control-dark w-100" required>
+                <input type="date" name="inicio" id="edp_inicio" class="form-control-dark w-100" required>
             </div>
             <div class="col-6">
                 <label class="form-label-dark">Período Hasta *</label>
-                <input type="date" name="fin" class="form-control-dark w-100" required>
+                <input type="date" name="fin" id="edp_fin" class="form-control-dark w-100" required>
             </div>
         </div>
 
         <div class="row g-3 mb-3">
             <div class="col-6">
-                <label class="form-label-dark">Monto Subtotal Neto ($) *</label>
-                <input type="number" step="1" name="subtotal_neto" class="form-control-dark w-100" placeholder="Ej: 450000" required>
+                <label class="form-label-dark">Monto Subtotal Neto ($) <small class="text-muted">(Opcional)</small></label>
+                <input type="number" step="1" name="subtotal_neto" value="0" class="form-control-dark w-100" placeholder="0 para cálculo automático">
+                <small class="text-muted" style="font-size:0.75rem;">Dejar en 0 para calcular tarifas automáticamente</small>
             </div>
             <div class="col-6">
                 <label class="form-label-dark">Estado Inicial</label>

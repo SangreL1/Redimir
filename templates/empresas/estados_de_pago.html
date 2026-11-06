@@ -62,9 +62,12 @@
         </select>
       </div>
 
-      <div class="col-12 col-md-auto ms-md-auto d-flex align-items-center gap-2">
+      <div class="col-12 col-md-auto ms-md-auto d-flex flex-wrap align-items-center gap-2">
         <a href="/estados-de-pago/?mes={{ mes_sel }}&anio={{ anio_sel }}&generar=1" class="btn btn-success btn-sm fw-bold px-3 py-2 text-white shadow-sm" style="border-radius:8px;" title="Recalcular o generar EDPs para todas las empresas en este mes">
-          <i class="fas fa-sync-alt me-1"></i> Actualizar EDPs de {{ nombre_mes_sel }} {{ anio_sel }}
+          <i class="fas fa-sync-alt me-1"></i> Actualizar {{ nombre_mes_sel }} {{ anio_sel }}
+        </a>
+        <a href="/estados-de-pago/?sincronizar_todo=1" class="btn btn-primary-redimir btn-sm fw-bold px-3 py-2 shadow-sm text-decoration-none" style="border-radius:8px;" title="Escanear y generar automáticamente los Estados de Pago para todos los meses con retiros (desde febrero a la fecha)" onclick="return confirm('¿Deseas escanear y sincronizar los Estados de Pago de todos los meses históricos con retiros registrados?');">
+          <i class="fas fa-calendar-check me-1"></i> Sincronizar Todo el Historial
         </a>
       </div>
     </form>

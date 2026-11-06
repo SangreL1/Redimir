@@ -26,6 +26,21 @@ from .forms import TicketRetiroForm, DetalleMaterialTicketForm
 from apps.empresas.models import Empresa
 
 
+def _sincronizar_edp_ticket(ticket, usuario=None):
+    """Sincroniza el Estado de Pago del mes correspondiente al ticket de retiro."""
+    try:
+        if ticket and ticket.empresa and ticket.fecha:
+            import calendar, datetime
+            from apps.empresas.models import actualizar_o_crear_edp_empresa
+            y, m = ticket.fecha.year, ticket.fecha.month
+            _, last_d = calendar.monthrange(y, m)
+            p_ini = datetime.date(y, m, 1)
+            p_fin = datetime.date(y, m, last_d)
+            actualizar_o_crear_edp_empresa(ticket.empresa, periodo_inicio=p_ini, periodo_fin=p_fin, usuario=usuario)
+    except Exception:
+        pass
+
+
 def _es_admin(user):
     if not user or not user.is_authenticated:
         return False
@@ -328,6 +343,9 @@ def retiro_crear(request):
                         observaciones=obs_val
                     )
 
+            # Sincronización automática con el Estado de Pago del mes
+            _sincronizar_edp_ticket(ticket, request.user)
+
             messages.success(request, f"✅ Ticket N° {ticket.numero_ticket} registrado exitosamente.")
             return redirect('retiro-detalle', pk=ticket.pk)
         else:
@@ -441,6 +459,9 @@ def retiro_editar(request, pk):
                         observaciones=obs_val
                     )
 
+            # Sincronización automática con el Estado de Pago del mes
+            _sincronizar_edp_ticket(ticket, request.user)
+
             messages.success(request, f"✅ Ticket N° {ticket.numero_ticket} actualizado correctamente.")
             return redirect('retiro-detalle', pk=ticket.pk)
         else:
@@ -516,7 +537,18 @@ def retiro_eliminar(request, pk):
 
     numero = ticket.numero_ticket
     if request.method == 'POST':
+        empresa_ref = ticket.empresa
+        fecha_ref = ticket.fecha
         ticket.delete()
+        try:
+            if empresa_ref and fecha_ref:
+                import calendar, datetime
+                from apps.empresas.models import actualizar_o_crear_edp_empresa
+                y, m = fecha_ref.year, fecha_ref.month
+                _, last_d = calendar.monthrange(y, m)
+                actualizar_o_crear_edp_empresa(empresa_ref, periodo_inicio=datetime.date(y, m, 1), periodo_fin=datetime.date(y, m, last_d), usuario=request.user)
+        except Exception:
+            pass
         messages.success(request, f"🗑️ Ticket N° {numero} eliminado exitosamente.")
         return redirect('retiros-lista')
 

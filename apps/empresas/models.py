@@ -354,12 +354,24 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
     from apps.servicios.models import Servicio
     
     today = timezone.now().date()
-    if not periodo_inicio:
+    from datetime import date, datetime
+    if isinstance(periodo_inicio, str):
+        try:
+            p_inicio = datetime.strptime(periodo_inicio.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            p_inicio = today.replace(day=1)
+    elif not periodo_inicio:
         p_inicio = today.replace(day=1)
     else:
         p_inicio = periodo_inicio
 
-    if not periodo_fin:
+    if isinstance(periodo_fin, str):
+        try:
+            p_fin = datetime.strptime(periodo_fin.strip(), "%Y-%m-%d").date()
+        except ValueError:
+            _, last_day = calendar.monthrange(p_inicio.year, p_inicio.month)
+            p_fin = p_inicio.replace(day=last_day)
+    elif not periodo_fin:
         _, last_day = calendar.monthrange(p_inicio.year, p_inicio.month)
         p_fin = p_inicio.replace(day=last_day)
     else:
@@ -666,5 +678,45 @@ def actualizar_o_crear_edp_empresa(empresa, periodo_inicio=None, periodo_fin=Non
     return edp
 
 
+def sincronizar_todos_los_edps(empresa=None, usuario=None):
+    """
+    Escanea todos los tickets de retiro, servicios y solicitudes registrados en la BD,
+    y asegura que exista un Estado de Pago calculado y actualizado para cada mes con retiros.
+    """
+    import calendar
+    from datetime import date
+    from apps.servicios.models import TicketRetiro, Servicio
+    from apps.empresas.models import Empresa
 
+    fechas_empresa = set()
 
+    # 1. Tickets de Retiro (operación principal Redimir)
+    t_qs = TicketRetiro.objects.all()
+    if empresa:
+        t_qs = t_qs.filter(empresa=empresa)
+    for emp_id, f in t_qs.values_list('empresa_id', 'fecha'):
+        if emp_id and f:
+            fechas_empresa.add((emp_id, f.year, f.month))
+
+    # 2. Servicios
+    s_qs = Servicio.objects.filter(is_active=True).exclude(estado='cancelado')
+    if empresa:
+        s_qs = s_qs.filter(empresa=empresa)
+    for emp_id, fr, fp, fs in s_qs.values_list('empresa_id', 'fecha_retiro_real', 'fecha_programada', 'fecha_solicitud'):
+        f = fr or fp or fs
+        if emp_id and f:
+            fechas_empresa.add((emp_id, f.year, f.month))
+
+    edps_actualizados = 0
+    for emp_id, year, month in sorted(fechas_empresa):
+        try:
+            emp = Empresa.objects.get(pk=emp_id)
+            _, last_day = calendar.monthrange(year, month)
+            p_ini = date(year, month, 1)
+            p_fin = date(year, month, last_day)
+            actualizar_o_crear_edp_empresa(emp, periodo_inicio=p_ini, periodo_fin=p_fin, usuario=usuario)
+            edps_actualizados += 1
+        except Exception:
+            pass
+
+    return edps_actualizados

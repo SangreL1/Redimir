@@ -581,6 +581,13 @@ class EstadoDePagoListView(View):
         p_inicio = today.replace(year=anio_sel, month=mes_sel, day=1)
         p_fin = today.replace(year=anio_sel, month=mes_sel, day=last_day)
 
+        # Sincronización completa de todo el historial de retiros (desde febrero o meses anteriores)
+        if request.GET.get('sincronizar_todo') == '1':
+            from .models import sincronizar_todos_los_edps
+            cnt = sincronizar_todos_los_edps(usuario=request.user)
+            messages.success(request, f"¡Sincronización completa! Se generaron/actualizaron {cnt} Estado(s) de Pago para todos los meses con retiros registrados en el historial.")
+            return redirect('estados-de-pago-lista')
+
         # Si se solicita generar o actualizar EDPs de todas las empresas para este mes
         if request.GET.get('generar') == '1':
             empresas_aprobadas = Empresa.objects.filter(estado='aprobada', activa=True)
@@ -668,143 +675,29 @@ class EstadoDePagoCrearView(View):
             return render(request, self.template_name, {'empresas': empresas, 'errores': errores})
 
         try:
-            from django.db.models import Q
-            from .models import EstadoDePago, DetalleEstadoDePago, TarifaEmpresa
-            from apps.servicios.models import Servicio
-            
+            from .models import EstadoDePago, DetalleEstadoDePago, TarifaEmpresa, actualizar_o_crear_edp_empresa
             empresa = Empresa.objects.get(pk=empresa_id)
-            
-            # Búsqueda flexible de retiros validados o completados dentro del rango
-            servicios_qs = Servicio.objects.filter(
-                empresa=empresa,
-                estado__in=['validado', 'documento_emitido', 'cerrado', 'retirado', 'pendiente_validacion']
-            ).filter(
-                Q(fecha_retiro_real__date__range=[inicio, fin]) |
-                Q(fecha_programada__date__range=[inicio, fin]) |
-                Q(fecha_solicitud__date__range=[inicio, fin])
-            ).distinct()
 
-            servicios_count = servicios_qs.count()
-
-            edp = EstadoDePago.objects.create(
+            # Utilizar función centralizada que compila Servicios, Lotes y Tickets de Retiro
+            edp = actualizar_o_crear_edp_empresa(
                 empresa=empresa,
                 periodo_inicio=inicio,
                 periodo_fin=fin,
-                total_servicios=servicios_count,
-                subtotal_neto=Decimal('0'),
-                iva=Decimal('0'),
-                total_bruto=Decimal('0'),
-                estado=estado_val,
-                observaciones=obs,
-                creado_por=request.user
+                usuario=request.user
             )
 
-            grupos = {}
-
-            for s in servicios_qs:
-                reg = s.get_registro()
-                cant = Decimal('1')
-                unid = 'servicio'
-                desc_base = f"Servicio de Retiro — {s.get_modulo_display()}"
-                mat_key = s.modulo
-
-                # Tarifas por defecto si no hay tarifa personalizada
-                tarifa = Decimal('150000')
-                if s.modulo == 'rsd': tarifa = Decimal('150000')
-                elif s.modulo == 'escombros': tarifa = Decimal('180000')
-                elif s.modulo == 'reciclables': tarifa = Decimal('150000')
-
-                if reg:
-                    if s.modulo == 'rsd':
-                        if hasattr(reg, 'cantidad_kg') and reg.cantidad_kg > 0:
-                            cant = Decimal(str(reg.cantidad_kg))
-                            unid = 'kg'
-                    elif s.modulo == 'escombros':
-                        if hasattr(reg, 'cantidad') and reg.cantidad > 0:
-                            cant = Decimal(str(reg.cantidad))
-                            unid = reg.get_unidad_display() if hasattr(reg, 'get_unidad_display') else 'm3'
-                    elif s.modulo == 'reciclables':
-                        if hasattr(reg, 'cantidad_kg') and reg.cantidad_kg > 0:
-                            cant = Decimal(str(reg.cantidad_kg))
-                            unid = 'kg'
-                        if hasattr(reg, 'tipo_material') and reg.tipo_material:
-                            mat_key = str(reg.tipo_material).lower()
-                            desc_base = f"Reciclaje ({mat_key.upper()})"
-
-                # Buscar si existe tarifa personalizada configurada para la empresa
-                tarifa_custom = TarifaEmpresa.objects.filter(
-                    empresa=empresa,
-                    modulo=s.modulo,
-                    tipo_material__iexact=mat_key
-                ).first()
-
-                if not tarifa_custom:
-                    tarifa_custom = TarifaEmpresa.objects.filter(
-                        empresa=empresa,
-                        modulo=s.modulo
-                    ).first()
-
-                if tarifa_custom:
-                    tarifa = tarifa_custom.precio_unitario
-                    if tarifa_custom.unidad_medida:
-                        unid = tarifa_custom.unidad_medida
-
-                # Si la tarifa es por servicio, la cantidad es 1 retiro/servicio completado
-                if unid in ['servicio', 'retiro', 'viaje']:
-                    cant = Decimal('1')
-
-                fecha_obj = s.fecha_retiro_real.date() if s.fecha_retiro_real else (s.fecha_solicitud.date() if s.fecha_solicitud else timezone.now().date())
-                key = (desc_base, tarifa, unid)
-                if key not in grupos:
-                    grupos[key] = {
-                        'modulo': s.get_modulo_display(),
-                        'descripcion': desc_base,
-                        'tarifa': tarifa,
-                        'unidad': unid,
-                        'cantidad': Decimal('0'),
-                        'fecha_objs': [],
-                        'servicio_obj': s,
-                        'fecha_obj': fecha_obj,
-                    }
-                grupos[key]['cantidad'] += cant
-                if fecha_obj not in grupos[key]['fecha_objs']:
-                    grupos[key]['fecha_objs'].append(fecha_obj)
-
-            total_calculado = Decimal('0')
-
-            items_ordenados = list(grupos.values())
-            for item in items_ordenados:
-                item['fecha_objs'].sort()
-                item['fecha_obj'] = item['fecha_objs'][0] if item['fecha_objs'] else item.get('fecha_obj', timezone.now().date())
-                item['fechas_texto'] = ", ".join([d.strftime("%d/%m/%Y") for d in item['fecha_objs']])
-
-            items_ordenados.sort(key=lambda x: (x['fecha_obj'], x['descripcion']))
-
-            for item in items_ordenados:
-                sub_item = item['cantidad'] * item['tarifa']
-                total_calculado += sub_item
-
-                DetalleEstadoDePago.objects.create(
-                    estado_de_pago=edp,
-                    servicio=item['servicio_obj'],
-                    fecha_servicio=item['fecha_obj'],
-                    fechas_texto=item['fechas_texto'],
-                    modulo=item['modulo'],
-                    descripcion=item['descripcion'],
-                    cantidad=item['cantidad'],
-                    unidad_medida=item['unidad'],
-                    tarifa_unitaria=item['tarifa'],
-                    subtotal=sub_item
-                )
-
-            # Si se ingresó subtotal manual diferente de 0, prevalece el ingresado
+            # Si el usuario ingresó un monto subtotal manual, aplicarlo
             if subtotal > 0:
                 edp.subtotal_neto = subtotal
-            else:
-                edp.subtotal_neto = total_calculado
+                edp.iva = round(edp.subtotal_neto * Decimal('0.19'), 2)
+                edp.total_bruto = edp.subtotal_neto + edp.iva
 
-            edp.iva = round(edp.subtotal_neto * Decimal('0.19'), 2)
-            edp.total_bruto = edp.subtotal_neto + edp.iva
+            if estado_val:
+                edp.estado = estado_val
+
+            if obs:
+                edp.observaciones = obs
+
             edp.save()
 
             # Auditoría estructurada (Fase 2 y 11)
