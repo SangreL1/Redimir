@@ -490,14 +490,114 @@ class ListaCertificadosView(View):
             user.is_staff or
             getattr(user, 'rol', '') in ('admin', 'gerencia', 'superadmin')
         )
-        if es_admin_o_staff:
-            certificados = Certificado.objects.all().order_by('-fecha_generacion')
-        elif getattr(user, 'empresa', None):
-            certificados = Certificado.objects.filter(empresa=user.empresa).order_by('-fecha_generacion')
-        else:
-            certificados = Certificado.objects.none()
 
-        return render(request, self.template_name, {'certificados': certificados})
+        from apps.empresas.models import EstadoDePago
+        from django.db.models import Q
+        from django.utils import timezone
+
+        tipo_filtro = request.GET.get('tipo', 'todos').strip().lower()
+        if tipo_filtro not in ('todos', 'trazabilidad', 'ecoequivalencia', 'edp'):
+            tipo_filtro = 'todos'
+
+        q = request.GET.get('q', '').strip()
+
+        if es_admin_o_staff:
+            cert_qs = Certificado.objects.select_related('empresa').all().order_by('-fecha_generacion')
+            edp_qs = EstadoDePago.objects.select_related('empresa').all().order_by('-fecha_creacion')
+        elif getattr(user, 'empresa', None):
+            cert_qs = Certificado.objects.filter(empresa=user.empresa).select_related('empresa').order_by('-fecha_generacion')
+            edp_qs = EstadoDePago.objects.filter(empresa=user.empresa).select_related('empresa').order_by('-fecha_creacion')
+        else:
+            cert_qs = Certificado.objects.none()
+            edp_qs = EstadoDePago.objects.none()
+
+        # Conteo antes de filtrar por búsqueda para mostrar en las píldoras
+        count_trazabilidad = sum(1 for c in cert_qs if not c.es_ecoequivalencia)
+        count_eco = sum(1 for c in cert_qs if c.es_ecoequivalencia)
+        count_edp = edp_qs.count()
+        count_todos = len(cert_qs) + count_edp
+
+        # Filtrar por texto de búsqueda si aplica
+        if q:
+            cert_qs = cert_qs.filter(
+                Q(codigo_certificado__icontains=q) |
+                Q(empresa__nombre__icontains=q) |
+                Q(empresa__rut__icontains=q)
+            )
+            edp_qs = edp_qs.filter(
+                Q(numero_edp__icontains=q) |
+                Q(empresa__nombre__icontains=q) |
+                Q(empresa__rut__icontains=q)
+            )
+
+        documentos = []
+
+        # Certificados (Trazabilidad y Eco-Equivalencia)
+        if tipo_filtro in ('todos', 'trazabilidad', 'ecoequivalencia'):
+            for c in cert_qs:
+                es_eco = c.es_ecoequivalencia
+                doc_tipo = 'ecoequivalencia' if es_eco else 'trazabilidad'
+                if tipo_filtro != 'todos' and tipo_filtro != doc_tipo:
+                    continue
+                total_kg = float(c.total_reciclables_kg or 0) + float(c.total_rsd_kg or 0)
+                total_fmt = f"{total_kg:,.1f}".replace(',', 'X').replace('.', ',').replace('X', '.') + " kg"
+                documentos.append({
+                    'id': c.id,
+                    'tipo': doc_tipo,
+                    'tipo_nombre': 'Eco-Equivalencia' if es_eco else 'Trazabilidad',
+                    'codigo': c.codigo_certificado,
+                    'empresa': c.empresa,
+                    'empresa_nombre': c.empresa.nombre,
+                    'empresa_email': getattr(c.empresa, 'email_contacto', '') or '',
+                    'periodo_inicio': c.periodo_inicio,
+                    'periodo_fin': c.periodo_fin,
+                    'total_display': total_fmt,
+                    'fecha_emision': c.fecha_generacion,
+                    'descarga_url': f"/certificados/descargar/{c.id}/",
+                    'enviar_url': f"/certificados/enviar/{c.id}/",
+                    'detalle_url': None,
+                    'es_edp': False,
+                    'es_eco': es_eco,
+                })
+
+        # Estados de Pago (EDP)
+        if tipo_filtro in ('todos', 'edp'):
+            for e in edp_qs:
+                monto_val = float(e.total_bruto or 0)
+                monto_fmt = f"${monto_val:,.0f}".replace(',', '.')
+                total_disp = f"{monto_fmt} ({e.total_servicios} retiros)"
+                documentos.append({
+                    'id': e.id,
+                    'tipo': 'edp',
+                    'tipo_nombre': 'Estado de Pago',
+                    'codigo': e.numero_edp,
+                    'empresa': e.empresa,
+                    'empresa_nombre': e.empresa.nombre,
+                    'empresa_email': getattr(e.empresa, 'email_contacto', '') or '',
+                    'periodo_inicio': e.periodo_inicio,
+                    'periodo_fin': e.periodo_fin,
+                    'total_display': total_disp,
+                    'fecha_emision': e.fecha_creacion,
+                    'descarga_url': f"/estados-de-pago/{e.id}/descargar-pdf/",
+                    'enviar_url': f"/estados-de-pago/{e.id}/enviar-email/",
+                    'detalle_url': f"/estados-de-pago/{e.id}/",
+                    'es_edp': True,
+                    'es_eco': False,
+                })
+
+        # Ordenar cronológicamente descendente por fecha de emisión
+        documentos.sort(key=lambda d: d['fecha_emision'] or timezone.now(), reverse=True)
+
+        return render(request, self.template_name, {
+            'documentos': documentos,
+            'certificados': cert_qs,  # compatibilidad
+            'tipo_filtro': tipo_filtro,
+            'query': q,
+            'count_todos': count_todos,
+            'count_trazabilidad': count_trazabilidad,
+            'count_eco': count_eco,
+            'count_edp': count_edp,
+        })
 
 
 MESES_NOMBRE = [

@@ -1,18 +1,23 @@
 {% extends 'base.html' %}
-{% block title %}Mis Certificados — Redimir{% endblock %}
+{% block title %}Documentos y Certificados Emitidos — Redimir{% endblock %}
 {% block nav_certificados %}active{% endblock %}
 
 {% block content %}
 <div class="row mb-4">
-    <div class="col-12 d-flex justify-content-between align-items-center">
+    <div class="col-12 d-flex flex-wrap justify-content-between align-items-center gap-3">
         <div>
             <h2 class="fw-bold mb-0" style="color: var(--primary);">
-                <i class="fas fa-certificate me-2" style="color: var(--secondary);"></i>Certificados Emitidos
+                <i class="fas fa-certificate me-2" style="color: var(--secondary);"></i>Documentos y Certificados Emitidos
             </h2>
-            <p class="text-muted mb-0" style="font-size: .85rem; font-weight: 500;">Trazabilidad oficial de residuos para empresas clientes</p>
+            <p class="text-muted mb-0" style="font-size: .85rem; font-weight: 500;">
+                Trazabilidad oficial de residuos, Eco-Equivalencia y Estados de Pago (EDP) para empresas clientes
+            </p>
         </div>
         {% if user.rol in 'admin,gerencia,superadmin' or user.is_staff or user.is_superuser %}
-        <div class="d-flex gap-2">
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{% url 'estados-de-pago-crear' %}" class="btn btn-sm" style="background-color: #059669; color: #fff; font-weight: 600;">
+                <i class="fas fa-file-invoice-dollar me-1"></i> Generar EDP
+            </a>
             <a href="{% url 'eco-equivalencia' %}" class="btn btn-sm" style="background-color: #95BF3C; color: #fff; font-weight: 600;">
                 <i class="fas fa-leaf me-1"></i> Eco-Equivalencia
             </a>
@@ -21,6 +26,47 @@
             </a>
         </div>
         {% endif %}
+    </div>
+</div>
+
+<!-- BARRA DE FILTROS POR TIPO Y BUSCADOR -->
+<div class="card p-3 mb-4 border-0 shadow-sm" style="background:#ffffff; border-radius:12px;">
+    <div class="d-flex flex-wrap align-items-center justify-content-between gap-3">
+        <!-- Píldoras de filtro por tipo -->
+        <div class="d-flex flex-wrap gap-2">
+            <a href="?tipo=todos{% if query %}&q={{ query }}{% endif %}" 
+               class="btn btn-sm py-1 px-3 fw-semibold rounded-pill {% if tipo_filtro == 'todos' %}btn-primary active text-white shadow-sm{% else %}btn-outline-secondary{% endif %}"
+               style="font-size:0.82rem;">
+               <i class="fas fa-layer-group me-1"></i> Todos <span class="badge bg-secondary ms-1">{{ count_todos }}</span>
+            </a>
+            <a href="?tipo=trazabilidad{% if query %}&q={{ query }}{% endif %}" 
+               class="btn btn-sm py-1 px-3 fw-semibold rounded-pill {% if tipo_filtro == 'trazabilidad' %}text-white shadow-sm{% else %}btn-outline-secondary{% endif %}"
+               style="font-size:0.82rem; {% if tipo_filtro == 'trazabilidad' %}background-color:#006BB8; border-color:#006BB8;{% endif %}">
+               <i class="fas fa-truck me-1"></i> Trazabilidad <span class="badge bg-secondary ms-1">{{ count_trazabilidad }}</span>
+            </a>
+            <a href="?tipo=ecoequivalencia{% if query %}&q={{ query }}{% endif %}" 
+               class="btn btn-sm py-1 px-3 fw-semibold rounded-pill {% if tipo_filtro == 'ecoequivalencia' %}text-white shadow-sm{% else %}btn-outline-secondary{% endif %}"
+               style="font-size:0.82rem; {% if tipo_filtro == 'ecoequivalencia' %}background-color:#95BF3C; border-color:#95BF3C;{% endif %}">
+               <i class="fas fa-leaf me-1"></i> Eco-Equivalencia <span class="badge bg-secondary ms-1">{{ count_eco }}</span>
+            </a>
+            <a href="?tipo=edp{% if query %}&q={{ query }}{% endif %}" 
+               class="btn btn-sm py-1 px-3 fw-semibold rounded-pill {% if tipo_filtro == 'edp' %}text-white shadow-sm{% else %}btn-outline-secondary{% endif %}"
+               style="font-size:0.82rem; {% if tipo_filtro == 'edp' %}background-color:#059669; border-color:#059669;{% endif %}">
+               <i class="fas fa-file-invoice-dollar me-1"></i> Estados de Pago (EDP) <span class="badge bg-secondary ms-1">{{ count_edp }}</span>
+            </a>
+        </div>
+
+        <!-- Buscador rápido por Empresa, RUT o Folio -->
+        <form method="get" class="d-flex align-items-center gap-1" style="min-width: 260px;">
+            <input type="hidden" name="tipo" value="{{ tipo_filtro }}">
+            <div class="input-group input-group-sm">
+                <input type="text" name="q" class="form-control" placeholder="Buscar por Folio, Empresa o RUT..." value="{{ query|default:'' }}">
+                <button class="btn btn-outline-primary" type="submit" title="Buscar"><i class="fas fa-search"></i></button>
+                {% if query %}
+                <a href="?tipo={{ tipo_filtro }}" class="btn btn-outline-secondary" title="Limpiar búsqueda"><i class="fas fa-times"></i></a>
+                {% endif %}
+            </div>
+        </form>
     </div>
 </div>
 
@@ -33,37 +79,58 @@
                     <th style="color: #006BB8; font-weight: 600;">Tipo</th>
                     <th style="color: #006BB8; font-weight: 600;">Empresa Cliente</th>
                     <th style="color: #006BB8; font-weight: 600;">Período</th>
-                    <th style="color: #006BB8; font-weight: 600;">Total Residuos</th>
+                    <th style="color: #006BB8; font-weight: 600;">Total / Monto</th>
                     <th style="color: #006BB8; font-weight: 600;">Fecha Emisión</th>
                     <th style="color: #006BB8; font-weight: 600; text-align: center;">Acciones</th>
                 </tr>
             </thead>
             <tbody>
-                {% for cert in certificados %}
+                {% for doc in documentos %}
                 <tr>
-                    <td><strong style="color: #006BB8;">{{ cert.codigo_certificado }}</strong></td>
                     <td>
-                        {% if cert.es_ecoequivalencia %}
+                        {% if doc.es_edp and doc.detalle_url %}
+                            <a href="{{ doc.detalle_url }}" class="fw-bold text-decoration-none" style="color: #059669;" title="Ver detalle del Estado de Pago">
+                                <i class="fas fa-file-invoice me-1"></i>{{ doc.codigo }}
+                            </a>
+                        {% else %}
+                            <strong style="color: #006BB8;">{{ doc.codigo }}</strong>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if doc.es_edp %}
+                            <span class="badge" style="background-color: #059669; color: #fff; font-size: 0.75rem;"><i class="fas fa-file-invoice-dollar me-1"></i>EDP</span>
+                        {% elif doc.es_eco %}
                             <span class="badge" style="background-color: #95BF3C; color: #fff; font-size: 0.75rem;"><i class="fas fa-leaf me-1"></i>Eco-Equivalencia</span>
                         {% else %}
                             <span class="badge" style="background-color: #006BB8; color: #fff; font-size: 0.75rem;"><i class="fas fa-truck me-1"></i>Trazabilidad</span>
                         {% endif %}
                     </td>
-                    <td>{{ cert.empresa.nombre }}</td>
-                    <td>{{ cert.periodo_inicio|date:"d/m/Y" }} → {{ cert.periodo_fin|date:"d/m/Y" }}</td>
-                    <td><strong style="color: #95BF3C;">{{ cert.total_reciclables_kg|add:cert.total_rsd_kg|floatformat:1 }} kg</strong></td>
-                    <td>{{ cert.fecha_generacion|date:"d/m/Y H:i" }}</td>
+                    <td><strong class="text-dark">{{ doc.empresa_nombre }}</strong></td>
+                    <td>{{ doc.periodo_inicio|date:"d/m/Y" }} → {{ doc.periodo_fin|date:"d/m/Y" }}</td>
+                    <td>
+                        {% if doc.es_edp %}
+                            <strong style="color: #059669;">{{ doc.total_display }}</strong>
+                        {% else %}
+                            <strong style="color: #95BF3C;">{{ doc.total_display }}</strong>
+                        {% endif %}
+                    </td>
+                    <td>{{ doc.fecha_emision|date:"d/m/Y H:i" }}</td>
                     <td class="text-center">
-                        <div class="d-flex justify-content-center gap-1">
-                            <a href="{% url 'descargar_certificado' cert.id %}" class="btn btn-sm btn-success-redimir" style="padding: 4px 10px; font-size: 0.82rem;" title="Descargar PDF">
+                        <div class="d-flex justify-content-center align-items-center gap-1">
+                            <a href="{{ doc.descarga_url }}" class="btn btn-sm btn-success-redimir" style="padding: 4px 10px; font-size: 0.82rem;" title="Descargar documento PDF">
                                 <i class="fas fa-download me-1"></i> PDF
                             </a>
-                            <form method="post" action="{% url 'enviar_certificado_email' cert.id %}" class="d-inline" onsubmit="return confirm('¿Enviar certificado {{ cert.codigo_certificado }} con PDF adjunto al correo {{ cert.empresa.email_contacto }}?');">
+                            <form method="post" action="{{ doc.enviar_url }}" class="d-inline" onsubmit="return confirm('¿Enviar {{ doc.tipo_nombre }} {{ doc.codigo }} con PDF adjunto al cliente {{ doc.empresa_nombre }}?');">
                                 {% csrf_token %}
-                                <button type="submit" class="btn btn-sm text-white" style="padding: 4px 10px; font-size: 0.82rem; background-color: #006BB8; border: none; font-weight: 600; color: #FFFFFF !important; white-space: nowrap;" title="Enviar por correo a {{ cert.empresa.email_contacto }}">
+                                <button type="submit" class="btn btn-sm text-white" style="padding: 4px 10px; font-size: 0.82rem; background-color: #006BB8; border: none; font-weight: 600; color: #FFFFFF !important; white-space: nowrap;" title="Enviar por correo a {{ doc.empresa_email }}">
                                     <i class="fas fa-envelope me-1"></i> Enviar
                                 </button>
                             </form>
+                            {% if doc.es_edp and doc.detalle_url %}
+                            <a href="{{ doc.detalle_url }}" class="btn btn-sm btn-outline-secondary" style="padding: 4px 8px; font-size: 0.82rem;" title="Ver desglose comercial">
+                                <i class="fas fa-eye"></i>
+                            </a>
+                            {% endif %}
                         </div>
                     </td>
                 </tr>
@@ -71,7 +138,7 @@
                 <tr>
                     <td colspan="7" class="text-center text-muted py-4">
                         <i class="fas fa-folder-open fa-2x mb-2 text-muted"></i><br>
-                        No se han emitido certificados aún.
+                        No se encontraron documentos emitidos para el filtro seleccionado.
                     </td>
                 </tr>
                 {% endfor %}
