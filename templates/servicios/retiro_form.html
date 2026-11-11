@@ -40,6 +40,12 @@
                             <div class="col-6">
                                 <label class="form-label fw-semibold">N° Ticket Báscula <span class="text-danger">*</span></label>
                                 {{ form.numero_ticket }}
+                                <div id="ticketDuplicadoAlerta" class="alert alert-warning py-1 px-2 mt-2 shadow-sm" style="display:none; font-size:0.75rem; border-left:4px solid #ffc107; border-radius:6px;">
+                                    <div class="d-flex align-items-start">
+                                        <i class="fas fa-exclamation-triangle me-1 text-warning mt-1"></i>
+                                        <div id="ticketDuplicadoMensaje"></div>
+                                    </div>
+                                </div>
                                 {% if form.numero_ticket.errors %}<div class="text-danger small mt-1">{{ form.numero_ticket.errors }}</div>{% endif %}
                             </div>
                             <div class="col-6">
@@ -49,10 +55,22 @@
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label class="form-label fw-semibold">Faena / Área</label>
-                            {{ form.faena_area }}
-                            {% if form.faena_area.errors %}<div class="text-danger small mt-1">{{ form.faena_area.errors }}</div>{% endif %}
+                        <div class="row g-2 mb-3">
+                            <div class="col-6">
+                                <label class="form-label fw-semibold">Faena / Área</label>
+                                {{ form.faena_area }}
+                                {% if form.faena_area.errors %}<div class="text-danger small mt-1">{{ form.faena_area.errors }}</div>{% endif %}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-semibold"><i class="fas fa-user-circle text-primary me-1"></i>Operador Responsable</label>
+                                {{ form.operador_responsable }}
+                                <datalist id="operadoresList">
+                                    {% for op in lista_operadores %}
+                                    <option value="{{ op }}"></option>
+                                    {% endfor %}
+                                </datalist>
+                                {% if form.operador_responsable.errors %}<div class="text-danger small mt-1">{{ form.operador_responsable.errors }}</div>{% endif %}
+                            </div>
                         </div>
 
                         <div class="row g-2 mb-3">
@@ -675,6 +693,45 @@ document.addEventListener('DOMContentLoaded', function() {
                 }
             });
         });
+    }
+
+    // Detección y notificación en tiempo real de Ticket Báscula Duplicado
+    const ticketInput = document.getElementById('id_numero_ticket');
+    const alertaDuplicado = document.getElementById('ticketDuplicadoAlerta');
+    const mensajeDuplicado = document.getElementById('ticketDuplicadoMensaje');
+    const currentTicketId = "{{ ticket.pk|default:'' }}";
+    let debounceTimerFolio = null;
+
+    function verificarFolioTicket() {
+        if (!ticketInput || !alertaDuplicado || !mensajeDuplicado) return;
+        const val = ticketInput.value.trim();
+        if (!val || val.length < 2) {
+            alertaDuplicado.style.display = 'none';
+            ticketInput.classList.remove('is-invalid');
+            return;
+        }
+
+        fetch(`/api/tickets/verificar-folio/?numero=${encodeURIComponent(val)}&ticket_id=${currentTicketId}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.existe) {
+                    alertaDuplicado.style.display = 'block';
+                    mensajeDuplicado.innerHTML = `<strong>¡Folio ya registrado!</strong> ${data.mensaje} <a href="/retiros/${data.id}/" target="_blank" class="ms-1 fw-bold text-decoration-underline text-dark">Ver ticket</a>`;
+                    ticketInput.classList.add('is-invalid');
+                } else {
+                    alertaDuplicado.style.display = 'none';
+                    ticketInput.classList.remove('is-invalid');
+                }
+            })
+            .catch(() => {});
+    }
+
+    if (ticketInput) {
+        ticketInput.addEventListener('input', function() {
+            clearTimeout(debounceTimerFolio);
+            debounceTimerFolio = setTimeout(verificarFolioTicket, 300);
+        });
+        ticketInput.addEventListener('blur', verificarFolioTicket);
     }
 
     // Inicializar al cargar

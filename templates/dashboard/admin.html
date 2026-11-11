@@ -169,15 +169,15 @@
                                 {% else %}<span class="badge-estado badge-reciclable">♻️ Reciclables</span>{% endif %}
                             </td>
                             <td class="fw-bold text-dark">{{ s.empresa.nombre|default:"—"|truncatechars:18 }}</td>
-                            <td class="text-muted" style="font-size:.85rem;">{{ s.operador.nombre_completo|default:"Sin asignar"|truncatechars:15 }}</td>
+                            <td class="text-muted" style="font-size:.85rem;">{{ s.operador_nombre|default:"Sin asignar"|truncatechars:18 }}</td>
                             <td>
                                 {% if s.estado == 'pendiente' %}<span class="badge-estado badge-pendiente">En ruta</span>
                                 {% elif s.estado == 'pendiente_validacion' %}<span class="badge-estado badge-observado">A validar</span>
                                 {% elif s.estado == 'validado' %}<span class="badge-estado badge-reciclable">Validado</span>
                                 {% elif s.estado == 'observado' %}<span class="badge-estado badge-observado">Obs.</span>
-                                {% else %}<span class="badge-estado" style="background:#E1E4E7;color:#64748B;">Cancelado</span>{% endif %}
+                                {% else %}<span class="badge-estado" style="background:#E1E4E7;color:#64748B;">Completado</span>{% endif %}
                             </td>
-                            <td class="text-muted" style="font-size:.8rem;">{{ s.fecha_programada|date:"d/M H:i"|default:"—" }}</td>
+                            <td class="text-muted" style="font-size:.8rem;">{{ s.fecha|date:"d/m/Y"|default:"—" }}</td>
                         </tr>
                         {% empty %}
                         <tr><td colspan="5" class="text-center text-muted py-4">No hay servicios registrados.</td></tr>

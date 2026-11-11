@@ -166,7 +166,10 @@
                             </span>
                         </td>
                         <td>
-                            <small class="text-muted">{{ ticket.faena_area|default:"-" }}</small>
+                            <small class="text-muted d-block">{{ ticket.faena_area|default:"-" }}</small>
+                            {% if ticket.operador_responsable %}
+                            <small class="text-primary d-block" style="font-size:0.75rem;"><i class="fas fa-user-circle me-1"></i>{{ ticket.operador_responsable }}</small>
+                            {% endif %}
                         </td>
                         <td>
                             <div class="fw-semibold text-truncate" style="max-width:200px;">{{ ticket.tipo_servicio|default:"Retiro" }}</div>

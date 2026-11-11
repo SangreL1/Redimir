@@ -11,7 +11,10 @@ import openpyxl
 from openpyxl.styles import Font, Alignment, PatternFill
 
 from apps.usuarios.models import Usuario
-from apps.servicios.models import Servicio, RegistroRSD, RegistroEscombros, RegistroReciclables, TicketRetiro
+from apps.servicios.models import (
+    Servicio, RegistroRSD, RegistroEscombros, RegistroReciclables,
+    TicketRetiro, DetalleMaterialTicket
+)
 from apps.empresas.models import Empresa
 
 
@@ -54,60 +57,195 @@ class DashboardAdminView(View):
         f_inicio   = request.GET.get('inicio')
         f_fin      = request.GET.get('fin')
 
-        # Base queryset
+        # Base querysets
         servicios = Servicio.objects.all()
+        tickets = TicketRetiro.objects.all()
+
+        op_obj = None
+        if f_operador:
+            op_obj = Usuario.objects.filter(id=f_operador).first()
 
         if f_empresa:
             servicios = servicios.filter(empresa_id=f_empresa)
-        if f_modulo:
-            servicios = servicios.filter(modulo=f_modulo)
-        if f_operador:
-            servicios = servicios.filter(operador_id=f_operador)
-        if f_estado:
-            servicios = servicios.filter(estado=f_estado)
+            tickets = tickets.filter(empresa_id=f_empresa)
         if f_inicio:
             servicios = servicios.filter(fecha_retiro_real__date__gte=f_inicio)
+            tickets = tickets.filter(fecha__gte=f_inicio)
         if f_fin:
             servicios = servicios.filter(fecha_retiro_real__date__lte=f_fin)
+            tickets = tickets.filter(fecha__lte=f_fin)
+        if f_operador:
+            servicios = servicios.filter(operador_id=f_operador)
+            if op_obj:
+                tickets = tickets.filter(
+                    Q(usuario_registro_id=f_operador) |
+                    Q(operador_responsable__icontains=op_obj.nombre) |
+                    Q(operador_responsable__icontains=op_obj.apellido)
+                )
+            else:
+                tickets = tickets.filter(usuario_registro_id=f_operador)
+        if f_estado:
+            servicios = servicios.filter(estado=f_estado)
 
         validados = servicios.filter(estado='validado')
         pendientes = servicios.filter(estado='pendiente_validacion')
-        
-        # Totales por módulo
-        rsd_total_kg = validados.filter(modulo='rsd', registro_rsd_set__isnull=False).aggregate(total=Sum('registro_rsd_set__cantidad_kg'))['total'] or 0
-        escombros_total = validados.filter(modulo='escombros').count()
-        reciclables_kg = validados.filter(modulo='reciclables', registro_reciclables_set__isnull=False).aggregate(total=Sum('registro_reciclables_set__cantidad_kg'))['total'] or 0
-        
+
+        # Clasificación de Tickets por Módulo
+        q_rsd_ticket = (
+            Q(tipo_residuo__icontains='domest') | Q(tipo_residuo__icontains='domést') |
+            Q(tipo_servicio__icontains='domest') | Q(tipo_servicio__icontains='domést') |
+            Q(tipo_residuo__icontains='rsd') | Q(tipo_servicio__icontains='rsd') |
+            Q(tipo_residuo__icontains='basura') | Q(tipo_servicio__icontains='basura') |
+            Q(tipo_residuo__icontains='asimilable')
+        )
+        q_escombros_ticket = (
+            Q(tipo_residuo__icontains='escombro') | Q(tipo_residuo__icontains='rescon') |
+            Q(tipo_servicio__icontains='escombro') | Q(tipo_servicio__icontains='rescon') |
+            Q(tipo_residuo__icontains='inertes')
+        )
+
+        tickets_rsd = tickets.filter(q_rsd_ticket)
+        tickets_escombros = tickets.filter(q_escombros_ticket).exclude(id__in=tickets_rsd.values_list('id', flat=True))
+        tickets_recic = tickets.exclude(id__in=tickets_rsd.values_list('id', flat=True)).exclude(id__in=tickets_escombros.values_list('id', flat=True))
+
+        if f_modulo == 'rsd':
+            servicios = servicios.filter(modulo='rsd')
+            validados = validados.filter(modulo='rsd')
+            tickets_escombros = tickets_escombros.none()
+            tickets_recic = tickets_recic.none()
+        elif f_modulo == 'escombros':
+            servicios = servicios.filter(modulo='escombros')
+            validados = validados.filter(modulo='escombros')
+            tickets_rsd = tickets_rsd.none()
+            tickets_recic = tickets_recic.none()
+        elif f_modulo == 'reciclables':
+            servicios = servicios.filter(modulo='reciclables')
+            validados = validados.filter(modulo='reciclables')
+            tickets_rsd = tickets_rsd.none()
+            tickets_escombros = tickets_escombros.none()
+
+        # Totales por módulo (Servicios legacy + Tickets relacionales)
+        rsd_servicios_kg = validados.filter(modulo='rsd', registro_rsd_set__isnull=False).aggregate(total=Sum('registro_rsd_set__cantidad_kg'))['total'] or 0
+        rsd_tickets_kg = tickets_rsd.aggregate(total=Sum('peso_total_ticket'))['total'] or 0
+        rsd_total_kg = float(rsd_servicios_kg) + float(rsd_tickets_kg)
+
+        escombros_servicios = validados.filter(modulo='escombros').count()
+        escombros_tickets = tickets_escombros.count()
+        escombros_total = escombros_servicios + escombros_tickets
+
+        reciclables_servicios_kg = validados.filter(modulo='reciclables', registro_reciclables_set__isnull=False).aggregate(total=Sum('registro_reciclables_set__cantidad_kg'))['total'] or 0
+        reciclables_tickets_kg = tickets_recic.aggregate(total=Sum('peso_total_ticket'))['total'] or 0
+        reciclables_kg = float(reciclables_servicios_kg) + float(reciclables_tickets_kg)
+
         # Eco-equivalencia global (Solo Reciclables)
-        eco_agua = eco_co2 = eco_energia = eco_arboles = 0
+        eco_agua = eco_co2 = eco_energia = eco_arboles = 0.0
+
         recic_qs = RegistroReciclables.objects.filter(servicio__in=validados)
         for reg in recic_qs:
-            eco_agua += reg.eco_agua_L or 0
-            eco_co2 += reg.eco_co2_kg or 0
-            eco_energia += reg.eco_energia_kwh or 0
-            eco_arboles += reg.eco_arboles or 0
+            eco_agua += float(reg.eco_agua_L or 0)
+            eco_co2 += float(reg.eco_co2_kg or 0)
+            eco_energia += float(reg.eco_energia_kwh or 0)
+            eco_arboles += float(reg.eco_arboles or 0)
+
+        # Cálculo de eco-beneficios desde los Tickets de Retiro
+        from apps.certificados.views import ECO_FACTORES, calcular_eco_beneficios
+        materiales_kg = {k: 0.0 for k in ECO_FACTORES}
+        tickets_recic_ids = list(tickets_recic.values_list('id', flat=True))
+        
+        detalles_recic = DetalleMaterialTicket.objects.filter(ticket_id__in=tickets_recic_ids).select_related('material')
+        tickets_con_detalles = set()
+
+        for det in detalles_recic:
+            tickets_con_detalles.add(det.ticket_id)
+            m_nom = (det.nombre_material or '').lower()
+            peso = float(det.peso_kg or 0.0)
+            if peso == 0 and det.cantidad_unidades and getattr(det.material, 'peso_unitario_kg', 0) > 0:
+                peso = float(det.cantidad_unidades * det.material.peso_unitario_kg)
+            
+            eco_key = None
+            if 'cart' in m_nom: eco_key = 'carton'
+            elif 'papel' in m_nom: eco_key = 'papel'
+            elif 'pet' in m_nom or 'botella' in m_nom: eco_key = 'plastico'
+            elif 'film' in m_nom: eco_key = 'film'
+            elif 'aluminio' in m_nom or 'lata' in m_nom: eco_key = 'aluminio'
+            elif 'zuncho' in m_nom or 'suncho' in m_nom: eco_key = 'sunchos'
+            elif 'palet' in m_nom or 'pallet' in m_nom: eco_key = 'pallets'
+            elif 'carrete' in m_nom: eco_key = 'carretes'
+            elif 'vidrio' in m_nom: eco_key = 'vidrio'
+            elif 'tambor' in m_nom: eco_key = 'aluminio' if 'metal' in m_nom else 'plastico'
+            elif 'bidon' in m_nom: eco_key = 'plastico'
+            elif 'pellon' in m_nom or 'pellón' in m_nom: eco_key = 'pellon'
+            elif 'plast' in m_nom: eco_key = 'plastico'
+            elif any(k in m_nom for k in ['recicl', 'mixto']): eco_key = 'carton'
+
+            if eco_key and peso > 0 and eco_key in materiales_kg:
+                materiales_kg[eco_key] += peso
+
+        for t in tickets_recic:
+            if t.id not in tickets_con_detalles and t.peso_total_ticket and t.peso_total_ticket > 0:
+                materiales_kg['carton'] += float(t.peso_total_ticket)
+
+        beneficios = calcular_eco_beneficios(materiales_kg)
+        eco_agua += beneficios['agua']
+        eco_co2 += beneficios['co2']
+        eco_energia += beneficios['energia']
+        eco_arboles += beneficios['arboles']
 
         # KPIs mensuales
-        lotes_mes = validados.filter(fecha_retiro_real__gte=hace_30).count()
-        
-        # Top Empresas
-        empresas_data = Empresa.objects.annotate(
-            total_servicios=Count('servicios', filter=Q(servicios__estado='validado'))
-        ).order_by('-total_servicios')[:8]
-        
-        # Top Operadores
-        operadores_data = Usuario.objects.filter(rol='operador').annotate(
-            total_rec=Count('servicios_asignados', filter=Q(servicios_asignados__estado='validado'))
-        ).order_by('-total_rec')[:10]
+        lotes_mes = validados.filter(fecha_retiro_real__gte=hace_30).count() + tickets.filter(fecha__gte=hace_30.date()).count()
 
-        ultimos = servicios.order_by('-id')[:10].select_related('empresa', 'operador')
+        # Top Empresas
+        empresas_data = list(Empresa.objects.filter(activa=True).annotate(
+            total_tickets=Count('tickets_retiro', distinct=True),
+            total_servicios_val=Count('servicios', filter=Q(servicios__estado='validado'), distinct=True)
+        ))
+        for emp in empresas_data:
+            emp.total_servicios = emp.total_tickets + emp.total_servicios_val
+        empresas_data = sorted(empresas_data, key=lambda e: e.total_servicios, reverse=True)[:8]
+
+        # Top Operadores
+        operadores_data = list(Usuario.objects.filter(rol__in=['operador', 'recolector'], is_active=True).annotate(
+            total_serv=Count('servicios_asignados', filter=Q(servicios_asignados__estado='validado'), distinct=True),
+            total_tickets_reg=Count('ticketretiro', distinct=True)
+        ))
+        for op in operadores_data:
+            op_nom = op.nombre.strip() if op.nombre else ''
+            extra_tickets = tickets.filter(operador_responsable__icontains=op_nom).count() if op_nom else 0
+            op.total_rec = max(op.total_serv + op.total_tickets_reg, extra_tickets)
+        operadores_data = sorted(operadores_data, key=lambda o: o.total_rec, reverse=True)[:10]
+
+        # Actividad Reciente (Tickets prioritarios + Servicios)
+        ultimos = []
+        tickets_recientes = tickets.select_related('empresa').order_by('-fecha', '-id')[:10]
+        for t in tickets_recientes:
+            mod = 'rsd' if t.id in tickets_rsd.values_list('id', flat=True) else ('escombros' if t.id in tickets_escombros.values_list('id', flat=True) else 'reciclables')
+            ultimos.append({
+                'modulo': mod,
+                'empresa': t.empresa,
+                'operador_nombre': t.operador_display,
+                'estado': 'validado',
+                'fecha': t.fecha,
+                'numero_ticket': t.numero_ticket,
+                'peso': t.peso_total_ticket,
+            })
+        if not ultimos:
+            for s in servicios.order_by('-id')[:10].select_related('empresa', 'operador'):
+                ultimos.append({
+                    'modulo': s.modulo,
+                    'empresa': s.empresa,
+                    'operador_nombre': s.operador.nombre_completo if s.operador else 'Sin asignar',
+                    'estado': s.estado,
+                    'fecha': s.fecha_programada or s.fecha_solicitud,
+                    'numero_ticket': s.numero_folio,
+                    'peso': s.cantidad_estimada,
+                })
 
         # Colección de filtros para plantilla
         all_empresas = Empresa.objects.filter(activa=True).order_by('nombre')
         all_operadores = Usuario.objects.filter(rol='operador', is_active=True).order_by('nombre')
 
         return render(request, self.template_name, {
-            'total_servicios': validados.count(),
+            'total_servicios': validados.count() + tickets.count(),
             'pendientes_validacion': pendientes.count(),
             'lotes_mes': lotes_mes,
             'rsd_total_kg': rsd_total_kg,

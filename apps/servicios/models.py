@@ -362,6 +362,11 @@ class TicketRetiro(models.Model):
         upload_to='tickets_retiro/respaldos/%Y/%m/', blank=True, null=True,
         verbose_name="Comprobante de Pesaje (Foto / PDF)"
     )
+    operador_responsable = models.CharField(
+        max_length=150, blank=True, default='',
+        verbose_name="Operador / Responsable del Retiro",
+        help_text="Nombre de la persona u operador responsable del retiro o pesaje"
+    )
     observaciones = models.TextField(blank=True, verbose_name="Observaciones")
     usuario_registro = models.ForeignKey(
         'usuarios.Usuario', on_delete=models.SET_NULL, null=True, blank=True,
@@ -400,6 +405,14 @@ class TicketRetiro(models.Model):
     @property
     def registrado_por(self):
         return self.usuario_registro
+
+    @property
+    def operador_display(self):
+        if self.operador_responsable and self.operador_responsable.strip():
+            return self.operador_responsable.strip()
+        if self.usuario_registro:
+            return self.usuario_registro.nombre_completo
+        return "Sin asignar"
 
     @property
     def detalles_materiales(self):

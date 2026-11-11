@@ -71,6 +71,11 @@
                             {% endif %}
                         </dd>
 
+                        <dt class="col-sm-5 text-muted">Operador / Responsable:</dt>
+                        <dd class="col-sm-7 fw-semibold text-dark">
+                            <i class="fas fa-user-circle text-primary me-1"></i>{{ ticket.operador_display }}
+                        </dd>
+
                         {% if ticket.observaciones %}
                         <dt class="col-sm-5 text-muted">Observaciones:</dt>
                         <dd class="col-sm-7 small text-secondary">{{ ticket.observaciones }}</dd>

@@ -24,6 +24,19 @@ from .models import (
 )
 from .forms import TicketRetiroForm, DetalleMaterialTicketForm
 from apps.empresas.models import Empresa
+from apps.usuarios.models import Usuario
+
+
+def _obtener_lista_operadores():
+    try:
+        ops_qs = Usuario.objects.filter(is_active=True).filter(
+            Q(rol__in=['operador', 'recolector', 'admin', 'gerencia']) | Q(is_staff=True)
+        ).order_by('nombre', 'apellido')
+        lista = [u.nombre_completo for u in ops_qs if u.nombre_completo]
+        ops_previos = list(TicketRetiro.objects.exclude(operador_responsable='').values_list('operador_responsable', flat=True).distinct())
+        return sorted(list(set(lista + [o.strip() for o in ops_previos if o and o.strip()])))
+    except Exception:
+        return []
 
 
 def _sincronizar_edp_ticket(ticket, usuario=None):
@@ -370,6 +383,7 @@ def retiro_crear(request):
         'empresas': empresas_disponibles,
         'empresas_disponibles': empresas_disponibles,
         'empresas_servicios_json': json.dumps(empresas_servicios_map),
+        'lista_operadores': _obtener_lista_operadores(),
         'modo_edicion': False,
         'detalles_existentes': [],
     })
@@ -494,6 +508,7 @@ def retiro_editar(request, pk):
         'empresas': empresas_disponibles,
         'empresas_disponibles': empresas_disponibles,
         'empresas_servicios_json': json.dumps(empresas_servicios_map),
+        'lista_operadores': _obtener_lista_operadores(),
         'modo_edicion': True,
     })
 
@@ -833,7 +848,10 @@ def exportar_retiros_excel(request):
             c_idx += 1
 
         c_obs = c_idx
-        ws.cell(curr_row, c_obs, t.observaciones or "").alignment = Alignment(vertical="center", wrap_text=True)
+        obs_val = t.observaciones or ""
+        if t.operador_responsable:
+            obs_val = f"Operador: {t.operador_responsable} — {obs_val}" if obs_val else f"Operador: {t.operador_responsable}"
+        ws.cell(curr_row, c_obs, obs_val).alignment = Alignment(vertical="center", wrap_text=True)
 
         c_img = c_obs + 1
         cell_img = ws.cell(curr_row, c_img)
@@ -1006,6 +1024,39 @@ def exportar_retiros_excel(request):
     response['Content-Disposition'] = f'attachment; filename="{filename}"'
     wb.save(response)
     return response
+
+
+@login_required
+def api_verificar_ticket_folio(request):
+    """
+    Verifica en tiempo real si un número de ticket de báscula ya existe en la base de datos.
+    Permite notificar al usuario antes o durante el registro.
+    """
+    numero = request.GET.get('numero', '').strip()
+    ticket_id = request.GET.get('ticket_id', '').strip()
+
+    if not numero or len(numero) < 1:
+        return JsonResponse({'existe': False})
+
+    qs = TicketRetiro.objects.filter(numero_ticket__iexact=numero)
+    if ticket_id and ticket_id.isdigit():
+        qs = qs.exclude(pk=int(ticket_id))
+
+    existente = qs.select_related('empresa').first()
+    if existente:
+        fecha_str = existente.fecha.strftime('%d/%m/%Y') if existente.fecha else 'fecha no indicada'
+        empresa_nom = existente.empresa.nombre if existente.empresa else 'Empresa registrada'
+        peso_str = f"{existente.peso_total_ticket} kg" if existente.peso_total_ticket is not None else ""
+        return JsonResponse({
+            'existe': True,
+            'id': existente.id,
+            'numero': existente.numero_ticket,
+            'empresa': empresa_nom,
+            'fecha': fecha_str,
+            'peso': peso_str,
+            'mensaje': f"El folio '{existente.numero_ticket}' ya fue registrado el {fecha_str} para {empresa_nom} ({peso_str})."
+        })
+    return JsonResponse({'existe': False})
 
 
 @login_required
