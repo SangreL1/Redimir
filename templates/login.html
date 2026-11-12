@@ -390,6 +390,46 @@ function togglePass() {
         icon.classList.replace('fa-eye-slash','fa-eye');
     }
 }
+
+// Auto-formato de RUT mientras el usuario escribe
+(function () {
+    const rutInput = document.getElementById('id_rut');
+    if (!rutInput) return;
+
+    rutInput.addEventListener('input', function () {
+        // Si contiene @, es un email — no formatear
+        if (this.value.includes('@')) return;
+
+        // Guardar posición del cursor
+        const selStart = this.selectionStart;
+        const prevLen  = this.value.length;
+
+        // Limpiar: solo dígitos y K
+        let val = this.value.replace(/[^0-9kKxX]/g, '').toUpperCase();
+        // Eliminar X (no válido en RUT chileno)
+        val = val.replace(/X/g, '');
+
+        if (val.length < 2) {
+            this.value = val;
+            return;
+        }
+
+        const dv     = val.slice(-1);
+        const cuerpo = val.slice(0, -1);
+
+        // Insertar puntos cada 3 dígitos desde la derecha
+        const rev    = cuerpo.split('').reverse().join('');
+        const partes = rev.match(/.{1,3}/g) || [];
+        const cuerpoFormateado = partes.join('.').split('').reverse().join('');
+
+        this.value = cuerpoFormateado + '-' + dv;
+
+        // Ajustar posición del cursor
+        const newLen = this.value.length;
+        const diff   = newLen - prevLen;
+        this.setSelectionRange(selStart + diff, selStart + diff);
+    });
+})();
 </script>
 </body>
 </html>

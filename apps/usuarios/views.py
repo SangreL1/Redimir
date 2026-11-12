@@ -10,6 +10,7 @@ from datetime import timedelta
 
 from .models import Usuario
 from apps.empresas.models import Empresa
+from apps.usuarios.utils import formatear_rut, variantes_rut
 
 
 def _es_admin(user):
@@ -34,9 +35,15 @@ class LoginPageView(View):
         return render(request, self.template_name)
 
     def post(self, request):
-        rut   = request.POST.get('rut', '').strip().upper()
-        password = request.POST.get('password', '')
-        tipo  = request.POST.get('tipo', 'trabajador')
+        rut_input = request.POST.get('rut', '').strip()
+        password  = request.POST.get('password', '')
+        tipo      = request.POST.get('tipo', 'trabajador')
+
+        # Si es email, dejarlo como está; si es RUT, normalizar al formato estándar
+        if '@' in rut_input:
+            rut = rut_input.lower()
+        else:
+            rut = formatear_rut(rut_input)
 
         user = authenticate(request, username=rut, password=password)
 
@@ -88,7 +95,7 @@ class RegistroEmpresaView(View):
 
     def post(self, request):
         nombre          = request.POST.get('nombre', '').strip()
-        rut_empresa     = request.POST.get('rut_empresa', '').strip().upper()
+        rut_empresa     = formatear_rut(request.POST.get('rut_empresa', '').strip())
         email_contacto  = request.POST.get('email_contacto', '').strip()
         telefono        = request.POST.get('telefono', '').strip()
         direccion       = request.POST.get('direccion', '').strip()
@@ -98,7 +105,7 @@ class RegistroEmpresaView(View):
         apellido_contacto = request.POST.get('apellido_contacto', '').strip()
         cargo_contacto  = request.POST.get('cargo_contacto', '').strip()
         logo            = request.FILES.get('logo')
-        rut_usuario     = request.POST.get('rut_usuario', '').strip().upper()
+        rut_usuario     = formatear_rut(request.POST.get('rut_usuario', '').strip())
         password        = request.POST.get('password', '')
         password2       = request.POST.get('password2', '')
 
@@ -158,7 +165,7 @@ class RegistroTrabajadorView(View):
 
     def post(self, request):
         empresas = Empresa.objects.filter(estado='aprobada', activa=True)
-        rut      = request.POST.get('rut', '').strip().upper()
+        rut      = formatear_rut(request.POST.get('rut', '').strip())
         nombre   = request.POST.get('nombre', '').strip()
         apellido = request.POST.get('apellido', '').strip()
         email    = request.POST.get('email', '').strip()
@@ -447,7 +454,7 @@ class RecolectorCrearAdminView(View):
             return redirect('dashboard')
 
         empresas = Empresa.objects.filter(activa=True).order_by('nombre')
-        rut      = request.POST.get('rut', '').strip().upper()
+        rut      = formatear_rut(request.POST.get('rut', '').strip())
         nombre   = request.POST.get('nombre', '').strip()
         apellido = request.POST.get('apellido', '').strip()
         email    = request.POST.get('email', '').strip()
